@@ -9,6 +9,10 @@ inputs:
   npm-token:
     description: "Npm token"
     required: true
+  optic-url:
+    description: "Optic URL"
+    required: false
+    default: "https://optic-zf3votdk5a-ew.a.run.app/api/generate/"
   optic-token:
     description: "Optic token"
     required: true
@@ -22,29 +26,44 @@ inputs:
     description: "The semver to use"
     required: true
     default: "patch"
+  npm-tag:
+    description: "The tag for npm release"
+    required: false
+    default: "latest"
 
 runs:
   using: 'composite'
   steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
-      with:
-        node-version: 14
-    - run: git config --global user.email "${{ inputs.actor-email }}"
-      shell: 'bash'
-    - run: git config --global user.name "${{ inputs.actor-name }}"
-      shell: 'bash'
-    - run: npm config set //registry.npmjs.org/:_authToken=${{ inputs.npm-token }}
-      shell: 'bash'
-    - run: npm install
-      shell: 'bash'
-    - run: npm version ${{ inputs.semver }}
+    - run: |
+        git config --global user.email "${{ inputs.actor-email }}"
+        git config --global user.name "${{ inputs.actor-name }}"
+        npm config set //registry.npmjs.org/:_authToken=${{ inputs.npm-token }}
       shell: 'bash'
     - run: |
-        echo "Requesting OTP from Optic..."
-        otp=$(curl -s https://optic-zf3votdk5a-ew.a.run.app/api/generate/${{ inputs.optic-token }})
-        npm publish --otp $otp
-        otp=remove
+        npm install
+        v=$(npm version ${{ inputs.semver }})
+        echo "Bumped to $v"
+        echo "::set-output name=version::$v"
+
+        if [ -n "${{ inputs.optic-token }}" ]; then
+          echo "Requesting OTP from Optic..."
+          otp=$(curl -s ${{ inputs.optic-url }}${{ inputs.optic-token }})
+          npm publish --otp $otp --tag ${{ inputs.npm-tag }}
+        else
+          npm publish --tag ${{ inputs.npm-tag }}
+        fi
       shell: 'bash'
+      id: 'npm-op'
     - run: git push origin
       shell: 'bash'
+    - uses: actions/github-script@v5
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: '${{ steps.npm-op.outputs.version }}',
+            generate_release_notes: true
+          });

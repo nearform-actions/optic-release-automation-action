@@ -1,5 +1,5 @@
 {
-  "name": "auto-publish",
+  "name": "optic-release-automation",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,8 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Salman Mitha",
+    "email": "SalmanMitha@gmail.com"
+  },
+  "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.6.0",
     "@actions/github": "^5.0.0"
