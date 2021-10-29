@@ -1,0 +1,50 @@
+name: 'Auto Publish'
+
+description: 'Automatically publish to NPM and create Github release'
+
+inputs:
+  github-token:
+    description: "GitHub token"
+    required: true
+  npm-token:
+    description: "Npm token"
+    required: true
+  optic-token:
+    description: "Optic token"
+    required: true
+  actor-name:
+    description: "Actor name"
+    required: true
+  actor-email:
+    description: "Actor email"
+    required: true
+  semver:
+    description: "The semver to use"
+    required: true
+    default: "patch"
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 14
+    - run: git config --global user.email "${{ inputs.actor-email }}"
+      shell: 'bash'
+    - run: git config --global user.name "${{ inputs.actor-name }}"
+      shell: 'bash'
+    - run: npm config set //registry.npmjs.org/:_authToken=${{ inputs.npm-token }}
+      shell: 'bash'
+    - run: npm install
+      shell: 'bash'
+    - run: npm version ${{ inputs.semver }}
+      shell: 'bash'
+    - run: |
+        echo "Requesting OTP from Optic..."
+        otp=$(curl -s https://optic-zf3votdk5a-ew.a.run.app/api/generate/${{ inputs.optic-token }})
+        npm publish --otp $otp
+        otp=remove
+      shell: 'bash'
+    - run: git push origin
+      shell: 'bash'
