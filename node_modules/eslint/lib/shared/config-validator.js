@@ -24,13 +24,9 @@
 const
     util = require("util"),
     configSchema = require("../../conf/config-schema"),
+    BuiltInEnvironments = require("@eslint/eslintrc/conf/environments"),
     BuiltInRules = require("../rules"),
-    {
-        Legacy: {
-            ConfigOps,
-            environments: BuiltInEnvironments
-        }
-    } = require("@eslint/eslintrc"),
+    ConfigOps = require("@eslint/eslintrc/lib/shared/config-ops"),
     { emitDeprecationWarning } = require("./deprecation-warnings");
 
 const ajv = require("./ajv")();
@@ -84,7 +80,6 @@ function getRuleOptionsSchema(rule) {
 /**
  * Validates a rule's severity and returns the severity value. Throws an error if the severity is invalid.
  * @param {options} options The given options for the rule.
- * @throws {Error} Wrong severity value.
  * @returns {number|string} The rule's severity value
  */
 function validateRuleSeverity(options) {
@@ -103,7 +98,6 @@ function validateRuleSeverity(options) {
  * Validates the non-severity options passed to a rule, based on its schema.
  * @param {{create: Function}} rule The rule to validate
  * @param {Array} localOptions The options for the rule, excluding severity
- * @throws {Error} Any rule validation errors.
  * @returns {void}
  */
 function validateRuleSchema(rule, localOptions) {
@@ -134,7 +128,6 @@ function validateRuleSchema(rule, localOptions) {
  * @param {Array|number} options The given options for the rule.
  * @param {string|null} source The name of the configuration source to report in any errors. If null or undefined,
  * no source is prepended to the message.
- * @throws {Error} Upon any bad rule configuration.
  * @returns {void}
  */
 function validateRuleOptions(rule, ruleId, options, source = null) {
@@ -159,7 +152,7 @@ function validateRuleOptions(rule, ruleId, options, source = null) {
  * Validates an environment object
  * @param {Object} environment The environment config object to validate.
  * @param {string} source The name of the configuration source to report in any errors.
- * @param {(envId:string) => Object} [getAdditionalEnv] A map from strings to loaded environments.
+ * @param {function(envId:string): Object} [getAdditionalEnv] A map from strings to loaded environments.
  * @returns {void}
  */
 function validateEnvironment(
@@ -188,7 +181,7 @@ function validateEnvironment(
  * Validates a rules config object
  * @param {Object} rulesConfig The rules config object to validate.
  * @param {string} source The name of the configuration source to report in any errors.
- * @param {(ruleId:string) => Object} getAdditionalRule A map from strings to loaded rules
+ * @param {function(ruleId:string): Object} getAdditionalRule A map from strings to loaded rules
  * @returns {void}
  */
 function validateRules(
@@ -232,8 +225,7 @@ function validateGlobals(globalsConfig, source = null) {
  * Validate `processor` configuration.
  * @param {string|undefined} processorName The processor name.
  * @param {string} source The name of config file.
- * @param {(id:string) => Processor} getProcessor The getter of defined processors.
- * @throws {Error} For invalid processor configuration.
+ * @param {function(id:string): Processor} getProcessor The getter of defined processors.
  * @returns {void}
  */
 function validateProcessor(processorName, source, getProcessor) {
@@ -272,7 +264,6 @@ function formatErrors(errors) {
  * Validates the top level properties of the config object.
  * @param {Object} config The config object to validate.
  * @param {string} source The name of the configuration source to report in any errors.
- * @throws {Error} For any config invalid per the schema.
  * @returns {void}
  */
 function validateConfigSchema(config, source = null) {
@@ -291,8 +282,8 @@ function validateConfigSchema(config, source = null) {
  * Validates an entire config object.
  * @param {Object} config The config object to validate.
  * @param {string} source The name of the configuration source to report in any errors.
- * @param {(ruleId:string) => Object} [getAdditionalRule] A map from strings to loaded rules.
- * @param {(envId:string) => Object} [getAdditionalEnv] A map from strings to loaded envs.
+ * @param {function(ruleId:string): Object} [getAdditionalRule] A map from strings to loaded rules.
+ * @param {function(envId:string): Object} [getAdditionalEnv] A map from strings to loaded envs.
  * @returns {void}
  */
 function validate(config, source, getAdditionalRule, getAdditionalEnv) {

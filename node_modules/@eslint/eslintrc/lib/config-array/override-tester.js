@@ -16,14 +16,12 @@
  *
  * @author Toru Nagashima <https://github.com/mysticatea>
  */
+"use strict";
 
-import assert from "assert";
-import path from "path";
-import util from "util";
-import minimatch from "minimatch";
-
-const { Minimatch } = minimatch;
-
+const assert = require("assert");
+const path = require("path");
+const util = require("util");
+const { Minimatch } = require("minimatch");
 const minimatchOpts = { dot: true, matchBase: true };
 
 /**
@@ -222,4 +220,4 @@ class OverrideTester {
     }
 }
 
-export { OverrideTester };
+module.exports = { OverrideTester };

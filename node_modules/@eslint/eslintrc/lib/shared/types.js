@@ -2,9 +2,10 @@
  * @fileoverview Define common types for input completion.
  * @author Toru Nagashima <https://github.com/mysticatea>
  */
+"use strict";
 
 /** @type {any} */
-export default {};
+module.exports = {};
 
 /** @typedef {boolean | "off" | "readable" | "readonly" | "writable" | "writeable"} GlobalConf */
 /** @typedef {0 | 1 | 2 | "off" | "warn" | "error"} SeverityConf */

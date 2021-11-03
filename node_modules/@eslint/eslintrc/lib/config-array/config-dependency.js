@@ -14,8 +14,9 @@
  *
  * @author Toru Nagashima <https://github.com/mysticatea>
  */
+"use strict";
 
-import util from "util";
+const util = require("util");
 
 /**
  * The class is to store parsers or plugins.
@@ -112,4 +113,4 @@ class ConfigDependency {
 /** @typedef {ConfigDependency<import("../../shared/types").Parser>} DependentParser */
 /** @typedef {ConfigDependency<import("../../shared/types").Plugin>} DependentPlugin */
 
-export { ConfigDependency };
+module.exports = { ConfigDependency };

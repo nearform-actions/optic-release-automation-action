@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Automate the release process of your npm modules by providing them OTP on-demand.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "lint": "eslint ."
+  },
   "keywords": [],
   "author": {
     "name": "Salman Mitha",
@@ -15,7 +17,7 @@
     "@actions/github": "^5.0.0"
   },
   "devDependencies": {
-    "eslint": "^8.1.0",
+    "eslint": "^7.32.0",
     "prettier": "^2.4.1"
   }
 }

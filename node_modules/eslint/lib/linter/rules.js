@@ -30,9 +30,6 @@ function normalizeRule(rule) {
 // Public Interface
 //------------------------------------------------------------------------------
 
-/**
- * A storage for rules.
- */
 class Rules {
     constructor() {
         this._rules = Object.create(null);

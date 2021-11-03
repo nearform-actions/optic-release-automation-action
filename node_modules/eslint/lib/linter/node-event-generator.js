@@ -37,7 +37,9 @@ const esquery = require("esquery");
  * @returns {any[]} The union of the input arrays
  */
 function union(...arrays) {
-    return [...new Set(arrays.flat())];
+
+    // TODO(stephenwade): Replace this with arrays.flat() when we drop support for Node v10
+    return [...new Set([].concat(...arrays))];
 }
 
 /**
@@ -97,13 +99,6 @@ function getPossibleTypes(parsedSelector) {
         case "sibling":
         case "adjacent":
             return getPossibleTypes(parsedSelector.right);
-
-        case "class":
-            if (parsedSelector.name === "function") {
-                return ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"];
-            }
-
-            return null;
 
         default:
             return null;
@@ -244,6 +239,7 @@ function parseSelector(rawSelector) {
  */
 class NodeEventGenerator {
 
+    // eslint-disable-next-line jsdoc/require-description
     /**
      * @param {SafeEmitter} emitter
      * An SafeEmitter which is the destination of events. This emitter must already

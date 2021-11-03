@@ -1,6 +1,7 @@
 /**
  * @fileoverview Common helpers for naming of plugins, formatters and configs
  */
+"use strict";
 
 const NAMESPACE_REGEX = /^@.*\//iu;
 
@@ -89,7 +90,7 @@ function getNamespaceFromTerm(term) {
 // Public Interface
 //------------------------------------------------------------------------------
 
-export {
+module.exports = {
     normalizePackageName,
     getShorthandName,
     getNamespaceFromTerm

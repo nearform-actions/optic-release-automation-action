@@ -41,27 +41,11 @@ runs:
         git config --global user.email "${{ inputs.actor-email }}"
         git config --global user.name "${{ inputs.actor-name }}"
         npm config set //registry.npmjs.org/:_authToken=${{ inputs.npm-token }}
-      shell: 'bash'
-    - run: |
         npm install
-        v=$(npm version ${{ inputs.semver }})
-        echo "Bumped to $v"
-        echo "::set-output name=version::$v"
-
-        if [ -n "${{ inputs.optic-token }}" ]; then
-          echo "Requesting OTP from Optic..."
-          otp=$(curl -s ${{ inputs.optic-url }}${{ inputs.optic-token }})
-          npm publish --otp $otp --tag ${{ inputs.npm-tag }}
-        else
-          npm publish --tag ${{ inputs.npm-tag }}
-        fi
       shell: 'bash'
-      id: 'npm-op'
-    # - run: git push origin
-      # shell: 'bash'
     - uses: actions/github-script@v5
       with:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/action.js')
-          await script({ github, context, core })
+          await script({ github, context, core, inputs: ${{ toJSON(inputs) }} })
