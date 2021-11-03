@@ -14,5 +14,8 @@
     "@actions/core": "^1.6.0",
     "@actions/github": "^5.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^8.1.0",
+    "prettier": "^2.4.1"
+  }
 }
