@@ -1,15 +1,13 @@
 {
   "name": "optic-release-automation",
   "version": "1.0.0",
-  "description": "",
+  "description": "Automate the release process of your npm modules by providing them OTP on-demand.",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "keywords": [],
   "author": {
     "name": "Salman Mitha",
-    "email": "SalmanMitha@gmail.com"
+    "email": "salman.mitha@nearform.com"
   },
   "license": "MIT",
   "dependencies": {
