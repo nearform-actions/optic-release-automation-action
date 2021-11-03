@@ -4,30 +4,32 @@ description: 'Automatically publish to NPM and create Github release'
 
 inputs:
   github-token:
-    description: "GitHub token"
+    description: "Your Github token, it's already available to your Github action"
     required: true
   npm-token:
-    description: "Npm token"
+    description: "Your Npm Publish token"
     required: true
   optic-url:
-    description: "Optic URL"
+    description: "URL if you have a custom application that serves OTP"
     required: false
     default: "https://optic-zf3votdk5a-ew.a.run.app/api/generate/"
   optic-token:
-    description: "Optic token"
+    description: "Your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input"
     required: true
   actor-name:
-    description: "Actor name"
-    required: true
+    description: "The name you want to see in the new release commit."
+    required: false
+    default: "${{ github.actor }}"
   actor-email:
-    description: "Actor email"
-    required: true
+    description: "The email you want to see in the new release commit"
+    required: false
+    default: "actions@users.noreply.github.com"
   semver:
-    description: "The semver to use"
+    description: "The semver to use for this new release"
     required: true
     default: "patch"
   npm-tag:
-    description: "The tag for npm release"
+    description: "If you want to release to the Npm with a custom tag, pass it here"
     required: false
     default: "latest"
 

@@ -2,16 +2,18 @@
 
 This action allows you to automate the release process of your npm modules. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
-### Options
+### Inputs
 
-- `github-token`: Your Github token (Available in the action).
-- `npm-token`: Your Npm token (You can add it in Github secrets).
-- `optic-token`: (Optional) Your Optic token (You can add it in Github secrets). If skipped, it will try to publish to npm without an OTP.
-- `actor-name`: The name you want to see in the new release commit.
-- `actor-email`: The email you want to see in the new release commit.
-- `semver`: The version you want to bump (`patch|minor|major`).
-- `optic-url`: (Optional) Optic URL if you have a custom application that serves OTP.
-- `npm-tag`: (Optional) (Default: `latest`) If you want to release to the Npm with a custom tag, say `next`.
+| Input          | Required | Description                                                                                                                                                                                |
+| ---            | ---      | ---                                                                                                                                                                                        |
+| `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
+| `npm-token`    | Yes      | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens                              |
+| `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
+| `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
+| `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|
+| `actor-name`   | No       | The name you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                            |
+| `actor-email`  | No       | The email you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                           |
+| `npm-tag`      | No       | If you want to release to the Npm with a custom tag, say `next`. <br /> (_Default: `latest`_)                                                                                              |
 
 ### Example
 
@@ -60,4 +62,6 @@ This workflow will
 
 *Why do I need this when I can create Npm automation tokens?*
 
-Although you can generate an Npm token that would let you bypass the MFA while publishing, this service let's you use the regular token and generate a token on the fly while publishing. It will request Optic service which would request OTP from your phone and only after your approval, will the release proceed.
+> An automation token will bypass two-factor authentication when publishing. If you have two-factor authentication enabled, you will not be prompted when using an automation token, making it suitable for CI/CD workflows.
+
+Although you can generate an Npm token that would let you bypass the OTP while publishing, this service let's you use the Publish token and generate a token on the fly while publishing. It will request Optic service which would request OTP from your phone and only after your approval, will the release proceed.
