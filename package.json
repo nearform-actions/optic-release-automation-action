@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Automate the release process of your npm modules by providing them OTP on-demand.",
   "main": "index.js",
-  "scripts": {
-    "lint": "eslint ."
-  },
+  "scripts": {},
   "keywords": [],
   "author": {
     "name": "Salman Mitha",
