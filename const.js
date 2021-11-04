@@ -1,0 +1,3 @@
+'use strict'
+
+exports.PR_TITLE_PREFIX = '[OPTIC-RELEASE-AUTOMATION]'
