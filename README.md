@@ -2,6 +2,15 @@
 
 This action allows you to automate the release process of your npm modules. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
+### What does it do?
+
+- Create a workflow that runs on `workflow_dispatch` & `pull_request` (closed)
+- Run the workflow manually when you want to publish a new release
+- The action opens a new PR.
+- Merge the PR (or close if you do not wish to proceed)
+- A new Npm release will be published
+- A new Github release will be created
+
 ### Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
@@ -17,7 +26,7 @@ This action allows you to automate the release process of your npm modules. It c
 
 ### Example
 
-To use this action, you can create a Github manual workflow with one step that uses this action and supply the options.
+To use this action, you can create a Github workflow with one step that uses this action and supply the inputs.
 
 ```yml
 name: release
@@ -33,6 +42,8 @@ on:
         description: "The npm tag"
         required: false
         default: "latest"
+  pull_request:
+    types: [closed]
 
 jobs:
   release:
@@ -43,15 +54,17 @@ jobs:
           github-token: ${{secrets.github_token}}
           npm-token: ${{secrets.NPM_TOKEN}}
           optic-token: ${{secrets.OPTIC_TOKEN}}
-          actor-name: ${{ github.actor }}
-          actor-email: "actions@users.noreply.github.com"
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-This workflow will
+The above example workflow will
 
-- Run `npm version <semver>` command to bump the version as configured
+- Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
+- Open a PR that looks like following
+
+
+
 - Request Npm OTP from Optic
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Push the new commit to your repo.
