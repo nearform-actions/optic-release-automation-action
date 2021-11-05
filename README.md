@@ -4,12 +4,8 @@ This action allows you to automate the release process of your npm modules. It c
 
 ### What does it do?
 
-- Create a workflow that runs on `workflow_dispatch` & `pull_request` (closed)
-- Run the workflow manually when you want to publish a new release
-- The action opens a new PR.
-- Merge the PR (or close if you do not wish to proceed)
-- A new Npm release will be published
-- A new Github release will be created
+- When run, it opens a new PR for the release.
+- When the PR gets merged, it publishes a new Npm release and a new Github release with change logs
 
 ### Inputs
 
@@ -65,9 +61,8 @@ The above example workflow will
 
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
-- Request Npm OTP from Optic
+- When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
-- Push the new commit to your repo.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 
 
