@@ -63,7 +63,7 @@ The above example workflow will
 - Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
 - Open a PR that looks like following
 
-
+![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
 - Request Npm OTP from Optic
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
