@@ -3,16 +3,23 @@
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
 
-const getPRBody = (releaseMeta, notes) => `
+const getPRBody = (releaseMeta, notes, url) => `
 ## Optic Release Automation
 
 This PR is opened by Github action [optic-release-automation](https://github.com/nearform/optic-release-automation).
 
-A new release will be created in Npm and Github when this PR gets merged.
-Package version: ${releaseMeta.version}
-Npm tag: ${releaseMeta.npmTag}
+A **draft** release [${releaseMeta.version}](${url}) has been created.
 
-You can close the PR if you do not wish to go ahead with this release.
+#### If you merge the PR
+
+- The release will be published
+- The npm package with tag \`${
+  releaseMeta.npmTag
+}\` will be published according to the publishing rules you have configured
+
+#### If you close the PR
+
+- The new draft release will be deleted and nothing will change
 
 ${notes}
 
@@ -58,6 +65,6 @@ module.exports = async function ({ github, context, inputs }) {
     head: `refs/heads/${branchName}`,
     base: context.payload.ref,
     title: `${PR_TITLE_PREFIX} ${branchName}`,
-    body: getPRBody(releaseMeta, data.body),
+    body: getPRBody(releaseMeta, data.body, data.html_url),
   })
 }
