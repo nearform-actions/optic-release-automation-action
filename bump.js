@@ -6,11 +6,11 @@ const { runSpawn } = require('./util')
 const getPRBody = (releaseMeta, notes, url) => `
 ## Optic Release Automation
 
-This PR is opened by Github action [optic-release-automation](https://github.com/nearform/optic-release-automation).
+This **draft** PR is opened by Github action [optic-release-automation](https://github.com/nearform/optic-release-automation).
 
-A **draft** release [${releaseMeta.version}](${url}) has been created.
+A new **draft** release [${releaseMeta.version}](${url}) has been created.
 
-#### If you merge the PR
+#### If you want to go ahead with the release, please mark this draft PR as ready and merge it. When you merge:
 
 - The release will be published
 - The npm package with tag \`${
@@ -66,5 +66,6 @@ module.exports = async function ({ github, context, inputs }) {
     base: context.payload.ref,
     title: `${PR_TITLE_PREFIX} ${branchName}`,
     body: getPRBody(releaseMeta, data.body, data.html_url),
+    draft: true,
   })
 }
