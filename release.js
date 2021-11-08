@@ -8,10 +8,8 @@ module.exports = async function ({ github, context, inputs }) {
 
   if (
     context.payload.action !== 'closed' ||
-    !pr.merged ||
     pr.user.login !== 'github-actions[bot]' ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
-    // TODO: more checks to validate if it's the right PR?
   ) {
     return
   }
@@ -28,11 +26,19 @@ module.exports = async function ({ github, context, inputs }) {
     return console.error('Unable to parse PR meta', err.message)
   }
 
+  if (!pr.merged) {
+    return github.rest.repos.deleteRelease({
+      owner,
+      repo,
+      release_id: id,
+    })
+  }
+
   const run = runSpawn({ cwd: github.action_path })
   const owner = context.repo.owner
   const repo = context.repo.repo
   const opticToken = inputs['optic-token']
-  const { opticUrl, npmTag, version } = releaseMeta
+  const { opticUrl, npmTag, version, id } = releaseMeta
 
   if (opticToken) {
     console.log('Requesting OTP from Optic...')
@@ -44,10 +50,12 @@ module.exports = async function ({ github, context, inputs }) {
 
   console.log('Published to Npm')
 
-  await github.rest.repos.createRelease({
+  await github.rest.repos.updateRelease({
     owner,
     repo,
     tag_name: version,
     generate_release_notes: true,
+    release_id: id,
+    draft: false,
   })
 }
