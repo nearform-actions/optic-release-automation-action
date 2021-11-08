@@ -45,7 +45,7 @@ module.exports = async function ({ github, context, inputs }) {
     owner,
     repo,
     head: `refs/heads/${branchName}`,
-    base: 'refs/heads/main',
+    base: context.payload.ref,
     title: `${PR_TITLE_PREFIX} ${branchName}`,
     body: getPRBody(releaseMeta),
   })
