@@ -28,6 +28,8 @@ module.exports = async function ({ github, context, inputs }) {
     return console.error('Unable to parse PR meta', err.message)
   }
 
+  const { opticUrl, npmTag, version, id } = releaseMeta
+
   if (!pr.merged) {
     return github.rest.repos.deleteRelease({
       owner,
@@ -38,7 +40,6 @@ module.exports = async function ({ github, context, inputs }) {
 
   const run = runSpawn({ cwd: github.action_path })
   const opticToken = inputs['optic-token']
-  const { opticUrl, npmTag, version, id } = releaseMeta
 
   if (opticToken) {
     console.log('Requesting OTP from Optic...')
