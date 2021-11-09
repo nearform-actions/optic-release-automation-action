@@ -5,6 +5,8 @@ const { runSpawn } = require('./util')
 
 module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
+  const owner = context.repo.owner
+  const repo = context.repo.repo
 
   if (
     context.payload.action !== 'closed' ||
@@ -35,8 +37,6 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   const run = runSpawn({ cwd: github.action_path })
-  const owner = context.repo.owner
-  const repo = context.repo.repo
   const opticToken = inputs['optic-token']
   const { opticUrl, npmTag, version, id } = releaseMeta
 
