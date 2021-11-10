@@ -51,6 +51,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   console.log('Published to Npm')
 
+  // TODO: What if PR was closed/reopened. The draft release would have been deleted!
   await github.rest.repos.updateRelease({
     owner,
     repo,
