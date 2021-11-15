@@ -5,13 +5,12 @@ const action = require('./action')
 async function fn() {
   await action({
     github: {
-      action_path: __dirname
+      action_path: __dirname,
     },
     inputs: {
-      semver: 'patch'
-    }
+      semver: 'patch',
+    },
   })
-
 }
 
 fn()
