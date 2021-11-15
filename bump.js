@@ -1,7 +1,11 @@
 'use strict'
 
+const fetch = require('node-fetch')
+
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
+
+const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation-app'
 
 const getPRBody = (releaseMeta, notes, url) => `
 ## Optic Release Automation
@@ -59,13 +63,28 @@ module.exports = async function ({ github, context, inputs }) {
     opticUrl: inputs['optic-url'],
   }
 
-  await github.rest.pulls.create({
-    owner,
-    repo,
-    head: `refs/heads/${branchName}`,
-    base: context.payload.ref,
-    title: `${PR_TITLE_PREFIX} ${branchName}`,
-    body: getPRBody(releaseMeta, data.body, data.html_url),
-    draft: true,
+  const response = await fetch(inputs['api-url'], {
+    method: 'POST',
+    headers: {
+      authorization: `token ${github.token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      owner,
+      repo,
+      head: `refs/heads/${branchName}`,
+      base: context.payload.ref,
+      title: `${PR_TITLE_PREFIX} ${branchName}`,
+      body: getPRBody(releaseMeta, data.body, data.html_url),
+      draft: true,
+    }),
   })
+
+  const responseText = await response.text()
+
+  console.log(responseText)
+
+  if (response.status === 400) {
+    console.warn(`Please ensure that Github App is installed ${GITHUB_APP_URL}`)
+  }
 }

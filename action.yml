@@ -32,6 +32,10 @@ inputs:
     description: "If you want to release to the Npm with a custom tag, pass it here"
     required: false
     default: "latest"
+  api-url:
+    description: "Url of the API where the application is running"
+    required: false
+    default: "https://smee.io/VceC5459wnYhIob/"
 
 runs:
   using: 'composite'
