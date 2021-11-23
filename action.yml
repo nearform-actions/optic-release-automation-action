@@ -35,7 +35,7 @@ inputs:
   api-url:
     description: "Url of the API where the application is running"
     required: false
-    default: "https://smee.io/VceC5459wnYhIob/"
+    default: "https://optic-release-automation-ocrlhra4va-ue.a.run.app/"
 
 runs:
   using: 'composite'
