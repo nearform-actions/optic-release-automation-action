@@ -1,4 +1,4 @@
-# optic-release-automation
+# optic-release-automation-action
 
 This action allows you to automate the release process of your npm modules. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
@@ -45,7 +45,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation@main
+      - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
           github-token: ${{secrets.github_token}}
           npm-token: ${{secrets.NPM_TOKEN}}

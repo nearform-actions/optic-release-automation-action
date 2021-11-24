@@ -5,12 +5,12 @@ const fetch = require('node-fetch')
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
 
-const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation-app'
+const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 
 const getPRBody = (releaseMeta, notes, url) => `
 ## Optic Release Automation
 
-This **draft** PR is opened by Github action [optic-release-automation](https://github.com/nearform/optic-release-automation).
+This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).
 
 A new **draft** release [${releaseMeta.version}](${url}) has been created.
 
