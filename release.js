@@ -1,7 +1,11 @@
 'use strict'
 
+const fetch = require('node-fetch')
+
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
+
+const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 
 module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
@@ -54,12 +58,26 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
-  await github.rest.repos.updateRelease({
-    owner,
-    repo,
-    tag_name: version,
-    generate_release_notes: true,
-    release_id: id,
-    draft: false,
+
+  // Github does not allow a new workflow run to be triggered as a result of an action using the same `GITHUB_TOKEN`.
+  // Hence creating PR via an external GitHub app.
+  const response = await fetch(`${inputs['api-url']}release`, {
+    method: 'POST',
+    headers: {
+      authorization: `token ${inputs['github-token']}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      version: version,
+      releaseId: id,
+    }),
   })
+
+  const responseText = await response.text()
+
+  console.log(responseText)
+
+  if (response.status === 404) {
+    console.warn(`Please ensure that Github App is installed ${GITHUB_APP_URL}`)
+  }
 }

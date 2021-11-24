@@ -65,7 +65,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   // Github does not allow a new workflow run to be triggered as a result of an action using the same `GITHUB_TOKEN`.
   // Hence creating PR via an external GitHub app.
-  const response = await fetch(inputs['api-url'], {
+  const response = await fetch(`${inputs['api-url']}pr`, {
     method: 'POST',
     headers: {
       authorization: `token ${inputs['github-token']}`,
