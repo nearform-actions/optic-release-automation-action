@@ -7,15 +7,15 @@ inputs:
     description: "Your Github token, it's already available to your Github action"
     required: true
   npm-token:
-    description: "Your Npm Publish token"
-    required: true
+    description: "Your Npm Publish token, if you do not wish to publish to Npm, skip this"
+    required: false
   optic-url:
     description: "URL if you have a custom application that serves OTP"
     required: false
     default: "https://optic-zf3votdk5a-ew.a.run.app/api/generate/"
   optic-token:
-    description: "Your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input"
-    required: true
+    description: "Your Optic token. You can add your Npm secret to the Optic app, generate a new token and pass it to this input. Required only if you want to pubish to Npm and have MFA enabled for your account"
+    required: false
   actor-name:
     description: "The name you want to see in the new release commit."
     required: false
@@ -44,7 +44,6 @@ runs:
     - run: |
         git config --global user.email "${{ inputs.actor-email }}"
         git config --global user.name "${{ inputs.actor-name }}"
-        npm config set //registry.npmjs.org/:_authToken=${{ inputs.npm-token }}
         npm install
       shell: 'bash'
     - uses: actions/github-script@v5

@@ -63,8 +63,8 @@ module.exports = async function ({ github, context, inputs }) {
     opticUrl: inputs['optic-url'],
   }
 
-  // Github does not allow a workflow to directly or indirectly result in another workflow run.
-  // Henc creating PR via an external github app.
+  // Github does not allow a new workflow run to be triggered as a result of an action using the same `GITHUB_TOKEN`.
+  // Hence creating PR via an external GitHub app.
   const response = await fetch(inputs['api-url'], {
     method: 'POST',
     headers: {

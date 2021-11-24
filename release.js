@@ -41,17 +41,19 @@ module.exports = async function ({ github, context, inputs }) {
   const run = runSpawn({ cwd: github.action_path })
   const opticToken = inputs['optic-token']
 
-  if (opticToken) {
-    console.log('Requesting OTP from Optic...')
-    const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
-    await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
-  } else {
-    await run('npm', ['publish', '--tag', npmTag])
+  if (inputs['npm-token']) {
+    if (opticToken) {
+      console.log('Requesting OTP from Optic...')
+      const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
+      await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+    } else {
+      await run('npm', ['publish', '--tag', npmTag])
+    }
+
+    console.log('Published to Npm')
   }
 
-  console.log('Published to Npm')
-
-  // TODO: What if PR was closed/reopened. The draft release would have been deleted!
+  // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
   await github.rest.repos.updateRelease({
     owner,
     repo,

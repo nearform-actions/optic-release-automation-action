@@ -5,24 +5,14 @@ This action allows you to automate the release process of your npm modules. It c
 ### What does it do?
 
 - When run, it opens a new PR for the release.
-- When the PR gets merged, it publishes a new Npm release and a new Github release with change logs
+- When/if the PR gets merged, it publishes a new Npm release and a new Github release with change logs
 
-### Inputs
+### Usage
 
-| Input          | Required | Description                                                                                                                                                                                |
-| ---            | ---      | ---                                                                                                                                                                                        |
-| `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
-| `npm-token`    | Yes      | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens                              |
-| `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
-| `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
-| `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|
-| `actor-name`   | No       | The name you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                            |
-| `actor-email`  | No       | The email you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                           |
-| `npm-tag`      | No       | If you want to release to the Npm with a custom tag, say `next`. <br /> (_Default: `latest`_)                                                                                              |
+- Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
+- Create a new workflow file at `.github/workflows/release.yml` (from example below) with one step that uses this action and supply the inputs.
 
-### Example
-
-To use this action, you can create a Github workflow with one step that uses this action and supply the inputs.
+#### Example
 
 ```yml
 name: release
@@ -54,7 +44,7 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-The above example workflow will
+The above workflow (when manually triggered) will
 
 - Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
 - Open a PR that looks like following
@@ -65,6 +55,18 @@ The above example workflow will
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 
+### Inputs
+
+| Input          | Required | Description                                                                                                                                                                                |
+| ---            | ---      | ---                                                                                                                                                                                        |
+| `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
+| `npm-token`    | Yes      | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens                              |
+| `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
+| `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
+| `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|
+| `actor-name`   | No       | The name you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                            |
+| `actor-email`  | No       | The email you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                           |
+| `npm-tag`      | No       | If you want to release to the Npm with a custom tag, say `next`. <br /> (_Default: `latest`_)                                                                                              |
 
 ## Motivation
 
