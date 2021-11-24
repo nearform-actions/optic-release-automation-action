@@ -10,7 +10,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   if (
     context.payload.action !== 'closed' ||
-    pr.user.login !== 'github-actions[bot]' ||
+    pr.user.login !== 'optic-release-automation[bot]' ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
   ) {
     return

@@ -83,7 +83,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   console.log(responseText)
 
-  if (response.status === 400) {
+  if (response.status === 404) {
     console.warn(`Please ensure that Github App is installed ${GITHUB_APP_URL}`)
   }
 }
