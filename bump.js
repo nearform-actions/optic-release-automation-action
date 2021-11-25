@@ -2,13 +2,10 @@
 
 const fs = require('fs')
 const path = require('path')
-const fetch = require('node-fetch')
 const _template = require('lodash.template')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
-
-const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -29,10 +26,8 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
   })
 }
 
-module.exports = async function ({ github, context, inputs }) {
+module.exports = async function ({ context, inputs, callApi }) {
   const run = runSpawn()
-  const owner = context.repo.owner
-  const repo = context.repo.repo
 
   const newVersion = await run('npm', [
     'version',
@@ -45,37 +40,24 @@ module.exports = async function ({ github, context, inputs }) {
   await run('git', ['commit', '-am', newVersion])
   await run('git', ['push', 'origin', branchName])
 
-  const { data: draftRelease } = await github.rest.repos.createRelease({
-    owner,
-    repo,
-    tag_name: newVersion,
-    generate_release_notes: true,
-    draft: true,
+  const { data: draftRelease } = await callApi({
+    method: 'POST',
+    endpoint: 'release',
+    body: {
+      version: newVersion,
+    },
   })
 
   const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
 
-  // Github does not allow a new workflow run to be triggered as a result of an action using the same `GITHUB_TOKEN`.
-  // Hence creating PR via an external GitHub app.
-  const response = await fetch(`${inputs['api-url']}pr`, {
+  await callApi({
     method: 'POST',
-    headers: {
-      authorization: `token ${inputs['github-token']}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
+    endpoint: 'pr',
+    body: {
       head: `refs/heads/${branchName}`,
       base: context.payload.ref,
       title: `${PR_TITLE_PREFIX} ${branchName}`,
       body: prBody,
-    }),
+    },
   })
-
-  const responseText = await response.text()
-
-  console.log(responseText)
-
-  if (response.status === 404) {
-    console.warn(`Please ensure that Github App is installed ${GITHUB_APP_URL}`)
-  }
 }
