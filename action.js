@@ -5,7 +5,7 @@ const release = require('./release')
 const { runSpawn } = require('./util')
 
 module.exports = async function ({ github, context, inputs }) {
-  const run = runSpawn({ cwd: github.action_path })
+  const run = runSpawn()
 
   if (inputs['npm-token']) {
     await run('npm', [

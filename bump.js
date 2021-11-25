@@ -1,38 +1,36 @@
 'use strict'
 
+const fs = require('fs')
+const path = require('path')
 const fetch = require('node-fetch')
+const _template = require('lodash.template')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
 
 const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 
-const getPRBody = (releaseMeta, notes, url) => `
-## Optic Release Automation
+const actionPath = process.env.GITHUB_ACTION_PATH
+const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
 
-This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).
+const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
+  // Should strictly contain only non-sensitive data
+  const releaseMeta = {
+    id: draftRelease.id,
+    version: newVersion,
+    npmTag: inputs['npm-tag'],
+    opticUrl: inputs['optic-url'],
+  }
 
-A new **draft** release [${releaseMeta.version}](${url}) has been created.
-
-#### If you want to go ahead with the release, please mark this draft PR as ready and merge it. When you merge:
-
-- The release will be published
-- The npm package with tag \`${
-  releaseMeta.npmTag
-}\` will be published according to the publishing rules you have configured
-
-#### If you close the PR
-
-- The new draft release will be deleted and nothing will change
-
-${notes}
-
-<!--
-<release-meta>${JSON.stringify(releaseMeta)}</release-meta>
--->`
+  return template({
+    releaseMeta,
+    draftRelease,
+    npmPublish: !!inputs['npm-token'],
+  })
+}
 
 module.exports = async function ({ github, context, inputs }) {
-  const run = runSpawn({ cwd: github.action_path })
+  const run = runSpawn()
   const owner = context.repo.owner
   const repo = context.repo.repo
 
@@ -47,7 +45,7 @@ module.exports = async function ({ github, context, inputs }) {
   await run('git', ['commit', '-am', newVersion])
   await run('git', ['push', 'origin', branchName])
 
-  const { data } = await github.rest.repos.createRelease({
+  const { data: draftRelease } = await github.rest.repos.createRelease({
     owner,
     repo,
     tag_name: newVersion,
@@ -55,13 +53,7 @@ module.exports = async function ({ github, context, inputs }) {
     draft: true,
   })
 
-  // Should strictly only non-sensitive data
-  const releaseMeta = {
-    id: data.id,
-    version: newVersion,
-    npmTag: inputs['npm-tag'],
-    opticUrl: inputs['optic-url'],
-  }
+  const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
 
   // Github does not allow a new workflow run to be triggered as a result of an action using the same `GITHUB_TOKEN`.
   // Hence creating PR via an external GitHub app.
@@ -75,7 +67,7 @@ module.exports = async function ({ github, context, inputs }) {
       head: `refs/heads/${branchName}`,
       base: context.payload.ref,
       title: `${PR_TITLE_PREFIX} ${branchName}`,
-      body: getPRBody(releaseMeta, data.body, data.html_url),
+      body: prBody,
     }),
   })
 
