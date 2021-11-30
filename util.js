@@ -1,6 +1,7 @@
 'use strict'
 
 const { spawn } = require('child_process')
+const { runSpawn } = require("./util");
 
 exports.runSpawn = function runSpawn({ cwd } = {}) {
   return (cmd, args) => {
@@ -31,4 +32,18 @@ exports.runSpawn = function runSpawn({ cwd } = {}) {
       })
     })
   }
+}
+
+exports.tagVersionInGit = async function (version) {
+  const run = runSpawn()
+
+  await run('git', ['push', 'origin', `:refs/tags/${version}`])
+  await run('git', [
+    'tag',
+    '-fa',
+    `"${version}"`,
+    '-m',
+    `"Update tag ${version}"`,
+  ])
+  await run('git', ['push', 'origin', `--tags`])
 }
