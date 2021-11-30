@@ -1,9 +1,15 @@
 'use strict'
 
 const { PR_TITLE_PREFIX } = require('./const')
-const { runSpawn } = require('./util')
+const semver = require('semver')
+const core = require('@actions/core')
 
-module.exports = async function ({ github, context, inputs, callApi }) {
+const { callApi } = require('./utils/callApi')
+const { tagVersionInGit } = require('./utils/tagVersion')
+const { runSpawn } = require('./utils/runSpawn')
+const { logError } = require('./log')
+
+module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -25,7 +31,7 @@ module.exports = async function ({ github, context, inputs, callApi }) {
       )
     )
   } catch (err) {
-    return console.error('Unable to parse PR meta', err.message)
+    return logError(err)
   }
 
   const { opticUrl, npmTag, version, id } = releaseMeta
@@ -43,24 +49,40 @@ module.exports = async function ({ github, context, inputs, callApi }) {
 
   if (inputs['npm-token']) {
     if (opticToken) {
-      console.log('Requesting OTP from Optic...')
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
       await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
     } else {
       await run('npm', ['publish', '--tag', npmTag])
     }
+  }
 
-    console.log('Published to Npm')
+  try {
+    const syncVersions = /true/i.test(inputs['sync-semver-tags'])
+
+    if (syncVersions) {
+      const { major, minor } = semver.parse(version)
+
+      if (major !== 0) await tagVersionInGit(`v${major}`)
+      if (minor !== 0) await tagVersionInGit(`v${major}.${minor}`)
+    }
+  } catch (err) {
+    core.setFailed(`Unable to update the semver tags ${err.message}`)
   }
 
   // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
-
-  await callApi({
-    endpoint: 'release',
-    method: 'PATCH',
-    body: {
-      version: version,
-      releaseId: id,
-    },
-  })
+  try {
+    await callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {
+          version: version,
+          releaseId: id,
+        },
+      },
+      inputs
+    )
+  } catch (err) {
+    core.setFailed(`Unable to publish the release ${err.message}`)
+  }
 }

@@ -2,7 +2,7 @@
 
 const { spawn } = require('child_process')
 
-exports.runSpawn = function runSpawn({ cwd } = {}) {
+function runSpawn({ cwd } = {}) {
   return (cmd, args) => {
     return new Promise((resolve, reject) => {
       const cli = spawn(cmd, args, { cwd, env: process.env, shell: true })
@@ -32,3 +32,5 @@ exports.runSpawn = function runSpawn({ cwd } = {}) {
     })
   }
 }
+
+exports.runSpawn = runSpawn
