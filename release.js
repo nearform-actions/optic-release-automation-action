@@ -55,12 +55,34 @@ module.exports = async function ({ github, context, inputs, callApi }) {
 
   // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
 
-  await callApi({
-    endpoint: 'release',
-    method: 'PATCH',
-    body: {
-      version: version,
-      releaseId: id,
-    },
-  })
+  try {
+    await callApi({
+      endpoint: 'release',
+      method: 'PATCH',
+      body: {
+        version: version,
+        releaseId: id,
+      },
+    })
+
+    const syncInput = inputs['sync-major']
+    const syncMajor =
+      syncInput === 'true' || syncInput === 'True' || syncInput === 'TRUE'
+
+    if (syncMajor) {
+      const major = version.split('.')[0]
+
+      await run('git', ['push', 'origin', `:refs/tags/${major}`])
+      await run('git', [
+        'tag',
+        '-fa',
+        `"${major}"`,
+        '-m',
+        `"Update tag ${major}"`,
+      ])
+      await run('git', ['push', 'origin', `--tags`])
+    }
+  } catch (err) {
+    console.error('Unable to publish the release', err.message)
+  }
 }
