@@ -13,6 +13,12 @@ A new **draft** GitHub release [${releaseMeta.version}](${draftRelease.html_url}
 - No npm package will be published as configured
 <% } %>
 
+<% if (syncTags) { %>
+- The following tags will be updated to point to the latest appropriate commit: ${tagsToUpdate}
+<% } else { %>
+- No major or minor tags will be updated as configured
+<% } %>
+
 #### If you close the PR
 
 - The new draft release will be deleted and nothing will change

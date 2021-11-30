@@ -9,6 +9,7 @@ jobs:
         with:
           node-version: '14.x'
       - run: npm ci
+      - run: npm test
 
   automerge:
     needs: build
