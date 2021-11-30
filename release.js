@@ -1,7 +1,7 @@
 'use strict'
 
 const { PR_TITLE_PREFIX } = require('./const')
-const { runSpawn } = require('./util')
+const { tagVersionInGit, runSpawn } = require('./util')
 
 module.exports = async function ({ github, context, inputs, callApi }) {
   const pr = context.payload.pull_request
@@ -70,17 +70,12 @@ module.exports = async function ({ github, context, inputs, callApi }) {
       syncInput === 'true' || syncInput === 'True' || syncInput === 'TRUE'
 
     if (syncMajor) {
-      const major = version.split('.')[0]
+      const versionPieces = version.split('.')
+      const major = versionPieces[0]
+      const minor = versionPieces.slice(0, 2).join('.')
 
-      await run('git', ['push', 'origin', `:refs/tags/${major}`])
-      await run('git', [
-        'tag',
-        '-fa',
-        `"${major}"`,
-        '-m',
-        `"Update tag ${major}"`,
-      ])
-      await run('git', ['push', 'origin', `--tags`])
+      await tagVersionInGit(major)
+      await tagVersionInGit(minor)
     }
   } catch (err) {
     console.error('Unable to publish the release', err.message)
