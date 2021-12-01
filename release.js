@@ -1,7 +1,9 @@
 'use strict'
 
 const { PR_TITLE_PREFIX } = require('./const')
-const { runSpawn } = require('./util')
+const { tagVersionInGit, runSpawn } = require('./util')
+const semver = require('semver')
+const core = require('@actions/core');
 
 module.exports = async function ({ github, context, inputs, callApi }) {
   const pr = context.payload.pull_request
@@ -65,24 +67,20 @@ module.exports = async function ({ github, context, inputs, callApi }) {
       },
     })
 
-    const syncInput = inputs['sync-major']
-    const syncMajor =
-      syncInput === 'true' || syncInput === 'True' || syncInput === 'TRUE'
+    const syncMajor = /true/i.test(inputs['sync-major'])
 
     if (syncMajor) {
-      const major = version.split('.')[0]
+      const parsed = semver.parse(version)
+      const major = parsed.major
+      const minor = parsed.minor
 
-      await run('git', ['push', 'origin', `:refs/tags/${major}`])
-      await run('git', [
-        'tag',
-        '-fa',
-        `"${major}"`,
-        '-m',
-        `"Update tag ${major}"`,
-      ])
-      await run('git', ['push', 'origin', `--tags`])
+      await tagVersionInGit(`v${major}`)
+
+      if (minor !== 0) {
+        await tagVersionInGit(`v${major}.${minor}`)
+      }
     }
   } catch (err) {
-    console.error('Unable to publish the release', err.message)
+    core.setFailed(`Unable to publish the release ${err.message}`)
   }
 }
