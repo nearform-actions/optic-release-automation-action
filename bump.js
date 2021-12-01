@@ -3,6 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
+const semver = require('semver')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./util')
@@ -11,18 +12,28 @@ const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
 
 const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
+  const tagsToBeUpdated = []
+  const parsed = semver.parse(newVersion)
+  const major = parsed.major
+  const minor = parsed.minor
+
+  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
+  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
+
   // Should strictly contain only non-sensitive data
   const releaseMeta = {
     id: draftRelease.id,
     version: newVersion,
     npmTag: inputs['npm-tag'],
     opticUrl: inputs['optic-url'],
+    tagsToUpdate: tagsToBeUpdated.join(', '),
   }
 
   return template({
     releaseMeta,
     draftRelease,
     npmPublish: !!inputs['npm-token'],
+    syncTags: /true/i.test(inputs['sync-semver-tags'])
   })
 }
 
