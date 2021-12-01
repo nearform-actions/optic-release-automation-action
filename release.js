@@ -3,7 +3,7 @@
 const { PR_TITLE_PREFIX } = require('./const')
 const { tagVersionInGit, runSpawn } = require('./util')
 const semver = require('semver')
-const core = require('@actions/core');
+const core = require('@actions/core')
 
 module.exports = async function ({ github, context, inputs, callApi }) {
   const pr = context.payload.pull_request
@@ -67,18 +67,19 @@ module.exports = async function ({ github, context, inputs, callApi }) {
       },
     })
 
-    const syncVersions = /true/i.test(inputs['sync-semver-tags'])
+    try {
+      const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
-    if (syncVersions) {
-      const parsed = semver.parse(version)
-      const major = parsed.major
-      const minor = parsed.minor
+      if (syncVersions) {
+        const parsed = semver.parse(version)
+        const major = parsed.major
+        const minor = parsed.minor
 
-      await tagVersionInGit(`v${major}`)
-
-      if (minor !== 0) {
-        await tagVersionInGit(`v${major}.${minor}`)
+        if (major !== 0) await tagVersionInGit(`v${major}`)
+        if (minor !== 0) await tagVersionInGit(`v${major}.${minor}`)
       }
+    } catch (err) {
+      core.setFailed(`Unable to update the semver tags ${err.message}`)
     }
   } catch (err) {
     core.setFailed(`Unable to publish the release ${err.message}`)
