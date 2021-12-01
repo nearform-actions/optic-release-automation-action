@@ -36,8 +36,8 @@ inputs:
     description: "Url of the API where the application is running"
     required: false
     default: "https://optic-release-automation-ocrlhra4va-ue.a.run.app/"
-  sync-major:
-    description: "If you want to keep the major version tag (E.g v2) synced to the latest commit (Boolean)"
+  sync-semver-tags:
+    description: "If you want to keep the major and minor versions tag synced to the latest appropriate commit"
     required: false
     default: "false"
 

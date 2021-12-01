@@ -67,9 +67,9 @@ module.exports = async function ({ github, context, inputs, callApi }) {
       },
     })
 
-    const syncMajor = /true/i.test(inputs['sync-major'])
+    const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
-    if (syncMajor) {
+    if (syncVersions) {
       const parsed = semver.parse(version)
       const major = parsed.major
       const minor = parsed.minor
