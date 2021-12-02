@@ -13,9 +13,7 @@ const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
 
 const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
   const tagsToBeUpdated = []
-  const parsed = semver.parse(newVersion)
-  const major = parsed.major
-  const minor = parsed.minor
+  const { major, minor } = semver.parse(newVersion)
 
   if (major !== 0) tagsToBeUpdated.push(`v${major}`)
   if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)

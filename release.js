@@ -55,8 +55,20 @@ module.exports = async function ({ github, context, inputs, callApi }) {
     console.log('Published to Npm')
   }
 
-  // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
+  try {
+    const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
+    if (syncVersions) {
+      const { major, minor } = semver.parse(version)
+
+      if (major !== 0) await tagVersionInGit(`v${major}`)
+      if (minor !== 0) await tagVersionInGit(`v${major}.${minor}`)
+    }
+  } catch (err) {
+    core.setFailed(`Unable to update the semver tags ${err.message}`)
+  }
+
+  // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
   try {
     await callApi({
       endpoint: 'release',
@@ -66,21 +78,6 @@ module.exports = async function ({ github, context, inputs, callApi }) {
         releaseId: id,
       },
     })
-
-    try {
-      const syncVersions = /true/i.test(inputs['sync-semver-tags'])
-
-      if (syncVersions) {
-        const parsed = semver.parse(version)
-        const major = parsed.major
-        const minor = parsed.minor
-
-        if (major !== 0) await tagVersionInGit(`v${major}`)
-        if (minor !== 0) await tagVersionInGit(`v${major}.${minor}`)
-      }
-    } catch (err) {
-      core.setFailed(`Unable to update the semver tags ${err.message}`)
-    }
   } catch (err) {
     core.setFailed(`Unable to publish the release ${err.message}`)
   }
