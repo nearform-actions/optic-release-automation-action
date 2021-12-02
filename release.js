@@ -1,11 +1,14 @@
 'use strict'
 
 const { PR_TITLE_PREFIX } = require('./const')
-const { tagVersionInGit, runSpawn } = require('./util')
 const semver = require('semver')
 const core = require('@actions/core')
 
-module.exports = async function ({ github, context, inputs, callApi }) {
+const { callApi } = require('./utils/callApi')
+const { tagVersionInGit } = require('./utils/tagVersion')
+const { runSpawn } = require('./utils/runSpawn')
+
+module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -70,14 +73,17 @@ module.exports = async function ({ github, context, inputs, callApi }) {
 
   // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
   try {
-    await callApi({
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {
-        version: version,
-        releaseId: id,
+    await callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {
+          version: version,
+          releaseId: id,
+        },
       },
-    })
+      inputs
+    )
   } catch (err) {
     core.setFailed(`Unable to publish the release ${err.message}`)
   }

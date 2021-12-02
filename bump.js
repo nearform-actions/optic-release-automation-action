@@ -6,7 +6,8 @@ const _template = require('lodash.template')
 const semver = require('semver')
 
 const { PR_TITLE_PREFIX } = require('./const')
-const { runSpawn } = require('./util')
+const { runSpawn } = require('./utils/runSpawn')
+const { callApi } = require('./utils/callApi')
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -31,11 +32,11 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
     releaseMeta,
     draftRelease,
     npmPublish: !!inputs['npm-token'],
-    syncTags: /true/i.test(inputs['sync-semver-tags'])
+    syncTags: /true/i.test(inputs['sync-semver-tags']),
   })
 }
 
-module.exports = async function ({ context, inputs, callApi }) {
+module.exports = async function ({ context, inputs }) {
   const run = runSpawn()
 
   const newVersion = await run('npm', [
@@ -49,24 +50,30 @@ module.exports = async function ({ context, inputs, callApi }) {
   await run('git', ['commit', '-am', newVersion])
   await run('git', ['push', 'origin', branchName])
 
-  const { data: draftRelease } = await callApi({
-    method: 'POST',
-    endpoint: 'release',
-    body: {
-      version: newVersion,
+  const { data: draftRelease } = await callApi(
+    {
+      method: 'POST',
+      endpoint: 'release',
+      body: {
+        version: newVersion,
+      },
     },
-  })
+    inputs
+  )
 
   const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
 
-  await callApi({
-    method: 'POST',
-    endpoint: 'pr',
-    body: {
-      head: `refs/heads/${branchName}`,
-      base: context.payload.ref,
-      title: `${PR_TITLE_PREFIX} ${branchName}`,
-      body: prBody,
+  await callApi(
+    {
+      method: 'POST',
+      endpoint: 'pr',
+      body: {
+        head: `refs/heads/${branchName}`,
+        base: context.payload.ref,
+        title: `${PR_TITLE_PREFIX} ${branchName}`,
+        body: prBody,
+      },
     },
-  })
+    inputs
+  )
 }
