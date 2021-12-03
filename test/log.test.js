@@ -33,7 +33,7 @@ tap.test('logDebug calls @actions/core/debug', async t => {
 
 tap.test('logError calls @actions/core/error', async t => {
   const { logger, coreStub } = setup()
-  logger.logError('Debug')
+  logger.logError(new Error('not a string'))
   t.ok(coreStub.error.calledOnce)
   t.ok(coreStub.debug.notCalled)
 })
