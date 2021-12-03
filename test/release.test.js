@@ -4,6 +4,7 @@ const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const core = require('@actions/core')
+const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../utils/runSpawn')
 const tagVersionAction = require('../utils/tagVersion')
@@ -89,19 +90,9 @@ tap.afterEach(() => {
 
 tap.test('Should delete the release if the pr is not merged', async t => {
   const { release } = setup()
-  await release({
-    ...DEFAULT_ACTION_DATA,
-    context: {
-      ...DEFAULT_ACTION_DATA.context,
-      payload: {
-        ...DEFAULT_ACTION_DATA.context.payload,
-        pull_request: {
-          ...DEFAULT_ACTION_DATA.context.payload.pull_request,
-          merged: false,
-        },
-      },
-    },
-  })
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  await release(data)
 
   t.ok(
     deleteReleaseStub.calledOnceWith({
@@ -220,19 +211,9 @@ tap.test(
   'Should not do anything if the user is not optic-release-automation[bot]',
   async t => {
     const { release, stubs } = setup()
-    await release({
-      ...DEFAULT_ACTION_DATA,
-      context: {
-        ...DEFAULT_ACTION_DATA.context,
-        payload: {
-          ...DEFAULT_ACTION_DATA.context.payload,
-          pull_request: {
-            ...DEFAULT_ACTION_DATA.context.payload.pull_request,
-            user: { login: 'not_the_correct_one' },
-          },
-        },
-      },
-    })
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.user.login = 'not_the_correct_one'
+    await release(data)
 
     t.ok(stubs.callApiStub.notCalled)
     t.ok(stubs.runSpawnStub.notCalled)
@@ -241,19 +222,9 @@ tap.test(
 
 tap.test('Should fail if the release metadata is incorrect', async t => {
   const { release, stubs } = setup()
-  await release({
-    ...DEFAULT_ACTION_DATA,
-    context: {
-      ...DEFAULT_ACTION_DATA.context,
-      payload: {
-        ...DEFAULT_ACTION_DATA.context.payload,
-        pull_request: {
-          ...DEFAULT_ACTION_DATA.context.payload.pull_request,
-          body: 'this data is not correct',
-        },
-      },
-    },
-  })
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.body = 'this data is not correct'
+  await release(data)
 
   t.ok(stubs.logStub.logError.calledOnce)
   t.ok(stubs.callApiStub.notCalled)
@@ -301,27 +272,18 @@ tap.test(
     const { release, stubs } = setup()
     stubs.callApiStub.throws()
 
-    await release({
-      ...DEFAULT_ACTION_DATA,
-      inputs: {
-        'npm-token': 'a-token',
-        'optic-token': 'optic-token',
-        'sync-semver-tags': 'true',
-      },
-      context: {
-        ...DEFAULT_ACTION_DATA.context,
-        payload: {
-          ...DEFAULT_ACTION_DATA.context.payload,
-          pull_request: {
-            ...DEFAULT_ACTION_DATA.context.payload.pull_request,
-            body:
-              '<!--\n' +
-              '<release-meta>{"id":54503465,"version":"v5.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
-              '-->',
-          },
-        },
-      },
-    })
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
+    data.context.payload.pull_request.body =
+      '<!--\n' +
+      '<release-meta>{"id":54503465,"version":"v5.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
+      '-->'
+
+    await release(data)
 
     t.ok(stubs.tagVersionStub.calledOnceWith('v5'))
   }
@@ -333,27 +295,18 @@ tap.test(
     const { release, stubs } = setup()
     stubs.callApiStub.throws()
 
-    await release({
-      ...DEFAULT_ACTION_DATA,
-      inputs: {
-        'npm-token': 'a-token',
-        'optic-token': 'optic-token',
-        'sync-semver-tags': 'true',
-      },
-      context: {
-        ...DEFAULT_ACTION_DATA.context,
-        payload: {
-          ...DEFAULT_ACTION_DATA.context.payload,
-          pull_request: {
-            ...DEFAULT_ACTION_DATA.context.payload.pull_request,
-            body:
-              '<!--\n' +
-              '<release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
-              '-->',
-          },
-        },
-      },
-    })
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
+    data.context.payload.pull_request.body =
+      '<!--\n' +
+      '<release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
+      '-->'
+
+    await release(data)
 
     t.ok(stubs.tagVersionStub.notCalled)
   }
