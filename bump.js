@@ -25,12 +25,12 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
     version: newVersion,
     npmTag: inputs['npm-tag'],
     opticUrl: inputs['optic-url'],
-    tagsToUpdate: tagsToBeUpdated.join(', '),
   }
 
   return template({
     releaseMeta,
     draftRelease,
+    tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
     syncTags: /true/i.test(inputs['sync-semver-tags']),
   })

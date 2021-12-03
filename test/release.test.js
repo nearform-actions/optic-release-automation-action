@@ -40,7 +40,7 @@ const DEFAULT_ACTION_DATA = {
         title: PR_TITLE_PREFIX,
         body:
           '<!--\n' +
-          '<release-meta>{"id":54503465,"version":"v5.1.3","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/","tagsToUpdate":"v5, v5.1"}</release-meta>\n' +
+          '<release-meta>{"id":54503465,"version":"v5.1.3","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
           '-->',
       },
     },
@@ -197,7 +197,6 @@ tap.test('Should call the release method', async t => {
     },
   })
 
-
   t.ok(
     stubs.callApiStub.calledWith(
       {
@@ -317,7 +316,7 @@ tap.test(
             ...DEFAULT_ACTION_DATA.context.payload.pull_request,
             body:
               '<!--\n' +
-              '<release-meta>{"id":54503465,"version":"v5.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/","tagsToUpdate":"v5, v5.1"}</release-meta>\n' +
+              '<release-meta>{"id":54503465,"version":"v5.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
               '-->',
           },
         },
@@ -349,7 +348,7 @@ tap.test(
             ...DEFAULT_ACTION_DATA.context.payload.pull_request,
             body:
               '<!--\n' +
-              '<release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/","tagsToUpdate":"v5, v5.1"}</release-meta>\n' +
+              '<release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
               '-->',
           },
         },

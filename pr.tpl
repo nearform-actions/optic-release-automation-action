@@ -14,7 +14,7 @@ A new **draft** GitHub release [${releaseMeta.version}](${draftRelease.html_url}
 <% } %>
 
 <% if (syncTags) { %>
-- The following tags will be updated to point to the latest appropriate commit: ${releaseMeta.tagsToUpdate}
+- The following tags will be updated to point to the latest appropriate commit: ${tagsToUpdate}
 <% } else { %>
 - No major or minor tags will be updated as configured
 <% } %>
