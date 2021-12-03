@@ -28,14 +28,6 @@ tap.test('Tag version in git', async t => {
   t.ok(
     runSpawnStub.calledWith('git', ['push', 'origin', `:refs/tags/${version}`])
   )
-  t.ok(
-    runSpawnStub.calledWith('git', [
-      'tag',
-      '-fa',
-      `"${version}"`,
-      '-m',
-      `"Update tag ${version}"`,
-    ])
-  )
+  t.ok(runSpawnStub.calledWith('git', ['tag', '-f', `"${version}"`]))
   t.ok(runSpawnStub.calledWith('git', ['push', 'origin', `--tags`]))
 })

@@ -7,6 +7,7 @@ const core = require('@actions/core')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { runSpawn } = require('./utils/runSpawn')
+const { logError } = require('./log')
 
 module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
@@ -30,7 +31,7 @@ module.exports = async function ({ github, context, inputs }) {
       )
     )
   } catch (err) {
-    return console.error('Unable to parse PR meta', err.message)
+    return logError(err)
   }
 
   const { opticUrl, npmTag, version, id } = releaseMeta
@@ -48,14 +49,11 @@ module.exports = async function ({ github, context, inputs }) {
 
   if (inputs['npm-token']) {
     if (opticToken) {
-      console.log('Requesting OTP from Optic...')
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
       await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
     } else {
       await run('npm', ['publish', '--tag', npmTag])
     }
-
-    console.log('Published to Npm')
   }
 
   try {

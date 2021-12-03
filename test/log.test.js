@@ -18,6 +18,12 @@ tap.afterEach(() => {
   sinon.restore()
 })
 
+tap.test('calling log with an array will stringify it', async t => {
+  const { logger, coreStub } = setup()
+  logger.logDebug([1, 2, 3])
+  t.ok(coreStub.debug.calledWith('1,2,3'))
+})
+
 tap.test('logDebug calls @actions/core/debug', async t => {
   const { logger, coreStub } = setup()
   logger.logDebug('Debug')
