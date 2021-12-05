@@ -24,24 +24,18 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   for (const [secret, value] of Object.entries(allSecrets)) {
-    console.log(`secret is ${secret}`)
     npmToken = npmToken || getToken('npm_token_', secret, value)
     opticToken = opticToken || getToken('optic_token_', secret, value)
   }
 
   // Default to npm-token
   if (!npmToken) {
-    console.log('No npm token found, using npm-token')
     npmToken = inputs['npm-token']
   }
 
   if (!opticToken) {
-    console.log('No optic token found, using optic-token')
     opticToken = inputs['optic-token']
   }
-
-  console.log('npmToken', npmToken)
-  console.log('opticToken', opticToken)
 
   if (npmToken) {
     await run('npm', [
