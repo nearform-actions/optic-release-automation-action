@@ -12,7 +12,10 @@ const { callApi } = require('./utils/callApi')
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
 
-const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
+const getPRBody = (
+  template,
+  { newVersion, draftRelease, inputs, npmToken }
+) => {
   const tagsToBeUpdated = []
   const { major, minor } = semver.parse(newVersion)
 
@@ -31,12 +34,12 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
     releaseMeta,
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
-    npmPublish: !!inputs['npm-token'],
+    npmPublish: !!npmToken,
     syncTags: /true/i.test(inputs['sync-semver-tags']),
   })
 }
 
-module.exports = async function ({ context, inputs }) {
+module.exports = async function ({ context, inputs, npmToken }) {
   const run = runSpawn()
 
   const newVersion = await run('npm', [
@@ -61,7 +64,12 @@ module.exports = async function ({ context, inputs }) {
     inputs
   )
 
-  const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
+  const prBody = getPRBody(_template(tpl), {
+    newVersion,
+    draftRelease,
+    inputs,
+    npmToken,
+  })
 
   await callApi(
     {
