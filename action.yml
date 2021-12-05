@@ -7,7 +7,7 @@ inputs:
     description: "Your Github token, it's already available to your Github action"
     required: true
   all-secrets:
-    description: "All github secrets stored of this repository in JSON format"
+    description: "All github secrets of this repository in JSON format"
     required: false
   npm-token:
     description: "Your Npm Publish token, if you do not wish to publish to Npm, skip this"

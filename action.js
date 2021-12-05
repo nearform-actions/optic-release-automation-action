@@ -24,6 +24,7 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   for (const [secret, value] of Object.entries(allSecrets)) {
+    console.log(`secret is ${secret}`)
     npmToken = npmToken || getToken('npm_token_', secret, value)
     opticToken = opticToken || getToken('optic_token_', secret, value)
   }

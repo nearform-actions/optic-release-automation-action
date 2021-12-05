@@ -41,6 +41,7 @@ jobs:
     steps:
       - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
+          all-secrets: ${{ toJson(secrets) }}
           github-token: ${{secrets.github_token}}
           npm-token: ${{secrets.NPM_TOKEN}}
           optic-token: ${{secrets.OPTIC_TOKEN}}
