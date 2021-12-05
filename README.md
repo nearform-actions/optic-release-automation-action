@@ -59,6 +59,7 @@ The above workflow (when manually triggered) will
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
 - You need to define Npm and Optic tokens in the Github secrets for each user that will receive the otp
 - The name of the npm/optic secret for each user should start with `NPM_TOKEN_` and `OPTIC_TOKEN_`
+- The value of the npm/optic secret for each user should be of the format `<github-username>:<token>`
 - Default tokens can be provided with `NPM_TOKEN` AND `OPTIC_TOKEN` secrets which will be used if individual user token secrets are not defined
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
