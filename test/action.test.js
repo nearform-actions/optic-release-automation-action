@@ -139,3 +139,84 @@ tap.test(
     )
   }
 )
+
+tap.test(
+  'user related npm and optic token should be used if supplied in secrets',
+  async t => {
+    const { action, stubs } = buildStubbedAction()
+    const inputs = {
+      'all-secrets': JSON.stringify({
+        NPM_TOKEN_A: 'a-name:a-token',
+        OPTIC_TOKEN_A: 'a-name:o-token',
+      }),
+      'actor-name': 'a-name',
+    }
+    const context = {
+      ...DEFAULT_ACTION_DATA.context,
+      eventName: 'workflow_dispatch',
+    }
+
+    await action({
+      ...DEFAULT_ACTION_DATA,
+      context,
+      inputs,
+    })
+
+    t.ok(stubs.logStub.logError.notCalled)
+    t.ok(stubs.bumpStub.calledOnce)
+    t.ok(stubs.utilStub.runSpawn.calledOnce)
+    t.ok(
+      stubs.bumpStub.calledOnceWith({
+        context,
+        inputs,
+        npmToken: 'a-token',
+      })
+    )
+    t.ok(
+      stubs.runSpawnStub.calledOnceWith('npm', [
+        'config',
+        'set',
+        `//registry.npmjs.org/:_authToken=a-token`,
+      ])
+    )
+  }
+)
+
+tap.test(
+  'should default to npm-token if user npm token not defined',
+  async t => {
+    const { action, stubs } = buildStubbedAction()
+    const inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'o-token',
+    }
+    const context = {
+      ...DEFAULT_ACTION_DATA.context,
+      eventName: 'workflow_dispatch',
+    }
+
+    await action({
+      ...DEFAULT_ACTION_DATA,
+      context,
+      inputs,
+    })
+
+    t.ok(stubs.logStub.logError.notCalled)
+    t.ok(stubs.bumpStub.calledOnce)
+    t.ok(stubs.utilStub.runSpawn.calledOnce)
+    t.ok(
+      stubs.bumpStub.calledOnceWith({
+        context,
+        inputs,
+        npmToken: 'a-token',
+      })
+    )
+    t.ok(
+      stubs.runSpawnStub.calledOnceWith('npm', [
+        'config',
+        'set',
+        `//registry.npmjs.org/:_authToken=a-token`,
+      ])
+    )
+  }
+)

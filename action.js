@@ -10,8 +10,13 @@ module.exports = async function ({ github, context, inputs }) {
 
   let npmToken = null
   let opticToken = null
+  let allSecrets = []
 
-  const allSecrets = JSON.parse(inputs['all-secrets'])
+  try {
+    allSecrets = JSON.parse(inputs['all-secrets'])
+  } catch (error) {
+    console.log('All secrets not specified')
+  }
 
   function getToken(type, secret, value) {
     if (
