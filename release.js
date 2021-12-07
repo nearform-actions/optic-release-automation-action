@@ -36,8 +36,11 @@ module.exports = async function ({ github, context, inputs }) {
 
   const { opticUrl, npmTag, version, id } = releaseMeta
 
-  console.log(pr)
+  console.log(releaseMeta)
+  console.log(owner)
+  console.log(repo)
   if (!pr.merged) {
+    console.log('Inside of the if')
     return github.rest.repos.deleteRelease({
       owner,
       repo,
