@@ -247,6 +247,8 @@ tap.test(
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
       },
+      npmToken: 'a-token',
+      opticToken: 'optic-token',
     })
 
     t.ok(stubs.coreStub.setFailed.calledOnce)

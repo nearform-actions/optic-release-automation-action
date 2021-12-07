@@ -145,11 +145,8 @@ tap.test(
   async t => {
     const { action, stubs } = buildStubbedAction()
     const inputs = {
-      'all-secrets': JSON.stringify({
-        NPM_TOKEN_A: 'a-name:a-token',
-        OPTIC_TOKEN_A: 'a-name:o-token',
-      }),
-      'actor-name': 'a-name',
+      'user-npm-token': 'a-user-npm-token',
+      'user-optic-token': 'a-user-optic-token',
     }
     const context = {
       ...DEFAULT_ACTION_DATA.context,
@@ -169,14 +166,14 @@ tap.test(
       stubs.bumpStub.calledOnceWith({
         context,
         inputs,
-        npmToken: 'a-token',
+        npmToken: 'a-user-npm-token',
       })
     )
     t.ok(
       stubs.runSpawnStub.calledOnceWith('npm', [
         'config',
         'set',
-        `//registry.npmjs.org/:_authToken=a-token`,
+        `//registry.npmjs.org/:_authToken=a-user-npm-token`,
       ])
     )
   }

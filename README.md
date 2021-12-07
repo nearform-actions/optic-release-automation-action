@@ -39,9 +39,25 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Get tokens
+        id: gettokens
+        run: |
+          echo '${{ toJson(secrets) }}' > secrets.json
+          echo ::set-output name=tokens::$(cat secrets.json)
+      - name: Run action
+        run: |
+          NPM_TOKEN=$(echo '${{ steps.gettokens.outputs.tokens }}' | jq -R '. | fromjson | to_entries[] | select((.key | startswith("NPM_TOKEN_")) and (.value | startswith("${{github.actor}}"))) | .value | split(":")[1]')
+          OPTIC_TOKEN=$(echo '${{ steps.gettokens.outputs.tokens }}' | jq -R '. | fromjson | to_entries[] | select((.key | startswith("OPTIC_TOKEN_")) and (.value | startswith("${{github.actor}}"))) | .value | split(":")[1]')
+
+          echo ::add-mask::$NPM_TOKEN
+          echo ::add-mask::$OPTIC_TOKEN
+
+          echo USER_NPM_TOKEN=$(echo $NPM_TOKEN) >> $GITHUB_ENV
+          echo USER_OPTIC_TOKEN=$(echo $OPTIC_TOKEN) >> $GITHUB_ENV
       - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
-          all-secrets: ${{ toJson(secrets) }}
+          user-npm-token: ${{ env.USER_NPM_TOKEN }}
+          user-optic-token: ${{ env.USER_OPTIC_TOKEN }}
           github-token: ${{secrets.github_token}}
           npm-token: ${{secrets.NPM_TOKEN}}
           optic-token: ${{secrets.OPTIC_TOKEN}}
@@ -71,8 +87,10 @@ The above workflow (when manually triggered) will
 | `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published.                              |
+| `user-npm-token`    | No       | This is the npm token of the user who has initiated the workflow. Required only if you want to release to Npm. If you omit this, default `npm-token` will be used.                              |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
 | `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|
+| `user-optic-token`  | No       | This is the optic token of the user who has initiated the workflow. You can add your Npm secret to the Optic app, generate a token and pass it to this input. If you omit this, default `optic-token` will be used.   |
 | `actor-name`   | No       | The name you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                            |
 | `actor-email`  | No       | The email you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                           |
 | `npm-tag`      | No       | If you want to release to the Npm with a custom tag, say `next`. <br /> (_Default: `latest`_)                                                                                              |
