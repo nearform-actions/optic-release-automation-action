@@ -44,11 +44,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v2
     - run: |
         git config --global user.email "${{ inputs.actor-email }}"
         git config --global user.name "${{ inputs.actor-name }}"
-        npm install
       shell: 'bash'
     - uses: actions/github-script@v5
       with:
