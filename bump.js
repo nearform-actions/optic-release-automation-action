@@ -47,7 +47,8 @@ module.exports = async function ({ context, inputs }) {
   const branchName = `release/${newVersion}`
 
   await run('git', ['checkout', '-b', branchName])
-  await run('git', ['commit', '-am', newVersion])
+  await run('git', ['add', '-A'])
+  await run('git', ['commit', '-m', newVersion])
   await run('git', ['push', 'origin', branchName])
 
   const { data: draftRelease } = await callApi(

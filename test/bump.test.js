@@ -78,7 +78,8 @@ tap.test('should create a new git branch', async t => {
   const branchName = `release/${TEST_VERSION}`
 
   t.ok(stubs.runSpawnStub.calledWith('git', ['checkout', '-b', branchName]))
-  t.ok(stubs.runSpawnStub.calledWith('git', ['commit', '-am', TEST_VERSION]))
+  t.ok(stubs.runSpawnStub.calledWith('git', ['add', '-A']))
+  t.ok(stubs.runSpawnStub.calledWith('git', ['commit', '-m', TEST_VERSION]))
   t.ok(stubs.runSpawnStub.calledWith('git', ['push', 'origin', branchName]))
 })
 
