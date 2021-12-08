@@ -13,7 +13,7 @@ You can also use it for releases without Npm. In that case, when the PR merges, 
 
 ### Usage
 
-- Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
+- _(Optional)_ Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
 - Create a new workflow file at `.github/workflows/release.yml` (from example below) with one step that uses this action and supply the inputs.
 
 #### Example
@@ -39,7 +39,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
+      - uses: nearform/optic-release-automation-action@v2
         with:
           github-token: ${{secrets.github_token}}
           npm-token: ${{secrets.NPM_TOKEN}}
