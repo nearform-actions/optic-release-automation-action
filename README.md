@@ -6,7 +6,7 @@ This action allows you to automate the release process of your npm modules. It c
 
 ### What does it do?
 
-- When run, it opens a new PR for the release.
+- When run, it opens a new PR for the release creating a new branch named `release/${new semver version}`.
 - When/if the PR gets merged, it publishes a new Npm release and a new Github release with change logs
 
 You can also use it for releases without Npm. In that case, when the PR merges, a new GitHub release will be published. Which you can use to trigger another workflow that deploys the app somewhere (GCP, AWS etc).
@@ -15,6 +15,11 @@ You can also use it for releases without Npm. In that case, when the PR merges, 
 
 - _(Optional)_ Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
 - Create a new workflow file at `.github/workflows/release.yml` (from example below) with one step that uses this action and supply the inputs.
+
+Note that the `on` triggers are mandatory:
+
+- `workflow_dispatch`: to start the new release process
+- `pull_request`: to complete the release process when the PR is merged
 
 ### Example
 
@@ -57,11 +62,117 @@ The above workflow (when manually triggered ⚡️) will:
 
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
-- ⚡️ When you merge this PR:
+When you merge this PR ⚡️:
+
 - 🤖 It will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
 - 🤖 Upon successful retrieval of the OTP, it will publish the package to Npm.
 - 🤖 Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 
+
+#### How to add a build step to your workflow
+
+You may need to build your project before releasing it.
+There are two build types:
+
+- to be committed: the build output should be committed to the repository and appear in the PR opened by this action
+- to be released: the build output should not be committed but its output should be published to Npm
+
+To do it you need to add some extra steps to your workflow.
+
+##### To be committed
+
+In this example, the `npm run build` command will create some artifacts that can be committed to the repository.
+Of course, you can use any build tool you need.
+_These artifacts should not be listed in the `.gitignore` file._
+
+The action will adds the changes in the new release PR.
+
+```yml
+name: build-and-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: "The semver to use"
+        required: true
+        default: "patch"
+  pull_request:
+    types: [closed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install your runtime
+        uses: actions/setup-node@v2.5.0
+        with:
+          node-version: 16
+
+      - name: build the project
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          npm install
+          npm run build
+
+      - uses: nearform/optic-release-automation-action@v2
+        with:
+          github-token: ${{secrets.github_token}}
+          npm-token: ${{secrets.NPM_TOKEN}}
+          optic-token: ${{secrets.OPTIC_TOKEN}}
+          semver: ${{ github.event.inputs.semver }}
+```
+
+_Another approach is to commit on your own the artifacts you want to release onto the new release branch._
+
+When you merge the PR, the action will publish the artifacts to Npm as expected.
+
+##### To be released
+
+You may want to release the artifacts without committing them to the repository such as a `dist/` folder.
+In this case, your workflow will look like this:
+
+```yml
+name: build-and-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: "The semver to use"
+        required: true
+        default: "patch"
+  pull_request:
+    types: [closed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install your runtime
+        uses: actions/setup-node@v2.5.0
+        with:
+          node-version: 16
+
+      - name: build the project when the PR is merged
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          npm install
+          npm run build
+
+      - uses: nearform/optic-release-automation-action@v2
+        with:
+          github-token: ${{secrets.github_token}}
+          npm-token: ${{secrets.NPM_TOKEN}}
+          optic-token: ${{secrets.OPTIC_TOKEN}}
+          semver: ${{ github.event.inputs.semver }}
+```
+
+_Another approach is to rely on the Npm [scripts](https://docs.npmjs.com/cli/v8/using-npm/scripts#pre--post-scripts) such as `prepare` or `prepublishOnly`._
 
 
 ### Inputs
