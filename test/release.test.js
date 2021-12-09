@@ -94,7 +94,9 @@ tap.test('Should delete the release if the pr is not merged', async t => {
   data.context.payload.pull_request.merged = false
   await release(data)
 
-  t.ok(stubs.runSpawnStub.calledWith('git', ['branch', '-D', `release/v5.1.3`]))
+  t.ok(
+    stubs.runSpawnStub.calledWith('git', ['branch', '-D', `"release/v5.1.3"`])
+  )
   t.ok(
     deleteReleaseStub.calledOnceWith({
       owner: DEFAULT_ACTION_DATA.context.repo.owner,
