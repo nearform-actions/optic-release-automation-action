@@ -35,6 +35,7 @@ tap.test('Call api warns if code is not 200', async t => {
     {}
   )
   t.ok(logStub.logWarning.calledOnce)
+  t.ok(logStub.logError.calledOnce)
 })
 
 tap.test('Call api does not warn if code is  200', async t => {
