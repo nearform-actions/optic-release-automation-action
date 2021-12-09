@@ -56,17 +56,16 @@ The above workflow (when manually triggered) will
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
-- You need to define Npm and Optic tokens in the Github secrets for each user that will receive the otp
+- (Optional) You can define Npm and Optic tokens in Github secrets for each user that will receive the otp. This is required only in case you want to publish to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 
 ### Multiple user scenario
 
-In case there are multiple users who have access to trigger the release automation action, you can define npm and optic tokens for different
-users in GitHub secrets. The naming convention to be used when creating the secrets is `NPM_TOKEN_<github-username>` and 
-`OPTIC_TOKEN_<github-username>`. In the workflow you can provide npm and optic tokens of the user who has initiated the workflow or provide default tokens or both.  
+In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets. The naming convention to be used when creating the secrets is `NPM_TOKEN_<github-username>` and 
+`OPTIC_TOKEN_<github-username>`. In the workflow you can provide Npm and Optic tokens of the user who has initiated the workflow or provide default tokens or both.  
 
-**Some examples**:  
+#### Example:  
   - Use only default tokens:   
     *e.g.* npm-token: ${{secrets.NPM_TOKEN}}
   - Use only user-related tokens:   
@@ -75,22 +74,6 @@ users in GitHub secrets. The naming convention to be used when creating the secr
     *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
 
 ```yml
-name: release
-
-on:
-  workflow_dispatch:
-    inputs:
-      semver:
-        description: "The semver to use"
-        required: true
-        default: "patch"
-      tag:
-        description: "The npm tag"
-        required: false
-        default: "latest"
-  pull_request:
-    types: [closed]
-
 jobs:
   release:
     runs-on: ubuntu-latest
