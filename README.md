@@ -38,26 +38,13 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      username: ${{ github.actor }}
     steps:
-      - name: Get tokens
-        id: gettokens
-        run: |
-          echo '${{ toJson(secrets) }}' > secrets.json
-          echo ::set-output name=tokens::$(cat secrets.json)
-      - name: Run action
-        run: |
-          NPM_TOKEN=$(echo '${{ steps.gettokens.outputs.tokens }}' | jq -R '. | fromjson | to_entries[] | select((.key | startswith("NPM_TOKEN_")) and (.value | startswith("${{github.actor}}"))) | .value | split(":")[1]')
-          OPTIC_TOKEN=$(echo '${{ steps.gettokens.outputs.tokens }}' | jq -R '. | fromjson | to_entries[] | select((.key | startswith("OPTIC_TOKEN_")) and (.value | startswith("${{github.actor}}"))) | .value | split(":")[1]')
-
-          echo ::add-mask::$NPM_TOKEN
-          echo ::add-mask::$OPTIC_TOKEN
-
-          echo USER_NPM_TOKEN=$(echo $NPM_TOKEN) >> $GITHUB_ENV
-          echo USER_OPTIC_TOKEN=$(echo $OPTIC_TOKEN) >> $GITHUB_ENV
       - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
-          user-npm-token: ${{ env.USER_NPM_TOKEN }}
-          user-optic-token: ${{ env.USER_OPTIC_TOKEN }}
+          user-npm-token: ${{ secrets[format('NPM_TOKEN_{0}', env.username)] }}
+          user-optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', env.username)] }}
           github-token: ${{secrets.github_token}}
           npm-token: ${{secrets.NPM_TOKEN}}
           optic-token: ${{secrets.OPTIC_TOKEN}}
@@ -74,8 +61,7 @@ The above workflow (when manually triggered) will
 
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
 - You need to define Npm and Optic tokens in the Github secrets for each user that will receive the otp
-- The name of the npm/optic secret for each user should start with `NPM_TOKEN_` and `OPTIC_TOKEN_`
-- The value of the npm/optic secret for each user should be of the format `<github-username>:<token>`
+- The name of the npm/optic secret for each user should be of the format `NPM_TOKEN_<github-username>` and `OPTIC_TOKEN_<github-username>`. This functionality will not work for usernames containing hypens.
 - Default tokens can be provided with `NPM_TOKEN` AND `OPTIC_TOKEN` secrets which will be used if individual user token secrets are not defined
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
