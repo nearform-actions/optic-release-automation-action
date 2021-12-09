@@ -9,13 +9,7 @@ const { tagVersionInGit } = require('./utils/tagVersion')
 const { runSpawn } = require('./utils/runSpawn')
 const { logError } = require('./log')
 
-module.exports = async function ({
-  github,
-  context,
-  inputs,
-  npmToken,
-  opticToken,
-}) {
+module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -51,8 +45,9 @@ module.exports = async function ({
   }
 
   const run = runSpawn()
+  const opticToken = inputs['optic-token']
 
-  if (npmToken) {
+  if (inputs['npm-token']) {
     if (opticToken) {
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
       await run('npm', ['publish', '--otp', otp, '--tag', npmTag])

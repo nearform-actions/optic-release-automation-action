@@ -141,45 +141,6 @@ tap.test(
 )
 
 tap.test(
-  'user related npm and optic token should be used if supplied in secrets',
-  async t => {
-    const { action, stubs } = buildStubbedAction()
-    const inputs = {
-      'user-npm-token': 'a-user-npm-token',
-      'user-optic-token': 'a-user-optic-token',
-    }
-    const context = {
-      ...DEFAULT_ACTION_DATA.context,
-      eventName: 'workflow_dispatch',
-    }
-
-    await action({
-      ...DEFAULT_ACTION_DATA,
-      context,
-      inputs,
-    })
-
-    t.ok(stubs.logStub.logError.notCalled)
-    t.ok(stubs.bumpStub.calledOnce)
-    t.ok(stubs.utilStub.runSpawn.calledOnce)
-    t.ok(
-      stubs.bumpStub.calledOnceWith({
-        context,
-        inputs,
-        npmToken: 'a-user-npm-token',
-      })
-    )
-    t.ok(
-      stubs.runSpawnStub.calledOnceWith('npm', [
-        'config',
-        'set',
-        `//registry.npmjs.org/:_authToken=a-user-npm-token`,
-      ])
-    )
-  }
-)
-
-tap.test(
   'should default to npm-token if user npm token not defined',
   async t => {
     const { action, stubs } = buildStubbedAction()

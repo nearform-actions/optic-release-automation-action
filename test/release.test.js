@@ -110,7 +110,6 @@ tap.test('Should publish to npm without optic', async t => {
     inputs: {
       'npm-token': 'a-token',
     },
-    npmToken: 'a-token',
   })
 
   t.ok(stubs.runSpawnStub.calledWith('npm', ['publish', '--tag', 'latest']))
@@ -150,8 +149,6 @@ tap.test('Should publish to npm with optic', async t => {
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
     },
-    npmToken: 'a-token',
-    opticToken: 'optic-token',
   })
 
   t.ok(
@@ -247,8 +244,6 @@ tap.test(
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
       },
-      npmToken: 'a-token',
-      opticToken: 'optic-token',
     })
 
     t.ok(stubs.coreStub.setFailed.calledOnce)
