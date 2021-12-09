@@ -112,7 +112,7 @@ jobs:
         with:
           node-version: 16
 
-      - name: build the project
+      - name: build the project when the PR is being opened
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           npm install
@@ -128,7 +128,7 @@ jobs:
 
 Now your PR includes the build artifacts, so when you will merge the PR, the action will publish the artifacts to Npm as expected.
 
-_Another approach is to commit on your own the artifacts you want to release onto the new release branch._
+_Another approach is to commit manually the artifacts you want to release into the release branch._
 
 
 ##### To be released
@@ -137,34 +137,15 @@ You may want to release the artifacts without committing them to the repository 
 In this case, your workflow will look similar to the previous one, but the build step needs to run when the PS is merged:
 
 ```yml
-name: build-and-release
-
-on:
-  workflow_dispatch:
-    inputs:
-      semver:
-        description: "The semver to use"
-        required: true
-        default: "patch"
-  pull_request:
-    types: [closed]
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: install your runtime
-        uses: actions/setup-node@v2.5.0
-        with:
-          node-version: 16
+      # [...] same workflow as before ...
 
       - name: build the project when the PR is merged
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           npm install
           npm run build
+        env:
+          NODE_ENV: production
 
       - uses: nearform/optic-release-automation-action@v2
         with:
@@ -173,8 +154,6 @@ jobs:
           optic-token: ${{secrets.OPTIC_TOKEN}}
           semver: ${{ github.event.inputs.semver }}
 ```
-
-_Another approach is to rely on the Npm [scripts](https://docs.npmjs.com/cli/v8/using-npm/scripts#pre--post-scripts) such as `prepare` or `prepublishOnly`._
 
 
 ### Inputs

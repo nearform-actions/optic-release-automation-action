@@ -112,6 +112,7 @@ tap.test('Should publish to npm without optic', async t => {
     },
   })
 
+  t.ok(stubs.runSpawnStub.calledWith('npm', ['pack', '--dry-run']))
   t.ok(stubs.runSpawnStub.calledWith('npm', ['publish', '--tag', 'latest']))
 })
 
@@ -127,6 +128,7 @@ tap.test('Should not publish to npm if there is no npm token', async t => {
     },
   })
 
+  t.ok(stubs.runSpawnStub.neverCalledWith('npm', ['pack', '--dry-run']))
   t.ok(
     stubs.runSpawnStub.neverCalledWith('npm', ['publish', '--tag', 'latest'])
   )
@@ -151,6 +153,7 @@ tap.test('Should publish to npm with optic', async t => {
     },
   })
 
+  t.ok(stubs.runSpawnStub.calledWith('npm', ['pack', '--dry-run']))
   t.ok(
     stubs.runSpawnStub.calledWith('npm', [
       'publish',
