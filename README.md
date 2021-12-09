@@ -71,8 +71,9 @@ When you merge this PR ⚡️:
 
 #### How to add a build step to your workflow
 
-You may need to build your project before releasing it.
-There are two build types:
+When your project need a build step, you can run it before the release.
+
+Mainly, there are two build types:
 
 - to be committed: the build output should be committed to the repository and appear in the PR opened by this action
 - to be released: the build output should not be committed but its output should be published to Npm
@@ -81,11 +82,11 @@ To do it you need to add some extra steps to your workflow.
 
 ##### To be committed
 
-In this example, the `npm run build` command will create some artifacts that can be committed to the repository.
+In this example, the `npm run build` command will create some artifacts that will be committed to the repository.
 Of course, you can use any build tool you need.
 _These artifacts should not be listed in the `.gitignore` file._
 
-The action will adds the changes in the new release PR.
+The action will adds the changes in the new release PR for you!
 
 ```yml
 name: build-and-release
@@ -125,14 +126,15 @@ jobs:
           semver: ${{ github.event.inputs.semver }}
 ```
 
+Now your PR includes the build artifacts, so when you will merge the PR, the action will publish the artifacts to Npm as expected.
+
 _Another approach is to commit on your own the artifacts you want to release onto the new release branch._
 
-When you merge the PR, the action will publish the artifacts to Npm as expected.
 
 ##### To be released
 
 You may want to release the artifacts without committing them to the repository such as a `dist/` folder.
-In this case, your workflow will look like this:
+In this case, your workflow will look similar to the previous one, but the build step needs to run when the PS is merged:
 
 ```yml
 name: build-and-release
