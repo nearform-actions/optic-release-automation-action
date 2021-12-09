@@ -16,7 +16,9 @@ You can also use it for releases without Npm. In that case, when the PR merges, 
 - _(Optional)_ Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
 - Create a new workflow file at `.github/workflows/release.yml` (from example below) with one step that uses this action and supply the inputs.
 
-#### Example
+### Example
+
+This example shows how to configure this action to release a new npm module version:
 
 ```yml
 name: release
@@ -48,16 +50,19 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-The above workflow (when manually triggered) will
+The above workflow (when manually triggered ⚡️) will:
 
-- Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
-- Open a PR that looks like following
+- 🤖 Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
+- 🤖 Open a PR that looks like following
 
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
-- When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
-- Upon successful retrieval of the OTP, it will publish the package to Npm.
-- Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+- ⚡️ When you merge this PR:
+- 🤖 It will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
+- 🤖 Upon successful retrieval of the OTP, it will publish the package to Npm.
+- 🤖 Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+
+
 
 ### Inputs
 
