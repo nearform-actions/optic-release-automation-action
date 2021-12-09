@@ -38,16 +38,12 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      username: ${{ github.actor }}
     steps:
       - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
-          user-npm-token: ${{ secrets[format('NPM_TOKEN_{0}', env.username)] }}
-          user-optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', env.username)] }}
           github-token: ${{secrets.github_token}}
-          npm-token: ${{secrets.NPM_TOKEN}}
-          optic-token: ${{secrets.OPTIC_TOKEN}}
+          npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
@@ -61,8 +57,14 @@ The above workflow (when manually triggered) will
 
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
 - You need to define Npm and Optic tokens in the Github secrets for each user that will receive the otp
-- The name of the npm/optic secret for each user should be of the format `NPM_TOKEN_<github-username>` and `OPTIC_TOKEN_<github-username>`. This functionality will not work for usernames containing hypens.
-- Default tokens can be provided with `NPM_TOKEN` AND `OPTIC_TOKEN` secrets which will be used if individual user token secrets are not defined
+- You can either provide npm and optic tokens of the user who has initiated the workflow or provide default tokens or both.  
+**Some examples**:  
+  - Use only default tokens:   
+    *e.g.* npm-token: ${{secrets.NPM_TOKEN}}
+  - Use only user-related tokens:   
+    *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}
+  - Use both user-related and default token:   
+    *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 
@@ -73,10 +75,8 @@ The above workflow (when manually triggered) will
 | `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published.                              |
-| `user-npm-token`    | No       | This is the npm token of the user who has initiated the workflow. Required only if you want to release to Npm. If you omit this, default `npm-token` will be used.                              |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
 | `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|
-| `user-optic-token`  | No       | This is the optic token of the user who has initiated the workflow. You can add your Npm secret to the Optic app, generate a token and pass it to this input. If you omit this, default `optic-token` will be used.   |
 | `actor-name`   | No       | The name you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                            |
 | `actor-email`  | No       | The email you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                           |
 | `npm-tag`      | No       | If you want to release to the Npm with a custom tag, say `next`. <br /> (_Default: `latest`_)                                                                                              |
