@@ -52,6 +52,7 @@ function setup() {
   const logStub = sinon.stub(actionLog)
   const coreStub = sinon.stub(core)
   deleteReleaseStub.resetHistory()
+  deleteReleaseStub.resolves()
   const runSpawnStub = sinon.stub().returns('otp123')
   const runSpawnProxy = sinon
     .stub(runSpawnAction, 'runSpawn')
@@ -243,6 +244,53 @@ tap.test('Should call the release method', async () => {
       'sync-semver-tags': 'true',
     }
   )
+})
+
+tap.test(
+  "Should NOT call the release method if the pr wasn't merged",
+  async () => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.merged = false
+    data.inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
+    await release(data)
+
+    sinon.assert.notCalled(stubs.callApiStub)
+  }
+)
+
+tap.test("Should NOT use npm if the pr wasn't merged", async () => {
+  const { release, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  data.inputs = {
+    'npm-token': 'a-token',
+    'optic-token': 'optic-token',
+    'sync-semver-tags': 'true',
+  }
+  await release(data)
+  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+  ])
+})
+
+tap.test("Should NOT tag version in git if the pr wasn't merged", async () => {
+  const { release, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  data.inputs = {
+    'npm-token': 'a-token',
+    'optic-token': 'optic-token',
+    'sync-semver-tags': 'true',
+  }
+  await release(data)
+  sinon.assert.notCalled(stubs.tagVersionStub)
 })
 
 tap.test(

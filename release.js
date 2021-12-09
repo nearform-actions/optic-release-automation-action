@@ -58,6 +58,9 @@ module.exports = async function ({ github, context, inputs }) {
         `The release ${id} could not be deleted. Error: ${err.message}`
       )
     }
+
+    // Both the branch and release have been deleted, return early
+    return
   }
 
   const opticToken = inputs['optic-token']
