@@ -99,7 +99,7 @@ tap.test('Should delete the release if the pr is not merged', async t => {
       'push',
       'origin',
       '--delete',
-      `"release/v5.1.3"`,
+      `release/v5.1.3`,
     ])
   )
   t.ok(

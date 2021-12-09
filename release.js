@@ -38,13 +38,27 @@ module.exports = async function ({ github, context, inputs }) {
 
   const run = runSpawn()
   if (!pr.merged) {
-    await run('git', ['push', 'origin', '--delete', `"release/${version}"`])
+    const branchName = `release/${version}`
+    try {
+      await run('git', ['push', 'origin', '--delete', branchName])
+    } catch (err) {
+      core.setFailed(
+        `The branch ${branchName} could not be deleted. Error: ${err.message}`
+      )
+    }
 
-    return await github.rest.repos.deleteRelease({
-      owner,
-      repo,
-      release_id: id,
-    })
+    try {
+      await github.rest.repos.deleteRelease({
+        owner,
+        repo,
+        release_id: id,
+      })
+    } catch (err) {
+      core.setFailed(
+        `The release ${id} could not be deleted. Error: ${err.message}`
+      )
+    }
+    return
   }
 
   const opticToken = inputs['optic-token']
