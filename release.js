@@ -42,7 +42,10 @@ module.exports = async function ({ github, context, inputs }) {
     try {
       await run('git', ['push', 'origin', '--delete', branchName])
     } catch (err) {
-      return core.setFailed(
+      core.info(
+        `The branch ${branchName} could not be deleted. Will try to delete the release anyways.`
+      )
+      core.setFailed(
         `The branch ${branchName} could not be deleted. Error: ${err.message}`
       )
     }

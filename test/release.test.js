@@ -110,7 +110,7 @@ tap.test('Should delete the release if the pr is not merged', async () => {
 })
 
 tap.test(
-  'Should not delete the release if deleting the branch failed',
+  'Should delete the release even if deleting the branch failed',
   async () => {
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
@@ -123,7 +123,11 @@ tap.test(
       stubs.coreStub.setFailed,
       `The branch release/v5.1.3 could not be deleted. Error: Something went wrong`
     )
-    sinon.assert.notCalled(deleteReleaseStub)
+    sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
+      owner: DEFAULT_ACTION_DATA.context.repo.owner,
+      repo: DEFAULT_ACTION_DATA.context.repo.repo,
+      release_id: 54503465,
+    })
   }
 )
 
