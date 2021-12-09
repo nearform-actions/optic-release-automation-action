@@ -38,6 +38,16 @@ module.exports = async function ({ github, context, inputs }) {
 
   if (!pr.merged) {
     try {
+      core.info({
+        owner,
+        repo,
+        release_id: id,
+      })
+      console.log({
+        owner,
+        repo,
+        release_id: id,
+      })
       const res = await github.rest.repos.deleteRelease({
         owner,
         repo,
