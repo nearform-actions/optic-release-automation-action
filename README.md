@@ -86,7 +86,7 @@ In this example, the `npm run build` command will create some artifacts that wil
 Of course, you can use any build tool you need.
 _These artifacts should not be listed in the `.gitignore` file._
 
-The action will adds the changes in the new release PR for you!
+The action will add the changes in the new release PR for you!
 
 ```yml
 name: build-and-release
@@ -134,7 +134,7 @@ _Another approach is to commit manually the artifacts you want to release into t
 ##### To be released
 
 You may want to release the artifacts without committing them to the repository such as a `dist/` folder.
-In this case, your workflow will look similar to the previous one, but the build step needs to run when the PS is merged:
+In this case, your workflow will look similar to the previous one, but the build step needs to run when the PR is merged:
 
 ```yml
       # [...] same workflow as before ...
