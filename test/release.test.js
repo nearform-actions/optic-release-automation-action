@@ -95,7 +95,12 @@ tap.test('Should delete the release if the pr is not merged', async t => {
   await release(data)
 
   t.ok(
-    stubs.runSpawnStub.calledWith('git', ['branch', '-D', `"release/v5.1.3"`])
+    stubs.runSpawnStub.calledWith('git', [
+      'push',
+      'origin',
+      '--delete',
+      `"release/v5.1.3"`,
+    ])
   )
   t.ok(
     deleteReleaseStub.calledOnceWith({

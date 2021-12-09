@@ -38,7 +38,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   const run = runSpawn()
   if (!pr.merged) {
-    await run('git', ['branch', '-D', `"release/${version}"`])
+    await run('git', ['push', 'origin', '--delete', `"release/${version}"`])
 
     return await github.rest.repos.deleteRelease({
       owner,
