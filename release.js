@@ -14,6 +14,7 @@ module.exports = async function ({ github, context, inputs }) {
   const owner = context.repo.owner
   const repo = context.repo.repo
 
+  console.log(context)
   if (
     context.payload.action !== 'closed' ||
     pr.user.login !== 'optic-release-automation[bot]' ||
@@ -37,30 +38,13 @@ module.exports = async function ({ github, context, inputs }) {
   const { opticUrl, npmTag, version, id } = releaseMeta
 
   if (!pr.merged) {
-    try {
-      core.info({
-        owner,
-        repo,
-        release_id: id,
-      })
-      console.log({
-        owner,
-        repo,
-        release_id: id,
-      })
-      const res = await github.rest.repos.deleteRelease({
-        owner,
-        repo,
-        release_id: id,
-      })
-      console.log('res')
-      console.log(res)
-    } catch (e) {
-      console.log(e)
-      core.setFailed(e)
-    }
+    // await run('git', ['checkout', '-b', branchName])
 
-    return
+    return await github.rest.repos.deleteRelease({
+      owner,
+      repo,
+      release_id: id,
+    })
   }
 
   const run = runSpawn()
