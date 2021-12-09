@@ -63,7 +63,7 @@ The above workflow (when manually triggered) will
 ### Multiple user scenario
 
 In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets. The naming convention to be used when creating the secrets is `NPM_TOKEN_<github-username>` and 
-`OPTIC_TOKEN_<github-username>`. In the workflow you can provide Npm and Optic tokens of the user who has initiated the workflow or provide default tokens or both.  
+`OPTIC_TOKEN_<github-username>`. In the workflow you can provide Npm and Optic tokens of the user who has initiated the workflow or provide default tokens or both.    
 
 #### Example:  
   - Use only default tokens:   
@@ -86,6 +86,8 @@ jobs:
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
+
+*Note*: The multiple user feature does not work if the GitHub username contains hyphens(-) because GitHub secrets do not allow hypens in the secret's name.  
 
 ### Inputs
 
