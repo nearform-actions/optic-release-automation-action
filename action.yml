@@ -13,6 +13,9 @@ inputs:
     description: "URL if you have a custom application that serves OTP"
     required: false
     default: "https://optic-zf3votdk5a-ew.a.run.app/api/generate/"
+  optic-token:
+    description: "Your Optic token. You can add your Npm secret to the Optic app, generate a new token and pass it to this input. Required only if you want to pubish to Npm and have MFA enabled for your account"
+    required: false
   actor-name:
     description: "The name you want to see in the new release commit."
     required: false
