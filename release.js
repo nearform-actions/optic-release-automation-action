@@ -42,7 +42,7 @@ module.exports = async function ({ github, context, inputs }) {
     try {
       await run('git', ['push', 'origin', '--delete', branchName])
     } catch (err) {
-      core.setFailed(
+      return core.setFailed(
         `The branch ${branchName} could not be deleted. Error: ${err.message}`
       )
     }
@@ -54,11 +54,10 @@ module.exports = async function ({ github, context, inputs }) {
         release_id: id,
       })
     } catch (err) {
-      core.setFailed(
+      return core.setFailed(
         `The release ${id} could not be deleted. Error: ${err.message}`
       )
     }
-    return
   }
 
   const opticToken = inputs['optic-token']

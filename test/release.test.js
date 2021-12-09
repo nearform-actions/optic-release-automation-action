@@ -13,7 +13,7 @@ const callApiAction = require('../utils/callApi')
 const { PR_TITLE_PREFIX } = require('../const')
 const actionLog = require('../log')
 
-const deleteReleaseStub = sinon.stub().resolves()
+let deleteReleaseStub = sinon.stub().resolves()
 
 const DEFAULT_ACTION_DATA = {
   github: {
@@ -51,7 +51,7 @@ const DEFAULT_ACTION_DATA = {
 function setup() {
   const logStub = sinon.stub(actionLog)
   const coreStub = sinon.stub(core)
-
+  deleteReleaseStub.resetHistory()
   const runSpawnStub = sinon.stub().returns('otp123')
   const runSpawnProxy = sinon
     .stub(runSpawnAction, 'runSpawn')
@@ -108,6 +108,38 @@ tap.test('Should delete the release if the pr is not merged', async t => {
       repo: DEFAULT_ACTION_DATA.context.repo.repo,
       release_id: 54503465,
     })
+  )
+})
+
+tap.test(
+  'Should not delete the release if deleting the branch failed',
+  async t => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.merged = false
+    stubs.runSpawnStub.rejects(new Error('Something went wrong'))
+
+    await release(data)
+
+    sinon.assert.calledOnceWithExactly(
+      stubs.coreStub.setFailed,
+      `The branch release/v5.1.3 could not be deleted. Error: Something went wrong`
+    )
+    sinon.assert.notCalled(deleteReleaseStub)
+  }
+)
+
+tap.test('Should log an error if deleting the release fails', async t => {
+  const { release, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  deleteReleaseStub.rejects(new Error('Something went wrong'))
+
+  await release(data)
+
+  sinon.assert.calledOnceWithExactly(
+    stubs.coreStub.setFailed,
+    'The release 54503465 could not be deleted. Error: Something went wrong'
   )
 })
 
