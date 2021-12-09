@@ -42,8 +42,8 @@ jobs:
       - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
           github-token: ${{ secrets.github_token }}
-          npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
-          optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
+          npm-token: ${{ secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets.OPTIC_TOKEN }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
@@ -57,7 +57,15 @@ The above workflow (when manually triggered) will
 
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
 - You need to define Npm and Optic tokens in the Github secrets for each user that will receive the otp
-- You can either provide npm and optic tokens of the user who has initiated the workflow or provide default tokens or both.  
+- Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+- Upon successful retrieval of the OTP, it will publish the package to Npm.
+
+### Multiple user scenario
+
+In case there are multiple users who have access to trigger the release automation action, you can define npm and optic tokens for different
+users in GitHub secrets. The naming convention to be used when creating the secrets is `NPM_TOKEN_<github-username>` and 
+`OPTIC_TOKEN_<github-username>`. In the workflow you can provide npm and optic tokens of the user who has initiated the workflow or provide default tokens or both.  
+
 **Some examples**:  
   - Use only default tokens:   
     *e.g.* npm-token: ${{secrets.NPM_TOKEN}}
@@ -65,8 +73,36 @@ The above workflow (when manually triggered) will
     *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}
   - Use both user-related and default token:   
     *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
-- Upon successful retrieval of the OTP, it will publish the package to Npm.
-- Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+
+```yml
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: "The semver to use"
+        required: true
+        default: "patch"
+      tag:
+        description: "The npm tag"
+        required: false
+        default: "latest"
+  pull_request:
+    types: [closed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
+        with:
+          github-token: ${{ secrets.github_token }}
+          npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
+          semver: ${{ github.event.inputs.semver }}
+          npm-tag: ${{ github.event.inputs.tag }}
+```
 
 ### Inputs
 
