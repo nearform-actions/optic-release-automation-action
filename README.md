@@ -19,7 +19,7 @@ You can also use it for releases without Npm. In that case, when the PR merges, 
 Note that the `on` triggers are mandatory:
 
 - `workflow_dispatch`: to start the new release process
-- `pull_request`: to complete the release process when the PR is merged
+- `pull_request` when `closed`: to complete the release process when the PR is merged
 
 ### Example
 
