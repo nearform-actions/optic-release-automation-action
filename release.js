@@ -39,27 +39,28 @@ module.exports = async function ({ github, context, inputs }) {
   const run = runSpawn()
   if (!pr.merged) {
     const branchName = `release/${version}`
-    try {
-      await run('git', ['push', 'origin', '--delete', branchName])
-    } catch (err) {
-      core.info(
-        `The branch ${branchName} could not be deleted. Will try to delete the release anyways.`
-      )
-      core.setFailed(
-        `The branch ${branchName} could not be deleted. Error: ${err.message}`
-      )
-    }
-
-    try {
-      await github.rest.repos.deleteRelease({
+    const [branchPromise, releasePromise] = await Promise.allSettled([
+      run('git', ['push', 'origin', '--delete', branchName]),
+      github.rest.repos.deleteRelease({
         owner,
         repo,
         release_id: id,
-      })
-    } catch (err) {
-      return core.setFailed(
-        `The release ${id} could not be deleted. Error: ${err.message}`
-      )
+      }),
+    ])
+
+    if (
+      branchPromise.status === 'rejected' &&
+      releasePromise.status === 'rejected'
+    ) {
+      logError(branchPromise.reason.message)
+      logError(releasePromise.reason.message)
+      core.setFailed(`Could not delete the branch or the release.`)
+    } else if (branchPromise.status === 'rejected') {
+      logError(branchPromise.reason.message)
+      core.setFailed(`Could not delete branch ${branchName}`)
+    } else if (releasePromise.status === 'rejected') {
+      logError(releasePromise.reason.message)
+      core.setFailed(`Could not delete release ${id}`)
     }
 
     // Both the branch and release have been deleted, return early

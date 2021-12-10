@@ -115,13 +115,17 @@ tap.test(
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
-    stubs.runSpawnStub.rejects(new Error('Something went wrong'))
+    stubs.runSpawnStub.rejects(new Error('Something went wrong in the branch'))
 
     await release(data)
 
+    sinon.assert.calledWithExactly(
+      stubs.logStub.logError,
+      'Something went wrong in the branch'
+    )
     sinon.assert.calledOnceWithExactly(
       stubs.coreStub.setFailed,
-      `The branch release/v5.1.3 could not be deleted. Error: Something went wrong`
+      `Could not delete branch release/v5.1.3`
     )
     sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
       owner: DEFAULT_ACTION_DATA.context.repo.owner,
@@ -135,15 +139,50 @@ tap.test('Should log an error if deleting the release fails', async () => {
   const { release, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.merged = false
-  deleteReleaseStub.rejects(new Error('Something went wrong'))
+  deleteReleaseStub.rejects(new Error('Something went wrong in the release'))
 
   await release(data)
 
+  sinon.assert.calledWithExactly(
+    stubs.logStub.logError,
+    'Something went wrong in the release'
+  )
   sinon.assert.calledOnceWithExactly(
     stubs.coreStub.setFailed,
-    'The release 54503465 could not be deleted. Error: Something went wrong'
+    'Could not delete release 54503465'
   )
 })
+
+tap.test(
+  'Should log and exit if both the release and the branch fail',
+  async () => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.merged = false
+    stubs.runSpawnStub.rejects(new Error('Something went wrong in the branch'))
+    deleteReleaseStub.rejects(new Error('Something went wrong in the release'))
+
+    await release(data)
+
+    sinon.assert.calledWithExactly(
+      stubs.logStub.logError,
+      'Something went wrong in the branch'
+    )
+    sinon.assert.calledWithExactly(
+      stubs.logStub.logError,
+      'Something went wrong in the release'
+    )
+    sinon.assert.calledOnceWithExactly(
+      stubs.coreStub.setFailed,
+      `Could not delete the branch or the release.`
+    )
+    sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  }
+)
 
 tap.test('Should publish to npm without optic', async () => {
   const { release, stubs } = setup()
