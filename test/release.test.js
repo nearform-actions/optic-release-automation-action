@@ -119,13 +119,9 @@ tap.test(
 
     await release(data)
 
-    sinon.assert.calledWithExactly(
-      stubs.logStub.logError,
-      'Something went wrong in the branch'
-    )
     sinon.assert.calledOnceWithExactly(
       stubs.coreStub.setFailed,
-      `Could not delete branch release/v5.1.3`
+      `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the branch`
     )
     sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
       owner: DEFAULT_ACTION_DATA.context.repo.owner,
@@ -143,13 +139,9 @@ tap.test('Should log an error if deleting the release fails', async () => {
 
   await release(data)
 
-  sinon.assert.calledWithExactly(
-    stubs.logStub.logError,
-    'Something went wrong in the release'
-  )
   sinon.assert.calledOnceWithExactly(
     stubs.coreStub.setFailed,
-    'Could not delete release 54503465'
+    `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the release`
   )
 })
 
@@ -164,17 +156,9 @@ tap.test(
 
     await release(data)
 
-    sinon.assert.calledWithExactly(
-      stubs.logStub.logError,
-      'Something went wrong in the branch'
-    )
-    sinon.assert.calledWithExactly(
-      stubs.logStub.logError,
-      'Something went wrong in the release'
-    )
     sinon.assert.calledOnceWithExactly(
       stubs.coreStub.setFailed,
-      `Could not delete the branch or the release.`
+      `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the branch\nSomething went wrong in the release`
     )
     sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
       'publish',
