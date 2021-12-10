@@ -54,5 +54,5 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/action.js')
+          const script = require('${{ github.action_path }}/dist/index.js')
           await script({ github, context, core, inputs: ${{ toJSON(inputs) }} })
