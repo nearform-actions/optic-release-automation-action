@@ -3,6 +3,8 @@
 const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
+const core = require('@actions/core')
+const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../utils/runSpawn')
 const callApiAction = require('../utils/callApi')
@@ -12,6 +14,7 @@ const TEST_VERSION = 'v3.1.1'
 const runSpawnStub = sinon.stub().returns(TEST_VERSION)
 
 function setup() {
+  const coreStub = sinon.stub(core)
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
@@ -21,6 +24,7 @@ function setup() {
 
   const bump = proxyquire('../bump', {
     './utils/runSpawn': utilStub,
+    '@actions/core': coreStub,
   })
 
   return {
@@ -29,6 +33,7 @@ function setup() {
       utilStub,
       runSpawnStub,
       callApiStub,
+      coreStub,
     },
   }
 }
@@ -251,3 +256,13 @@ tap.test(
     )
   }
 )
+
+tap.test('Should call core.setFailed if it fails to create a PR', async t => {
+  const { bump, stubs } = setup()
+  const localVersion = 'v0.0.5'
+  runSpawnStub.returns(localVersion)
+  const { inputs } = DEFAULT_ACTION_DATA
+  await bump({ inputs })
+
+  t.ok(stubs.coreStub.setFailed.calledOnce)
+})

@@ -1,7 +1,7 @@
 'use strict'
 
 const fetch = require('node-fetch')
-const { logWarning, logError } = require('../log')
+const { logWarning } = require('../log')
 
 const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 
@@ -19,7 +19,7 @@ const callApi = async ({ method, endpoint, body }, inputs) => {
 
   if (response.status !== 200) {
     logWarning(`Please ensure that Github App is installed ${GITHUB_APP_URL}`)
-    logError(response)
+    return response
   }
 
   return response.json()

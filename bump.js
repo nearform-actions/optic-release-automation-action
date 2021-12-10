@@ -4,6 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
+const core = require('@actions/core')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
@@ -62,18 +63,21 @@ module.exports = async function ({ context, inputs }) {
   )
 
   const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
-
-  await callApi(
-    {
-      method: 'POST',
-      endpoint: 'pr',
-      body: {
-        head: `refs/heads/${branchName}`,
-        base: context.payload.ref,
-        title: `${PR_TITLE_PREFIX} ${branchName}`,
-        body: prBody,
+  try {
+    await callApi(
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body: prBody,
+        },
       },
-    },
-    inputs
-  )
+      inputs
+    )
+  } catch (err) {
+    core.setFailed(`Unable to create the pull request ${err.message}`)
+  }
 }
