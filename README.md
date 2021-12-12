@@ -7,7 +7,7 @@ This action allows you to automate the release process of your npm modules. It c
 ### What does it do?
 
 - When run, it opens a new PR for the release.
-- When/if the PR gets merged, it publishes a new Npm release and a new Github release with change logs
+- When/if the PR gets merged, it publishes a new Npm release and a new GitHub release with change logs
 
 You can also use it for releases without Npm. In that case, when the PR merges, a new GitHub release will be published. Which you can use to trigger another workflow that deploys the app somewhere (GCP, AWS etc).
 
@@ -56,22 +56,21 @@ The above workflow (when manually triggered) will
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
-- (Optional) You can define Npm and Optic tokens in Github secrets for each user that will receive the otp. This is required only in case you want to publish to Npm.
-- Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+- (Optional) You can define Npm and Optic tokens in GitHub secrets for each user that will receive the OTP. This is required only in case you want to publish to Npm.
+- Create a GitHub release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 
 ### Multiple user scenario
 
-In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets. The naming convention to be used when creating the secrets is `NPM_TOKEN_<github-username>` and 
-`OPTIC_TOKEN_<github-username>`. In the workflow you can provide Npm and Optic tokens of the user who has initiated the workflow or provide default tokens or both.    
+In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets. Following is an example of a way to use different tokens depending on the user who merged the pull request.   
 
 #### Example:  
   - Use only default tokens:   
-    *e.g.* npm-token: ${{secrets.NPM_TOKEN}}
+    *e.g.* `npm-token: ${{ secrets.NPM_TOKEN }}`
   - Use only user-related tokens:   
-    *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}
+    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}`
   - Use both user-related and default token:   
-    *e.g.* npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
+    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}`
 
 ```yml
 jobs:
@@ -93,7 +92,7 @@ jobs:
 
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
-| `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
+| `github-token` | Yes      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published.                              |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
