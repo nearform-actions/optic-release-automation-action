@@ -86,7 +86,7 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-*Note*: The multiple user feature does not work if the GitHub username contains hyphens(-) because GitHub secrets do not allow hypens in the secret's name.  
+*Note*: Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work. 
 
 ### Inputs
 
