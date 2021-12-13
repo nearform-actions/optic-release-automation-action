@@ -58,56 +58,119 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-tap.test('npm should called with semver', async t => {
+tap.test('npm should be called with semver', async () => {
   const { bump, stubs } = setup()
   await bump(DEFAULT_ACTION_DATA)
 
-  t.ok(
-    stubs.runSpawnStub.calledWith('npm', [
-      'version',
-      '--no-git-tag-version',
-      DEFAULT_ACTION_DATA.inputs.semver,
-    ])
-  )
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+    'version',
+    '--no-git-tag-version',
+    DEFAULT_ACTION_DATA.inputs.semver,
+  ])
 })
 
-tap.test('should create a new git branch', async t => {
+tap.test('should create a new git branch', async () => {
   const { bump, stubs } = setup()
   await bump(DEFAULT_ACTION_DATA)
 
   const branchName = `release/${TEST_VERSION}`
 
-  t.ok(stubs.runSpawnStub.calledWith('git', ['checkout', '-b', branchName]))
-  t.ok(stubs.runSpawnStub.calledWith('git', ['add', '-A']))
-  t.ok(stubs.runSpawnStub.calledWith('git', ['commit', '-m', TEST_VERSION]))
-  t.ok(stubs.runSpawnStub.calledWith('git', ['push', 'origin', branchName]))
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'checkout',
+    '-b',
+    branchName,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'add',
+    '-A',
+    TEST_VERSION,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'commit',
+    '-m',
+    TEST_VERSION,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    branchName,
+  ])
 })
 
-tap.test('should call the release endpoint with a new version', async t => {
+tap.test('should call the release endpoint with a new version', async () => {
   const { bump, stubs } = setup()
   await bump(DEFAULT_ACTION_DATA)
 
-  t.ok(
-    stubs.callApiStub.calledWith(
-      {
-        method: 'POST',
-        endpoint: 'release',
-        body: {
-          version: TEST_VERSION,
-        },
+  sinon.assert.calledWithExactly(
+    stubs.callApiStub,
+    {
+      method: 'POST',
+      endpoint: 'release',
+      body: {
+        version: TEST_VERSION,
       },
-      DEFAULT_ACTION_DATA.inputs
-    )
+    },
+    DEFAULT_ACTION_DATA.inputs
   )
 })
 
-tap.test('should call the PR endpoint with a new version', async t => {
+tap.test('should call the PR endpoint with a new version', async () => {
   const { bump, stubs } = setup()
   await bump(DEFAULT_ACTION_DATA)
 
   const branchName = `release/${TEST_VERSION}`
-  t.ok(
-    stubs.callApiStub.calledWith(
+  sinon.assert.calledWithExactly(
+    stubs.callApiStub,
+    {
+      method: 'POST',
+      endpoint: 'pr',
+      body: {
+        head: `refs/heads/${branchName}`,
+        base: DEFAULT_ACTION_DATA.context.payload.ref,
+        title: `${PR_TITLE_PREFIX} ${branchName}`,
+        body:
+          '## Optic Release Automation\n' +
+          '\n' +
+          'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
+          '\n' +
+          `A new **draft** GitHub release [${TEST_VERSION}]() has been created.\n` +
+          '\n' +
+          '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
+          '\n' +
+          '- The GitHub release will be published\n' +
+          '\n' +
+          '- No npm package will be published as configured\n' +
+          '\n' +
+          '\n' +
+          '\n' +
+          '- No major or minor tags will be updated as configured\n' +
+          '\n' +
+          '\n' +
+          '#### If you close the PR\n' +
+          '\n' +
+          '- The new draft release will be deleted and nothing will change\n' +
+          '\n' +
+          '\n' +
+          '\n' +
+          '<!--\n' +
+          `<release-meta>{"version":"${TEST_VERSION}"}</release-meta>\n` +
+          '-->\n',
+      },
+    },
+    DEFAULT_ACTION_DATA.inputs
+  )
+})
+
+tap.test(
+  'should create the correct release for a version with no minor',
+  async () => {
+    const { bump, stubs } = setup()
+    const localVersion = 'v2.0.0'
+    runSpawnStub.returns(localVersion)
+    await bump(DEFAULT_ACTION_DATA)
+    const branchName = `release/${localVersion}`
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
       {
         method: 'POST',
         endpoint: 'pr',
@@ -120,7 +183,7 @@ tap.test('should call the PR endpoint with a new version', async t => {
             '\n' +
             'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
             '\n' +
-            `A new **draft** GitHub release [${TEST_VERSION}]() has been created.\n` +
+            `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
             '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
@@ -140,115 +203,62 @@ tap.test('should call the PR endpoint with a new version', async t => {
             '\n' +
             '\n' +
             '<!--\n' +
-            `<release-meta>{"version":"${TEST_VERSION}"}</release-meta>\n` +
+            `<release-meta>{"version":"${localVersion}"}</release-meta>\n` +
             '-->\n',
         },
       },
       DEFAULT_ACTION_DATA.inputs
-    )
-  )
-})
-
-tap.test(
-  'should create the correct release for a version with no minor',
-  async t => {
-    const { bump, stubs } = setup()
-    const localVersion = 'v2.0.0'
-    runSpawnStub.returns(localVersion)
-    await bump(DEFAULT_ACTION_DATA)
-    const branchName = `release/${localVersion}`
-    t.ok(
-      stubs.callApiStub.calledWith(
-        {
-          method: 'POST',
-          endpoint: 'pr',
-          body: {
-            head: `refs/heads/${branchName}`,
-            base: DEFAULT_ACTION_DATA.context.payload.ref,
-            title: `${PR_TITLE_PREFIX} ${branchName}`,
-            body:
-              '## Optic Release Automation\n' +
-              '\n' +
-              'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
-              '\n' +
-              `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
-              '\n' +
-              '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
-              '\n' +
-              '- The GitHub release will be published\n' +
-              '\n' +
-              '- No npm package will be published as configured\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '- No major or minor tags will be updated as configured\n' +
-              '\n' +
-              '\n' +
-              '#### If you close the PR\n' +
-              '\n' +
-              '- The new draft release will be deleted and nothing will change\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '<!--\n' +
-              `<release-meta>{"version":"${localVersion}"}</release-meta>\n` +
-              '-->\n',
-          },
-        },
-        DEFAULT_ACTION_DATA.inputs
-      )
     )
   }
 )
 
 tap.test(
   'should create the correct release for a version with no major',
-  async t => {
+  async () => {
     const { bump, stubs } = setup()
     const localVersion = 'v0.0.5'
     runSpawnStub.returns(localVersion)
     await bump(DEFAULT_ACTION_DATA)
     const branchName = `release/${localVersion}`
-    t.ok(
-      stubs.callApiStub.calledWith(
-        {
-          method: 'POST',
-          endpoint: 'pr',
-          body: {
-            head: `refs/heads/${branchName}`,
-            base: DEFAULT_ACTION_DATA.context.payload.ref,
-            title: `${PR_TITLE_PREFIX} ${branchName}`,
-            body:
-              '## Optic Release Automation\n' +
-              '\n' +
-              'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
-              '\n' +
-              `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
-              '\n' +
-              '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
-              '\n' +
-              '- The GitHub release will be published\n' +
-              '\n' +
-              '- No npm package will be published as configured\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '- No major or minor tags will be updated as configured\n' +
-              '\n' +
-              '\n' +
-              '#### If you close the PR\n' +
-              '\n' +
-              '- The new draft release will be deleted and nothing will change\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '<!--\n' +
-              `<release-meta>{"version":"${localVersion}"}</release-meta>\n` +
-              '-->\n',
-          },
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: DEFAULT_ACTION_DATA.context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body:
+            '## Optic Release Automation\n' +
+            '\n' +
+            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
+            '\n' +
+            `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
+            '\n' +
+            '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
+            '\n' +
+            '- The GitHub release will be published\n' +
+            '\n' +
+            '- No npm package will be published as configured\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '- No major or minor tags will be updated as configured\n' +
+            '\n' +
+            '\n' +
+            '#### If you close the PR\n' +
+            '\n' +
+            '- The new draft release will be deleted and nothing will change\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '<!--\n' +
+            `<release-meta>{"version":"${localVersion}"}</release-meta>\n` +
+            '-->\n',
         },
-        DEFAULT_ACTION_DATA.inputs
-      )
+      },
+      DEFAULT_ACTION_DATA.inputs
     )
   }
 )

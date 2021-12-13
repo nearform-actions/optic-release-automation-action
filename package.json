@@ -5,7 +5,9 @@
   "main": "action.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "tap"
+    "test": "tap",
+    "build": "ncc build action.js",
+    "prepare": "husky install"
   },
   "keywords": [],
   "author": {
@@ -21,9 +23,11 @@
     "semver": "^7.3.5"
   },
   "devDependencies": {
+    "@vercel/ncc": "^0.33.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.4",
     "lodash.clonedeep": "^4.5.0",
     "prettier": "^2.5.1",
     "proxyquire": "^2.1.3",

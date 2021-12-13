@@ -7,7 +7,7 @@ This action allows you to automate the release process of your npm modules. It c
 ### What does it do?
 
 - When run, it opens a new PR for the release creating a new branch named `release/${new semver version}`.
-- When/if the PR gets merged, it publishes a new Npm release and a new Github release with change logs
+- When/if the PR gets merged, it publishes a new Npm release and a new GitHub release with change logs
 
 You can also use it for releases without Npm. In that case, when the PR merges, a new GitHub release will be published. Which you can use to trigger another workflow that deploys the app somewhere (GCP, AWS etc).
 
@@ -48,9 +48,9 @@ jobs:
     steps:
       - uses: nearform/optic-release-automation-action@v2
         with:
-          github-token: ${{secrets.github_token}}
-          npm-token: ${{secrets.NPM_TOKEN}}
-          optic-token: ${{secrets.OPTIC_TOKEN}}
+          github-token: ${{ secrets.github_token }}
+          npm-token: ${{ secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets.OPTIC_TOKEN }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
@@ -65,11 +65,39 @@ The above workflow (when manually triggered ⚡️) will:
 When you merge this PR ⚡️:
 
 - 🤖 It will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
-- 🤖 Upon successful retrieval of the OTP, it will publish the package to Npm.
+- _(Optional)_ You can define Npm and Optic tokens in GitHub secrets for each user that will receive the OTP. This is required only in case you want to publish to Npm.
 - 🤖 Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+- 🤖 Upon successful retrieval of the OTP, it will publish the package to Npm.
 
+### Multiple user scenario
 
-#### How to add a build step to your workflow
+In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets. Following is an example of a way to use different tokens depending on the user who merged the pull request.
+
+#### Example:
+  - Use only default tokens:
+    *e.g.* `npm-token: ${{ secrets.NPM_TOKEN }}`
+  - Use only user-related tokens:
+    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}`
+  - Use both user-related and default token:
+    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}`
+
+```yml
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nearform/optic-release-automation-action@v2
+        with:
+          github-token: ${{ secrets.github_token }}
+          npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
+          semver: ${{ github.event.inputs.semver }}
+          npm-tag: ${{ github.event.inputs.tag }}
+```
+
+*Note*: Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work. 
+
+### How to add a build step to your workflow
 
 When your project need a build step, you can run it before the release.
 
@@ -80,7 +108,7 @@ Mainly, there are two build types:
 
 To do it you need to add some extra steps to your workflow.
 
-##### To be committed
+#### To be committed
 
 In this example, the `npm run build` command will create some artifacts that will be committed to the repository.
 Of course, you can use any build tool you need.
@@ -90,7 +118,6 @@ The action will add the changes in the new release PR for you!
 
 ```yml
 name: build-and-release
-
 on:
   workflow_dispatch:
     inputs:
@@ -100,7 +127,6 @@ on:
         default: "patch"
   pull_request:
     types: [closed]
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -131,14 +157,13 @@ Now your PR includes the build artifacts, so when you will merge the PR, the act
 _Another approach is to commit manually the artifacts you want to release into the release branch._
 
 
-##### To be released
+#### To be released
 
 You may want to release the artifacts without committing them to the repository such as a `dist/` folder.
 In this case, your workflow will look similar to the previous one, but the build step needs to run when the PR is merged:
 
 ```yml
-      # [...] same workflow as before ...
-
+      # [...] same workflow as the previous section
       - name: build the project when the PR is merged
         if: ${{ github.event_name == 'pull_request' }}
         run: |
@@ -155,12 +180,11 @@ In this case, your workflow will look similar to the previous one, but the build
           semver: ${{ github.event.inputs.semver }}
 ```
 
-
 ### Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
-| `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
+| `github-token` | Yes      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published.                              |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |

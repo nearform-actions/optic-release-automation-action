@@ -25,9 +25,20 @@ tap.test('Tag version in git', async t => {
   await tagVersionProxy.tagVersionInGit(version)
 
   t.ok(runSpawnStub.callCount === 3)
-  t.ok(
-    runSpawnStub.calledWith('git', ['push', 'origin', `:refs/tags/${version}`])
-  )
-  t.ok(runSpawnStub.calledWith('git', ['tag', '-f', `"${version}"`]))
-  t.ok(runSpawnStub.calledWith('git', ['push', 'origin', `--tags`]))
+
+  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+    'push',
+    'origin',
+    `:refs/tags/${version}`,
+  ])
+  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+    'tag',
+    '-f',
+    `"${version}"`,
+  ])
+  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+    'push',
+    'origin',
+    `--tags`,
+  ])
 })
