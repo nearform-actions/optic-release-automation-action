@@ -48,6 +48,7 @@ jobs:
           github-token: ${{ secrets.github_token }}
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
+          commit-message: ${{ github.event.inputs.commit-message }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
