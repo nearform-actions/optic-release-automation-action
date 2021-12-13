@@ -3,6 +3,7 @@
 const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
+const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../utils/runSpawn')
 const callApiAction = require('../utils/callApi')
@@ -83,7 +84,33 @@ tap.test('should create a new git branch', async () => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
     '-am',
-    TEST_VERSION,
+    `Release ${TEST_VERSION}`,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    branchName,
+  ])
+})
+
+tap.test('should handle custom commit messages', async () => {
+  const { bump, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.inputs['commit-message'] =
+    '[{version}] The brand new {version} has been released'
+  await bump(data)
+
+  const branchName = `release/${TEST_VERSION}`
+
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'checkout',
+    '-b',
+    branchName,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'commit',
+    '-am',
+    `[${TEST_VERSION}] The brand new ${TEST_VERSION} has been released`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
