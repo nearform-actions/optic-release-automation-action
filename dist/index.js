@@ -90,7 +90,7 @@ module.exports = async function ({ context, inputs }) {
   ])
   const branchName = `release/${newVersion}`
 
-  const messageTemplate = inputs['commit-message'] || 'Release {version}'
+  const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
   await run('git', [
     'commit',
