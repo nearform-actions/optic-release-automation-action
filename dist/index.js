@@ -90,7 +90,8 @@ module.exports = async function ({ context, inputs }) {
   const branchName = `release/${newVersion}`
 
   await run('git', ['checkout', '-b', branchName])
-  await run('git', ['commit', '-am', newVersion])
+  await run('git', ['add', '-A'])
+  await run('git', ['commit', '-m', newVersion])
   await run('git', ['push', 'origin', branchName])
 
   const { data: draftRelease } = await callApi(
@@ -10725,18 +10726,35 @@ module.exports = async function ({ github, context, inputs }) {
 
   const { opticUrl, npmTag, version, id } = releaseMeta
 
+  const run = runSpawn()
   if (!pr.merged) {
-    return github.rest.repos.deleteRelease({
-      owner,
-      repo,
-      release_id: id,
-    })
+    const branchName = `release/${version}`
+    const promises = await Promise.allSettled([
+      run('git', ['push', 'origin', '--delete', branchName]),
+      github.rest.repos.deleteRelease({
+        owner,
+        repo,
+        release_id: id,
+      }),
+    ])
+
+    const errors = promises.filter(p => p.reason).map(p => p.reason.message)
+    if (errors.length) {
+      core.setFailed(
+        `Something went wrong while deleting the branch or release. \n Errors: ${errors.join(
+          '\n'
+        )}`
+      )
+    }
+
+    // Return early after an attempt at deleting the branch and release
+    return
   }
 
-  const run = runSpawn()
   const opticToken = inputs['optic-token']
 
   if (inputs['npm-token']) {
+    await run('npm', ['pack', '--dry-run'])
     if (opticToken) {
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
       await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
