@@ -41,6 +41,7 @@ tap.afterEach(() => {
 const DEFAULT_ACTION_DATA = {
   inputs: {
     semver: 'patch',
+    'commit-message': 'Release {version}'
   },
   context: {
     eventName: 'pull_request',
