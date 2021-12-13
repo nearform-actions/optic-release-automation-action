@@ -4,11 +4,11 @@ const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
-const format = require('string-format')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
+const transformCommitMessage = require('./utils/commitMessage')
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -52,7 +52,7 @@ module.exports = async function ({ context, inputs }) {
   await run('git', [
     'commit',
     '-am',
-    format(`"${messageTemplate}"`, { version: newVersion }),
+    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
   await run('git', ['push', 'origin', branchName])
 

@@ -47,11 +47,11 @@ const fs = __nccwpck_require__(7147)
 const path = __nccwpck_require__(1017)
 const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
-const format = __nccwpck_require__(3259)
 
 const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
 const { runSpawn } = __nccwpck_require__(1914)
 const { callApi } = __nccwpck_require__(8720)
+const transformCommitMessage = __nccwpck_require__(627)
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -95,7 +95,7 @@ module.exports = async function ({ context, inputs }) {
   await run('git', [
     'commit',
     '-am',
-    format(`"${messageTemplate}"`, { version: newVersion }),
+    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
   await run('git', ['push', 'origin', branchName])
 
@@ -10931,6 +10931,22 @@ const callApi = async ({ method, endpoint, body }, inputs) => {
 }
 
 exports.callApi = callApi
+
+
+/***/ }),
+
+/***/ 627:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const format = __nccwpck_require__(3259)
+
+const transformCommitMessage = (template, version) => {
+  return format(template.replace(/"/g, '\\"'), { version })
+}
+
+module.exports = transformCommitMessage
 
 
 /***/ }),
