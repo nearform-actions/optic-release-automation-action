@@ -83,7 +83,6 @@ tap.test('should create a new git branch', async () => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'add',
     '-A',
-    TEST_VERSION,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
