@@ -24,7 +24,7 @@ tap.afterEach(() => {
   sinon.restore()
 })
 
-tap.test('Call api warns if code is not 200', async t => {
+tap.test('Call api warns if code is not 200', async () => {
   const { logStub, callApiProxy } = setup(401)
   await callApiProxy.callApi(
     {
@@ -34,10 +34,10 @@ tap.test('Call api warns if code is not 200', async t => {
     },
     {}
   )
-  t.ok(logStub.logWarning.calledOnce)
+  sinon.assert.calledOnce(logStub.logWarning)
 })
 
-tap.test('Call api does not warn if code is  200', async t => {
+tap.test('Call api does not warn if code is  200', async () => {
   const { logStub, callApiProxy } = setup(200)
   await callApiProxy.callApi(
     {
@@ -47,5 +47,5 @@ tap.test('Call api does not warn if code is  200', async t => {
     },
     {}
   )
-  t.ok(logStub.logWarning.notCalled)
+  sinon.assert.notCalled(logStub.logWarning)
 })
