@@ -84,7 +84,7 @@ tap.test('should create a new git branch', async () => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
     '-am',
-    `Release ${TEST_VERSION}`,
+    `"Release ${TEST_VERSION}"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
@@ -110,7 +110,7 @@ tap.test('should handle custom commit messages', async () => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
     '-am',
-    `[${TEST_VERSION}] The brand new ${TEST_VERSION} has been released`,
+    `"[${TEST_VERSION}] The brand new ${TEST_VERSION} has been released"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',

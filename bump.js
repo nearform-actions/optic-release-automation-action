@@ -4,6 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
+const format = require('string-format')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
@@ -51,7 +52,7 @@ module.exports = async function ({ context, inputs }) {
   await run('git', [
     'commit',
     '-am',
-    messageTemplate.replace(/{version}/g, newVersion),
+    format(`"${messageTemplate}"`, { version: newVersion }),
   ])
   await run('git', ['push', 'origin', branchName])
 

@@ -47,6 +47,7 @@ const fs = __nccwpck_require__(7147)
 const path = __nccwpck_require__(1017)
 const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
+const format = __nccwpck_require__(3259)
 
 const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
 const { runSpawn } = __nccwpck_require__(1914)
@@ -94,7 +95,7 @@ module.exports = async function ({ context, inputs }) {
   await run('git', [
     'commit',
     '-am',
-    messageTemplate.replace(/{version}/g, newVersion),
+    format(`"${messageTemplate}"`, { version: newVersion }),
   ])
   await run('git', ['push', 'origin', branchName])
 
@@ -7792,6 +7793,105 @@ const validRange = (range, options) => {
   }
 }
 module.exports = validRange
+
+
+/***/ }),
+
+/***/ 3259:
+/***/ (function(module) {
+
+void function(global) {
+
+  'use strict';
+
+  //  ValueError :: String -> Error
+  function ValueError(message) {
+    var err = new Error(message);
+    err.name = 'ValueError';
+    return err;
+  }
+
+  //  create :: Object -> String,*... -> String
+  function create(transformers) {
+    return function(template) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      var idx = 0;
+      var state = 'UNDEFINED';
+
+      return template.replace(
+        /([{}])\1|[{](.*?)(?:!(.+?))?[}]/g,
+        function(match, literal, _key, xf) {
+          if (literal != null) {
+            return literal;
+          }
+          var key = _key;
+          if (key.length > 0) {
+            if (state === 'IMPLICIT') {
+              throw ValueError('cannot switch from ' +
+                               'implicit to explicit numbering');
+            }
+            state = 'EXPLICIT';
+          } else {
+            if (state === 'EXPLICIT') {
+              throw ValueError('cannot switch from ' +
+                               'explicit to implicit numbering');
+            }
+            state = 'IMPLICIT';
+            key = String(idx);
+            idx += 1;
+          }
+
+          //  1.  Split the key into a lookup path.
+          //  2.  If the first path component is not an index, prepend '0'.
+          //  3.  Reduce the lookup path to a single result. If the lookup
+          //      succeeds the result is a singleton array containing the
+          //      value at the lookup path; otherwise the result is [].
+          //  4.  Unwrap the result by reducing with '' as the default value.
+          var path = key.split('.');
+          var value = (/^\d+$/.test(path[0]) ? path : ['0'].concat(path))
+            .reduce(function(maybe, key) {
+              return maybe.reduce(function(_, x) {
+                return x != null && key in Object(x) ?
+                  [typeof x[key] === 'function' ? x[key]() : x[key]] :
+                  [];
+              }, []);
+            }, [args])
+            .reduce(function(_, x) { return x; }, '');
+
+          if (xf == null) {
+            return value;
+          } else if (Object.prototype.hasOwnProperty.call(transformers, xf)) {
+            return transformers[xf](value);
+          } else {
+            throw ValueError('no transformer named "' + xf + '"');
+          }
+        }
+      );
+    };
+  }
+
+  //  format :: String,*... -> String
+  var format = create({});
+
+  //  format.create :: Object -> String,*... -> String
+  format.create = create;
+
+  //  format.extend :: Object,Object -> ()
+  format.extend = function(prototype, transformers) {
+    var $format = create(transformers);
+    prototype.format = function() {
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift(this);
+      return $format.apply(global, args);
+    };
+  };
+
+  /* istanbul ignore else */
+  if (true) {
+    module.exports = format;
+  } else {}
+
+}.call(this, this);
 
 
 /***/ }),
