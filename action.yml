@@ -41,7 +41,7 @@ inputs:
     required: false
     default: "false"
   commit-message:
-    description: "The commit message template. The keyword "{version}" will be replaced with the new version"
+    description: "The commit message template. The keyword \"{version}\" will be replaced with the new version"
     required: true
     default: "Release {version}"
 
