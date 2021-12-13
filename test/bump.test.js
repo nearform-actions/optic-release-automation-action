@@ -4,7 +4,6 @@ const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const core = require('@actions/core')
-const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../utils/runSpawn')
 const callApiAction = require('../utils/callApi')
@@ -257,12 +256,25 @@ tap.test(
   }
 )
 
-tap.test('Should call core.setFailed if it fails to create a PR', async t => {
+tap.test('should delete branch in case of pr failure', async t => {
   const { bump, stubs } = setup()
   const localVersion = 'v0.0.5'
-  runSpawnStub.returns(localVersion)
   const { inputs } = DEFAULT_ACTION_DATA
   await bump({ inputs })
 
-  t.ok(stubs.coreStub.setFailed.calledOnce)
+  const branchName = `release/${localVersion}`
+  sinon.assert.calledWith(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    '--delete',
+    branchName,
+  ])
+})
+
+tap.test('Should call core.setFailed if it fails to create a PR', async t => {
+  const { bump, stubs } = setup()
+  const { inputs } = DEFAULT_ACTION_DATA
+  await bump({ inputs })
+
+  sinon.assert.calledOnce(stubs.coreStub.setFailed)
 })
