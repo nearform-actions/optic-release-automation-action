@@ -263,7 +263,7 @@ tap.test('should delete branch in case of pr failure', async t => {
   await bump({ inputs })
 
   const branchName = `release/${localVersion}`
-  sinon.assert.calledWith(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
     'origin',
     '--delete',

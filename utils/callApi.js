@@ -19,7 +19,6 @@ const callApi = async ({ method, endpoint, body }, inputs) => {
 
   if (response.status !== 200) {
     logWarning(`Please ensure that Github App is installed ${GITHUB_APP_URL}`)
-    return response
   }
 
   return response.json()
