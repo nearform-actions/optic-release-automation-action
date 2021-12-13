@@ -57,7 +57,7 @@ module.exports = async function ({ github, context, inputs }) {
       )
     }
 
-    // Both the branch and release have been deleted, return early
+    // Return early after an attempt at deleting the branch and release
     return
   }
 
