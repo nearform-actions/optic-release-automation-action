@@ -13,7 +13,7 @@ const { PR_TITLE_PREFIX } = require('../const')
 const TEST_VERSION = 'v3.1.1'
 const runSpawnStub = sinon.stub().returns(TEST_VERSION)
 
-function setup() {
+function setup(version = TEST_VERSION) {
   const coreStub = sinon.stub(core)
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
   const callApiStub = sinon
@@ -21,14 +21,15 @@ function setup() {
     .resolves({ data: {} })
 
   process.env.GITHUB_ACTION_PATH = './'
+  process.env.NPM_VERSION = version.slice(1)
 
-  const bump = proxyquire('../bump', {
+  const openPr = proxyquire('../openPr', {
     './utils/runSpawn': utilStub,
     '@actions/core': coreStub,
   })
 
   return {
-    bump,
+    openPr,
     stubs: {
       utilStub,
       runSpawnStub,
@@ -64,20 +65,9 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-tap.test('npm should be called with semver', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
-
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
-    'version',
-    '--no-git-tag-version',
-    DEFAULT_ACTION_DATA.inputs.semver,
-  ])
-})
-
 tap.test('should create a new git branch', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+  const { openPr, stubs } = setup()
+  await openPr(DEFAULT_ACTION_DATA)
 
   const branchName = `release/${TEST_VERSION}`
 
@@ -100,11 +90,11 @@ tap.test('should create a new git branch', async () => {
 })
 
 tap.test('should handle custom commit messages', async () => {
-  const { bump, stubs } = setup()
+  const { openPr, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.inputs['commit-message'] =
     '[{version}] The brand new {version} has been released'
-  await bump(data)
+  await openPr(data)
 
   const branchName = `release/${TEST_VERSION}`
 
@@ -126,8 +116,8 @@ tap.test('should handle custom commit messages', async () => {
 })
 
 tap.test('should call the release endpoint with a new version', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+  const { openPr, stubs } = setup()
+  await openPr(DEFAULT_ACTION_DATA)
 
   sinon.assert.calledWithExactly(
     stubs.callApiStub,
@@ -143,8 +133,8 @@ tap.test('should call the release endpoint with a new version', async () => {
 })
 
 tap.test('should call the PR endpoint with a new version', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+  const { openPr, stubs } = setup()
+  await openPr(DEFAULT_ACTION_DATA)
 
   const branchName = `release/${TEST_VERSION}`
   sinon.assert.calledWithExactly(
@@ -192,10 +182,10 @@ tap.test('should call the PR endpoint with a new version', async () => {
 tap.test(
   'should create the correct release for a version with no minor',
   async () => {
-    const { bump, stubs } = setup()
     const localVersion = 'v2.0.0'
+    const { openPr, stubs } = setup(localVersion)
     runSpawnStub.returns(localVersion)
-    await bump(DEFAULT_ACTION_DATA)
+    await openPr(DEFAULT_ACTION_DATA)
     const branchName = `release/${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -243,10 +233,10 @@ tap.test(
 tap.test(
   'should create the correct release for a version with no major',
   async () => {
-    const { bump, stubs } = setup()
     const localVersion = 'v0.0.5'
+    const { openPr, stubs } = setup(localVersion)
     runSpawnStub.returns(localVersion)
-    await bump(DEFAULT_ACTION_DATA)
+    await openPr(DEFAULT_ACTION_DATA)
     const branchName = `release/${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -292,10 +282,10 @@ tap.test(
 )
 
 tap.test('should delete branch in case of pr failure', async t => {
-  const { bump, stubs } = setup()
   const localVersion = 'v0.0.5'
+  const { openPr, stubs } = setup(localVersion)
   const { inputs } = DEFAULT_ACTION_DATA
-  await bump({ inputs })
+  await openPr({ inputs })
 
   const branchName = `release/${localVersion}`
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -304,12 +294,14 @@ tap.test('should delete branch in case of pr failure', async t => {
     '--delete',
     branchName,
   ])
+  t.pass('branch deleted')
 })
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
-  const { bump, stubs } = setup()
+  const { openPr, stubs } = setup()
   const { inputs } = DEFAULT_ACTION_DATA
-  await bump({ inputs })
+  await openPr({ inputs })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
+  t.pass('failed called')
 })

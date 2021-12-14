@@ -4,38 +4,29 @@ const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 
-const core = require('@actions/core')
 const actionLog = require('../log')
-const runSpawnAction = require('../utils/runSpawn')
 const { PR_TITLE_PREFIX } = require('../const')
 
 function buildStubbedAction() {
-  const coreStub = sinon.stub(core)
   const logStub = sinon.stub(actionLog)
-  const runSpawnStub = sinon.stub()
-  const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
   const releaseStub = sinon.stub()
-  const bumpStub = sinon.stub()
+  const openPrStub = sinon.stub()
 
   process.env.GITHUB_ACTION_PATH = './'
+  process.env.NPM_VERSION = '3.1.1'
 
   const action = proxyquire('../action', {
-    '@actions/core': coreStub,
     './log': logStub,
     './release': releaseStub.resolves(),
-    './bump': bumpStub.resolves(),
-    './utils/runSpawn': utilStub,
+    './openPr': openPrStub.resolves(),
   })
 
   return {
     action,
     stubs: {
-      coreStub,
       logStub,
       releaseStub,
-      bumpStub,
-      utilStub,
-      runSpawnStub,
+      openPrStub,
     },
   }
 }
@@ -108,7 +99,7 @@ tap.test(
     })
 
     sinon.assert.notCalled(stubs.logStub.logError)
-    sinon.assert.calledOnce(stubs.bumpStub)
+    sinon.assert.calledOnce(stubs.openPrStub)
   }
 )
 
@@ -128,12 +119,6 @@ tap.test(
     })
 
     sinon.assert.notCalled(stubs.logStub.logError)
-    sinon.assert.calledOnce(stubs.bumpStub)
-    sinon.assert.calledOnce(stubs.utilStub.runSpawn)
-    sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
-      'config',
-      'set',
-      `//registry.npmjs.org/:_authToken=a-token`,
-    ])
+    sinon.assert.calledOnce(stubs.openPrStub)
   }
 )

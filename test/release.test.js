@@ -225,18 +225,25 @@ tap.test('Should publish to npm with optic', async t => {
   })
 
   sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(0), 'npm', [
+    'config',
+    'set',
+    '//registry.npmjs.org/:_authToken=a-token',
+  ])
+  t.pass('npm config')
+
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(1), 'npm', [
     'pack',
     '--dry-run',
   ])
   t.pass('npm pack called')
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(1), 'curl', [
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(2), 'curl', [
     '-s',
     'https://optic-test.run.app/api/generate/optic-token',
   ])
   t.pass('curl called')
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(2), 'npm', [
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(3), 'npm', [
     'publish',
     '--otp',
     'otp123',

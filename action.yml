@@ -84,7 +84,7 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ action: 'open_pr', github, context, inputs: ${{ toJSON(inputs) }} })
+          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
       env:
         NPM_VERSION: ${{ steps.version-bump.outputs.NPM_VERSION }}
 
@@ -95,4 +95,4 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ action: 'release', github, context, inputs: ${{ toJSON(inputs) }} })
+          await script({ github, context, inputs: ${{ toJSON(inputs) }} })

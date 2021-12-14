@@ -5,7 +5,8 @@
   "main": "action.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "tap",
+    "lint:fix": "eslint . --fix",
+    "test": "npm run lint && tap",
     "build": "ncc build action.js",
     "prepare": "husky install"
   },
