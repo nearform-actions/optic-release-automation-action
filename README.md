@@ -39,6 +39,10 @@ on:
         description: "The npm tag"
         required: false
         default: "latest"
+      commit-message:
+        description: "The commit message template"
+        required: false
+        default: "Release {version}"
   pull_request:
     types: [closed]
 
@@ -51,6 +55,7 @@ jobs:
           github-token: ${{ secrets.github_token }}
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
+          commit-message: ${{ github.event.inputs.commit-message }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
@@ -186,6 +191,7 @@ In this case, your workflow will look similar to the previous one, but the build
 | ---            | ---      | ---                                                                                                                                                                                        |
 | `github-token` | Yes      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
+| `commit-message`       | No      |The commit message template. The keyword `{version}` will be replaced with the new version.  (_Default: `Release {version}`_)                                                                                                                                         |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published.                              |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
 | `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|

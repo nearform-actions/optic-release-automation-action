@@ -4,10 +4,12 @@ const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
+const core = require('@actions/core')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
+const transformCommitMessage = require('./utils/commitMessage')
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -46,9 +48,14 @@ module.exports = async function ({ context, inputs }) {
 
   const branchName = `release/${newVersion}`
 
+  const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
   await run('git', ['add', '-A'])
-  await run('git', ['commit', '-m', newVersion])
+  await run('git', [
+    'commit',
+    '-m',
+    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
+  ])
   await run('git', ['push', 'origin', branchName])
 
   const { data: draftRelease } = await callApi(
@@ -63,18 +70,27 @@ module.exports = async function ({ context, inputs }) {
   )
 
   const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
-
-  await callApi(
-    {
-      method: 'POST',
-      endpoint: 'pr',
-      body: {
-        head: `refs/heads/${branchName}`,
-        base: context.payload.ref,
-        title: `${PR_TITLE_PREFIX} ${branchName}`,
-        body: prBody,
+  try {
+    await callApi(
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body: prBody,
+        },
       },
-    },
-    inputs
-  )
+      inputs
+    )
+  } catch (err) {
+    let message = `Unable to create the pull request ${err.message}`
+    try {
+      await run('git', ['push', 'origin', '--delete', branchName])
+    } catch (error) {
+      message += `\n Unable to delete branch ${branchName}:  ${error.message}`
+    }
+    core.setFailed(message)
+  }
 }

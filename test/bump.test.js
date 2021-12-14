@@ -3,6 +3,8 @@
 const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
+const core = require('@actions/core')
+const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../utils/runSpawn')
 const callApiAction = require('../utils/callApi')
@@ -12,6 +14,7 @@ const TEST_VERSION = 'v3.1.1'
 const runSpawnStub = sinon.stub().returns(TEST_VERSION)
 
 function setup() {
+  const coreStub = sinon.stub(core)
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
@@ -21,6 +24,7 @@ function setup() {
 
   const bump = proxyquire('../bump', {
     './utils/runSpawn': utilStub,
+    '@actions/core': coreStub,
   })
 
   return {
@@ -29,6 +33,7 @@ function setup() {
       utilStub,
       runSpawnStub,
       callApiStub,
+      coreStub,
     },
   }
 }
@@ -40,6 +45,7 @@ tap.afterEach(() => {
 const DEFAULT_ACTION_DATA = {
   inputs: {
     semver: 'patch',
+    'commit-message': 'Release {version}',
   },
   context: {
     eventName: 'pull_request',
@@ -80,14 +86,37 @@ tap.test('should create a new git branch', async () => {
     '-b',
     branchName,
   ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', ['add', '-A'])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
-    'add',
-    '-A',
+    'commit',
+    '-m',
+    `"Release ${TEST_VERSION}"`,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    branchName,
+  ])
+})
+
+tap.test('should handle custom commit messages', async () => {
+  const { bump, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.inputs['commit-message'] =
+    '[{version}] The brand new {version} has been released'
+  await bump(data)
+
+  const branchName = `release/${TEST_VERSION}`
+
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'checkout',
+    '-b',
+    branchName,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
     '-m',
-    TEST_VERSION,
+    `"[${TEST_VERSION}] The brand new ${TEST_VERSION} has been released"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
@@ -261,3 +290,26 @@ tap.test(
     )
   }
 )
+
+tap.test('should delete branch in case of pr failure', async t => {
+  const { bump, stubs } = setup()
+  const localVersion = 'v0.0.5'
+  const { inputs } = DEFAULT_ACTION_DATA
+  await bump({ inputs })
+
+  const branchName = `release/${localVersion}`
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    '--delete',
+    branchName,
+  ])
+})
+
+tap.test('Should call core.setFailed if it fails to create a PR', async t => {
+  const { bump, stubs } = setup()
+  const { inputs } = DEFAULT_ACTION_DATA
+  await bump({ inputs })
+
+  sinon.assert.calledOnce(stubs.coreStub.setFailed)
+})

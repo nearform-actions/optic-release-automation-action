@@ -10595,10 +10595,12 @@ const fs = __nccwpck_require__(7147)
 const path = __nccwpck_require__(1017)
 const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
+const core = __nccwpck_require__(2186)
 
 const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
 const { runSpawn } = __nccwpck_require__(1914)
 const { callApi } = __nccwpck_require__(8720)
+const transformCommitMessage = __nccwpck_require__(627)
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -10637,9 +10639,14 @@ module.exports = async function ({ context, inputs }) {
 
   const branchName = `release/${newVersion}`
 
+  const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
   await run('git', ['add', '-A'])
-  await run('git', ['commit', '-m', newVersion])
+  await run('git', [
+    'commit',
+    '-m',
+    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
+  ])
   await run('git', ['push', 'origin', branchName])
 
   const { data: draftRelease } = await callApi(
@@ -10654,20 +10661,29 @@ module.exports = async function ({ context, inputs }) {
   )
 
   const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
-
-  await callApi(
-    {
-      method: 'POST',
-      endpoint: 'pr',
-      body: {
-        head: `refs/heads/${branchName}`,
-        base: context.payload.ref,
-        title: `${PR_TITLE_PREFIX} ${branchName}`,
-        body: prBody,
+  try {
+    await callApi(
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body: prBody,
+        },
       },
-    },
-    inputs
-  )
+      inputs
+    )
+  } catch (err) {
+    let message = `Unable to create the pull request ${err.message}`
+    try {
+      await run('git', ['push', 'origin', '--delete', branchName])
+    } catch (error) {
+      message += `\n Unable to delete branch ${branchName}:  ${error.message}`
+    }
+    core.setFailed(message)
+  }
 }
 
 
@@ -10827,6 +10843,22 @@ exports.callApi = callApi
 
 /***/ }),
 
+/***/ 627:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const format = __nccwpck_require__(2673)
+
+const transformCommitMessage = (template, version) => {
+  return format(template.replace(/"/g, '\\"'), { version })
+}
+
+module.exports = transformCommitMessage
+
+
+/***/ }),
+
 /***/ 1914:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -10895,6 +10927,14 @@ exports.tagVersionInGit = tagVersionInGit
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 2673:
+/***/ ((module) => {
+
+module.exports = eval("require")("string-format");
 
 
 /***/ }),
