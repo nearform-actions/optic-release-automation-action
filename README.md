@@ -13,7 +13,7 @@ You can also use it for releases without Npm. In that case, when the PR merges, 
 
 ### Usage
 
-- _(Optional)_ Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
+- Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
 - Create a new workflow file at `.github/workflows/release.yml` (from example below) with one step that uses this action and supply the inputs.
 
 Note that the `on` triggers are mandatory:
@@ -23,7 +23,7 @@ Note that the `on` triggers are mandatory:
 
 ### Example
 
-This example shows how to configure this action to release a new npm module version:
+This example shows how to configure this action to release a new Npm package version:
 
 ```yml
 name: release
@@ -76,7 +76,7 @@ When you merge this PR ⚡️:
 - 🤖 Upon successful retrieval of the OTP, it will publish the package to Npm.
 - 🤖 Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 
-When you close the PR ⚡️: nothing will happen.
+When you close the PR without merging it ⚡️: nothing will happen.
 
 ### Multiple user scenario
 
@@ -110,7 +110,7 @@ jobs:
 
 ### How to add a build step to your workflow
 
-When your project need a build step, you can provide it to this action!
+When your project needs a build step, you can provide it to this action!
 The `build-command` option accepts a string that will be executed as a shell command (you can use `yarn` or your preferred build tool).
 
 The build's output will be committed to the `release/${new semver version}` branch, unless the project's `.gitignore` blocks it.
