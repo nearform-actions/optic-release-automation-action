@@ -58,7 +58,7 @@ runs:
       shell: 'bash'
 
     - name: Configure npm
-      if: ${{ inputs.npm-token }}
+      if: ${{ github.event_name == 'pull_request' && inputs.npm-token }}
       run: |
         npm config set //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
       shell: 'bash'
