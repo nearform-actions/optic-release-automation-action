@@ -57,12 +57,6 @@ runs:
         git config --global user.name "${{ inputs.actor-name }}"
       shell: 'bash'
 
-    - name: Configure npm
-      if: ${{ github.event_name == 'pull_request' && inputs.npm-token }}
-      run: |
-        npm config set //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
-      shell: 'bash'
-
     - name: Version bump
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -98,5 +92,3 @@ runs:
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
           await script({ action: 'release', github, context, inputs: ${{ toJSON(inputs) }} })
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}

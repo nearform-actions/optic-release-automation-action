@@ -64,6 +64,12 @@ module.exports = async function ({ github, context, inputs }) {
   const opticToken = inputs['optic-token']
 
   if (inputs['npm-token']) {
+    await run('npm', [
+      'config',
+      'set',
+      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
+    ])
+
     await run('npm', ['pack', '--dry-run'])
     if (opticToken) {
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
