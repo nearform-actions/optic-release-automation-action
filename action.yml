@@ -51,9 +51,8 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout if not already done
-      if: hashFiles('package.json') == ''
-      uses: actions/checkout@v2.4.0
+    - name: Checkout the fresh project
+      uses: actions/checkout@v2
 
     - name: Configure git
       run: |
