@@ -78,11 +78,12 @@ module.exports = async function ({ context, inputs }) {
       inputs
     )
   } catch (err) {
+    let message = `Unable to create the pull request ${err.message}`
     try {
       await run('git', ['push', 'origin', '--delete', branchName])
     } catch (error) {
-      core.setFailed(`Unable to delete the pull request ${error.message}`)
+      message += `\n Unable to delete the pull request ${error.message}`
     }
-    core.setFailed(`Unable to create the pull request ${err.message}`)
+    core.setFailed(message)
   }
 }
