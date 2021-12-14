@@ -10630,10 +10630,10 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
 module.exports = async function ({ context, inputs }) {
   const run = runSpawn()
 
-  const newVersion = process.env.NPM_VERSION
-  if (!newVersion) {
+  if (!process.env.NPM_VERSION) {
     throw new Error('Env var NPM_VERSION is not set!')
   }
+  const newVersion = `v${process.env.NPM_VERSION}`
 
   const branchName = `release/${newVersion}`
 
@@ -10743,6 +10743,12 @@ module.exports = async function ({ github, context, inputs }) {
   const opticToken = inputs['optic-token']
 
   if (inputs['npm-token']) {
+    await run('npm', [
+      'config',
+      'set',
+      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
+    ])
+
     await run('npm', ['pack', '--dry-run'])
     if (opticToken) {
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
