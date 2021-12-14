@@ -47,6 +47,7 @@ const fs = __nccwpck_require__(7147)
 const path = __nccwpck_require__(1017)
 const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
+const core = __nccwpck_require__(2186)
 
 const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
 const { runSpawn } = __nccwpck_require__(1914)
@@ -111,20 +112,29 @@ module.exports = async function ({ context, inputs }) {
   )
 
   const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
-
-  await callApi(
-    {
-      method: 'POST',
-      endpoint: 'pr',
-      body: {
-        head: `refs/heads/${branchName}`,
-        base: context.payload.ref,
-        title: `${PR_TITLE_PREFIX} ${branchName}`,
-        body: prBody,
+  try {
+    await callApi(
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body: prBody,
+        },
       },
-    },
-    inputs
-  )
+      inputs
+    )
+  } catch (err) {
+    let message = `Unable to create the pull request ${err.message}`
+    try {
+      await run('git', ['push', 'origin', '--delete', branchName])
+    } catch (error) {
+      message += `\n Unable to delete branch ${branchName}:  ${error.message}`
+    }
+    core.setFailed(message)
+  }
 }
 
 
