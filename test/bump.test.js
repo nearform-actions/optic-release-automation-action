@@ -65,6 +65,19 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
+tap.test('it trigger an error when the NPM_VERSION is missing', async t => {
+  const { openPr } = setup()
+  delete process.env.NPM_VERSION
+
+  try {
+    await openPr(DEFAULT_ACTION_DATA)
+    t.fail('should have thrown an error')
+  } catch (error) {
+    t.ok(error)
+    t.match(error.message, 'NPM_VERSION is missing')
+  }
+})
+
 tap.test('should create a new git branch', async () => {
   const { openPr, stubs } = setup()
   await openPr(DEFAULT_ACTION_DATA)

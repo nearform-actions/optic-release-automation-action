@@ -10732,7 +10732,7 @@ module.exports = async function ({ context, inputs }) {
   const run = runSpawn()
 
   if (!process.env.NPM_VERSION) {
-    throw new Error('Env var NPM_VERSION is not set!')
+    throw new Error('Env var NPM_VERSION is missing!')
   }
   const newVersion = `v${process.env.NPM_VERSION}`
 
