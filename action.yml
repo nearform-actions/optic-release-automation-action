@@ -40,6 +40,10 @@ inputs:
     description: "If you want to keep the major and minor versions tag synced to the latest appropriate commit"
     required: false
     default: "false"
+  commit-message:
+    description: "The commit message template. The keyword \"{version}\" will be replaced with the new version"
+    required: false
+    default: "Release {version}"
 
 runs:
   using: 'composite'
@@ -54,5 +58,5 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/action.js')
+          const script = require('${{ github.action_path }}/dist/index.js')
           await script({ github, context, core, inputs: ${{ toJSON(inputs) }} })

@@ -2,12 +2,12 @@
 
 # optic-release-automation-action
 
-This action allows you to automate the release process of your npm modules. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
+This action allows you to automate the release process of your npm modules, apps and actions. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
 ### What does it do?
 
 - When run, it opens a new PR for the release.
-- When/if the PR gets merged, it publishes a new Npm release and a new Github release with change logs
+- When/if the PR gets merged, it publishes a new Npm release and a new GitHub release with change logs
 
 You can also use it for releases without Npm. In that case, when the PR merges, a new GitHub release will be published. Which you can use to trigger another workflow that deploys the app somewhere (GCP, AWS etc).
 
@@ -32,6 +32,10 @@ on:
         description: "The npm tag"
         required: false
         default: "latest"
+      commit-message:
+        description: "The commit message template"
+        required: false
+        default: "Release {version}"
   pull_request:
     types: [closed]
 
@@ -41,9 +45,10 @@ jobs:
     steps:
       - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
         with:
-          github-token: ${{secrets.github_token}}
-          npm-token: ${{secrets.NPM_TOKEN}}
-          optic-token: ${{secrets.OPTIC_TOKEN}}
+          github-token: ${{ secrets.github_token }}
+          npm-token: ${{ secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets.OPTIC_TOKEN }}
+          commit-message: ${{ github.event.inputs.commit-message }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
 ```
@@ -56,15 +61,45 @@ The above workflow (when manually triggered) will
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
 - When you merge this PR, it will request an Npm OTP from Optic. (If you close the PR, nothing will happen)
+- (Optional) You can define Npm and Optic tokens in GitHub secrets for each user that will receive the OTP. This is required only in case you want to publish to Npm.
+- Create a GitHub release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
-- Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+
+### Multiple user scenario
+
+In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets. Following is an example of a way to use different tokens depending on the user who merged the pull request.   
+
+#### Example:  
+  - Use only default tokens:   
+    *e.g.* `npm-token: ${{ secrets.NPM_TOKEN }}`
+  - Use only user-related tokens:   
+    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}`
+  - Use both user-related and default token:   
+    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}`
+
+```yml
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nearform/optic-release-automation-action@main # you can use a tag instead of main
+        with:
+          github-token: ${{ secrets.github_token }}
+          npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
+          semver: ${{ github.event.inputs.semver }}
+          npm-tag: ${{ github.event.inputs.tag }}
+```
+
+*Note*: Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work. 
 
 ### Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
-| `github-token` | Yes      | This is your Github token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your Github action |
+| `github-token` | Yes      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
+| `commit-message`       | No      |The commit message template. The keyword `{version}` will be replaced with the new version.  (_Default: `Release {version}`_)                                                                                                                                         |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published.                              |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
 | `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|

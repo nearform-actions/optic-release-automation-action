@@ -9,6 +9,7 @@ const core = require('@actions/core')
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
+const transformCommitMessage = require('./utils/commitMessage')
 
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
@@ -47,8 +48,13 @@ module.exports = async function ({ context, inputs }) {
   ])
   const branchName = `release/${newVersion}`
 
+  const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
-  await run('git', ['commit', '-am', newVersion])
+  await run('git', [
+    'commit',
+    '-am',
+    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
+  ])
   await run('git', ['push', 'origin', branchName])
 
   const { data: draftRelease } = await callApi(

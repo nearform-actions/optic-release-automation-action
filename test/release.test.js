@@ -13,7 +13,7 @@ const callApiAction = require('../utils/callApi')
 const { PR_TITLE_PREFIX } = require('../const')
 const actionLog = require('../log')
 
-const deleteReleaseStub = sinon.stub().resolves()
+let deleteReleaseStub = sinon.stub().resolves()
 
 const DEFAULT_ACTION_DATA = {
   github: {
@@ -51,7 +51,8 @@ const DEFAULT_ACTION_DATA = {
 function setup() {
   const logStub = sinon.stub(actionLog)
   const coreStub = sinon.stub(core)
-
+  deleteReleaseStub.resetHistory()
+  deleteReleaseStub.resolves()
   const runSpawnStub = sinon.stub().returns('otp123')
   const runSpawnProxy = sinon
     .stub(runSpawnAction, 'runSpawn')
@@ -88,22 +89,86 @@ tap.afterEach(() => {
   sinon.restore()
 })
 
-tap.test('Should delete the release if the pr is not merged', async t => {
-  const { release } = setup()
+tap.test('Should delete the release if the pr is not merged', async () => {
+  const { release, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.merged = false
   await release(data)
 
-  t.ok(
-    deleteReleaseStub.calledOnceWith({
+  sinon.assert.calledOnceWithExactly(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    '--delete',
+    `release/v5.1.3`,
+  ])
+
+  sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
+    owner: DEFAULT_ACTION_DATA.context.repo.owner,
+    repo: DEFAULT_ACTION_DATA.context.repo.repo,
+    release_id: 54503465,
+  })
+})
+
+tap.test(
+  'Should delete the release even if deleting the branch failed',
+  async () => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.merged = false
+    stubs.runSpawnStub.rejects(new Error('Something went wrong in the branch'))
+
+    await release(data)
+
+    sinon.assert.calledOnceWithExactly(
+      stubs.coreStub.setFailed,
+      `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the branch`
+    )
+    sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
       owner: DEFAULT_ACTION_DATA.context.repo.owner,
       repo: DEFAULT_ACTION_DATA.context.repo.repo,
       release_id: 54503465,
     })
+  }
+)
+
+tap.test('Should log an error if deleting the release fails', async () => {
+  const { release, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  deleteReleaseStub.rejects(new Error('Something went wrong in the release'))
+
+  await release(data)
+
+  sinon.assert.calledOnceWithExactly(
+    stubs.coreStub.setFailed,
+    `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the release`
   )
 })
 
-tap.test('Should publish to npm without optic', async t => {
+tap.test(
+  'Should log and exit if both the release and the branch fail',
+  async () => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.merged = false
+    stubs.runSpawnStub.rejects(new Error('Something went wrong in the branch'))
+    deleteReleaseStub.rejects(new Error('Something went wrong in the release'))
+
+    await release(data)
+
+    sinon.assert.calledOnceWithExactly(
+      stubs.coreStub.setFailed,
+      `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the branch\nSomething went wrong in the release`
+    )
+    sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  }
+)
+
+tap.test('Should publish to npm without optic', async () => {
   const { release, stubs } = setup()
   await release({
     ...DEFAULT_ACTION_DATA,
@@ -112,10 +177,14 @@ tap.test('Should publish to npm without optic', async t => {
     },
   })
 
-  t.ok(stubs.runSpawnStub.calledWith('npm', ['publish', '--tag', 'latest']))
+  sinon.assert.calledOnceWithExactly(stubs.runSpawnStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+  ])
 })
 
-tap.test('Should not publish to npm if there is no npm token', async t => {
+tap.test('Should not publish to npm if there is no npm token', async () => {
   const { release, stubs } = setup()
   stubs.callApiStub.throws()
 
@@ -127,21 +196,21 @@ tap.test('Should not publish to npm if there is no npm token', async t => {
     },
   })
 
-  t.ok(
-    stubs.runSpawnStub.neverCalledWith('npm', ['publish', '--tag', 'latest'])
-  )
-  t.ok(
-    stubs.runSpawnStub.neverCalledWith('npm', [
-      'publish',
-      '--otp',
-      'otp123',
-      '--tag',
-      'latest',
-    ])
-  )
+  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+  ])
+  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
+    'publish',
+    '--otp',
+    'otp123',
+    '--tag',
+    'latest',
+  ])
 })
 
-tap.test('Should publish to npm with optic', async t => {
+tap.test('Should publish to npm with optic', async () => {
   const { release, stubs } = setup()
   await release({
     ...DEFAULT_ACTION_DATA,
@@ -151,33 +220,16 @@ tap.test('Should publish to npm with optic', async t => {
     },
   })
 
-  t.ok(
-    stubs.runSpawnStub.calledWith('npm', [
-      'publish',
-      '--otp',
-      'otp123',
-      '--tag',
-      'latest',
-    ])
-  )
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+    'publish',
+    '--otp',
+    'otp123',
+    '--tag',
+    'latest',
+  ])
 })
 
-tap.test('Should tag versions', async t => {
-  const { release, stubs } = setup()
-  await release({
-    ...DEFAULT_ACTION_DATA,
-    inputs: {
-      'npm-token': 'a-token',
-      'optic-token': 'optic-token',
-      'sync-semver-tags': 'true',
-    },
-  })
-
-  t.ok(stubs.tagVersionStub.calledWith('v5'))
-  t.ok(stubs.tagVersionStub.calledWith('v5.1'))
-})
-
-tap.test('Should call the release method', async t => {
+tap.test('Should tag versions', async () => {
   const { release, stubs } = setup()
   await release({
     ...DEFAULT_ACTION_DATA,
@@ -188,52 +240,113 @@ tap.test('Should call the release method', async t => {
     },
   })
 
-  t.ok(
-    stubs.callApiStub.calledWith(
-      {
-        endpoint: 'release',
-        method: 'PATCH',
-        body: {
-          version: 'v5.1.3',
-          releaseId: 54503465,
-        },
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5')
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.1')
+})
+
+tap.test('Should call the release method', async () => {
+  const { release, stubs } = setup()
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    },
+  })
+
+  sinon.assert.calledWithExactly(
+    stubs.callApiStub,
+    {
+      endpoint: 'release',
+      method: 'PATCH',
+      body: {
+        version: 'v5.1.3',
+        releaseId: 54503465,
       },
-      {
-        'npm-token': 'a-token',
-        'optic-token': 'optic-token',
-        'sync-semver-tags': 'true',
-      }
-    )
+    },
+    {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
   )
 })
 
 tap.test(
+  "Should NOT call the release method if the pr wasn't merged",
+  async () => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.merged = false
+    data.inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
+    await release(data)
+
+    sinon.assert.notCalled(stubs.callApiStub)
+  }
+)
+
+tap.test("Should NOT use npm if the pr wasn't merged", async () => {
+  const { release, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  data.inputs = {
+    'npm-token': 'a-token',
+    'optic-token': 'optic-token',
+    'sync-semver-tags': 'true',
+  }
+  await release(data)
+  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+  ])
+})
+
+tap.test("Should NOT tag version in git if the pr wasn't merged", async () => {
+  const { release, stubs } = setup()
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.context.payload.pull_request.merged = false
+  data.inputs = {
+    'npm-token': 'a-token',
+    'optic-token': 'optic-token',
+    'sync-semver-tags': 'true',
+  }
+  await release(data)
+  sinon.assert.notCalled(stubs.tagVersionStub)
+})
+
+tap.test(
   'Should not do anything if the user is not optic-release-automation[bot]',
-  async t => {
+  async () => {
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.user.login = 'not_the_correct_one'
     await release(data)
 
-    t.ok(stubs.callApiStub.notCalled)
-    t.ok(stubs.runSpawnStub.notCalled)
+    sinon.assert.notCalled(stubs.callApiStub)
+    sinon.assert.notCalled(stubs.runSpawnStub)
   }
 )
 
-tap.test('Should fail if the release metadata is incorrect', async t => {
+tap.test('Should fail if the release metadata is incorrect', async () => {
   const { release, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.body = 'this data is not correct'
   await release(data)
 
-  t.ok(stubs.logStub.logError.calledOnce)
-  t.ok(stubs.callApiStub.notCalled)
-  t.ok(stubs.runSpawnStub.notCalled)
+  sinon.assert.calledOnce(stubs.logStub.logError)
+  sinon.assert.notCalled(stubs.callApiStub)
+  sinon.assert.notCalled(stubs.runSpawnStub)
 })
 
 tap.test(
   'Should call core.setFailed if the tagging the version in git fails',
-  async t => {
+  async () => {
     const { release, stubs } = setup()
     stubs.tagVersionStub.throws()
 
@@ -246,11 +359,11 @@ tap.test(
       },
     })
 
-    t.ok(stubs.coreStub.setFailed.calledOnce)
+    sinon.assert.calledOnce(stubs.coreStub.setFailed)
   }
 )
 
-tap.test('Should call core.setFailed if the release fails', async t => {
+tap.test('Should call core.setFailed if the release fails', async () => {
   const { release, stubs } = setup()
   stubs.callApiStub.throws()
 
@@ -263,12 +376,12 @@ tap.test('Should call core.setFailed if the release fails', async t => {
     },
   })
 
-  t.ok(stubs.coreStub.setFailed.calledOnce)
+  sinon.assert.calledOnce(stubs.coreStub.setFailed)
 })
 
 tap.test(
   'Should not tag the minor version in git if there is no minor',
-  async t => {
+  async () => {
     const { release, stubs } = setup()
     stubs.callApiStub.throws()
 
@@ -285,13 +398,13 @@ tap.test(
 
     await release(data)
 
-    t.ok(stubs.tagVersionStub.calledOnceWith('v5'))
+    sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5')
   }
 )
 
 tap.test(
   'Should not tag the major version in git if there is no major',
-  async t => {
+  async () => {
     const { release, stubs } = setup()
     stubs.callApiStub.throws()
 
@@ -308,6 +421,6 @@ tap.test(
 
     await release(data)
 
-    t.ok(stubs.tagVersionStub.notCalled)
+    sinon.assert.notCalled(stubs.tagVersionStub)
   }
 )
