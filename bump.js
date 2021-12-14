@@ -88,7 +88,7 @@ module.exports = async function ({ context, inputs }) {
     try {
       await run('git', ['push', 'origin', '--delete', branchName])
     } catch (error) {
-      message += `\n Unable to delete the pull request ${error.message}`
+      message += `\n Unable to delete branch ${branchName}:  ${error.message}`
     }
     core.setFailed(message)
   }
