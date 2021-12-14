@@ -39,11 +39,11 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
 module.exports = async function ({ context, inputs }) {
   const run = runSpawn()
 
-  const newVersion = await run('npm', [
-    'version',
-    '--no-git-tag-version',
-    inputs.semver,
-  ])
+  const newVersion = process.env.NPM_VERSION
+  if (!newVersion) {
+    throw new Error('Env var NPM_VERSION is not set!')
+  }
+
   const branchName = `release/${newVersion}`
 
   await run('git', ['checkout', '-b', branchName])
