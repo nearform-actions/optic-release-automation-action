@@ -11,9 +11,9 @@ const openPr = __nccwpck_require__(2411)
 const release = __nccwpck_require__(4315)
 const { logError } = __nccwpck_require__(261)
 
-module.exports = async function ({ github, context, inputs }) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
-    return openPr({ context, inputs })
+    return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
