@@ -13,7 +13,6 @@ function buildStubbedAction() {
   const openPrStub = sinon.stub()
 
   process.env.GITHUB_ACTION_PATH = './'
-  process.env.NPM_VERSION = '3.1.1'
 
   const action = proxyquire('../action', {
     './log': logStub,
@@ -37,6 +36,7 @@ tap.afterEach(() => {
 
 const DEFAULT_ACTION_DATA = {
   inputs: {},
+  packageVersion: '3.1.1',
   context: {
     eventName: 'pull_request',
     repo: {

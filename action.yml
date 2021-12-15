@@ -65,7 +65,7 @@ runs:
       if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         npm version --no-git-tag-version ${{ inputs.semver }}
-        echo "::set-output name=NPM_VERSION::$(echo $(node -p "require('./package.json').version"))"
+        echo "::set-output name=PACKAGE_VERSION::$(echo $(node -p "require('./package.json').version"))"
       shell: 'bash'
 
     - name: Build the package
@@ -83,9 +83,7 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
-      env:
-        NPM_VERSION: ${{ steps.version-bump.outputs.NPM_VERSION }}
+          await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: ${{ steps.version-bump.outputs.PACKAGE_VERSION }} })
 
     - name: Release the package
       uses: actions/github-script@v5

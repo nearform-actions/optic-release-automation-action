@@ -60,23 +60,23 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-The above workflow (when manually triggered ⚡️) will:
+The above workflow (when manually triggered) will:
 
-- 🤖 Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
-- 🤖 Execute the `build-command` if configured
-- 🤖 Commit the changes and push to the `release/${new semver version}` branch
-- 🤖 Open a PR that looks like following
+- Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
+- Execute the `build-command` if configured
+- Commit the changes and push to the `release/${new semver version}` branch
+- Open a PR that looks like following
 
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
-When you merge this PR ⚡️:
+When you merge this PR:
 
-- 🤖 It will request an Npm OTP from Optic.
+- It will request an Npm OTP from Optic.
 - _(Optional)_ You can define Npm and Optic tokens in GitHub secrets for each user that will receive the OTP. This is required only in case you want to publish to Npm.
-- 🤖 Upon successful retrieval of the OTP, it will publish the package to Npm.
-- 🤖 Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+- Upon successful retrieval of the OTP, it will publish the package to Npm.
+- Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 
-When you close the PR without merging it ⚡️: nothing will happen.
+When you close the PR without merging it: nothing will happen.
 
 ### Multiple user scenario
 

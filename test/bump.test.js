@@ -13,7 +13,7 @@ const { PR_TITLE_PREFIX } = require('../const')
 const TEST_VERSION = 'v3.1.1'
 const runSpawnStub = sinon.stub().returns(TEST_VERSION)
 
-function setup(version = TEST_VERSION) {
+function setup() {
   const coreStub = sinon.stub(core)
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
   const callApiStub = sinon
@@ -21,7 +21,6 @@ function setup(version = TEST_VERSION) {
     .resolves({ data: {} })
 
   process.env.GITHUB_ACTION_PATH = './'
-  process.env.NPM_VERSION = version.slice(1)
 
   const openPr = proxyquire('../openPr', {
     './utils/runSpawn': utilStub,
@@ -44,6 +43,7 @@ tap.afterEach(() => {
 })
 
 const DEFAULT_ACTION_DATA = {
+  packageVersion: TEST_VERSION.slice(1),
   inputs: {
     semver: 'patch',
     'commit-message': 'Release {version}',
@@ -65,16 +65,18 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-tap.test('it trigger an error when the NPM_VERSION is missing', async t => {
+tap.test('it trigger an error when the packageVersion is missing', async t => {
   const { openPr } = setup()
-  delete process.env.NPM_VERSION
 
   try {
-    await openPr(DEFAULT_ACTION_DATA)
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: undefined,
+    })
     t.fail('should have thrown an error')
   } catch (error) {
     t.ok(error)
-    t.match(error.message, 'NPM_VERSION is missing')
+    t.match(error.message, 'packageVersion is missing')
   }
 })
 
@@ -196,9 +198,12 @@ tap.test(
   'should create the correct release for a version with no minor',
   async () => {
     const localVersion = 'v2.0.0'
-    const { openPr, stubs } = setup(localVersion)
+    const { openPr, stubs } = setup()
     runSpawnStub.returns(localVersion)
-    await openPr(DEFAULT_ACTION_DATA)
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: localVersion.slice(1),
+    })
     const branchName = `release/${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -247,9 +252,12 @@ tap.test(
   'should create the correct release for a version with no major',
   async () => {
     const localVersion = 'v0.0.5'
-    const { openPr, stubs } = setup(localVersion)
+    const { openPr, stubs } = setup()
     runSpawnStub.returns(localVersion)
-    await openPr(DEFAULT_ACTION_DATA)
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: localVersion.slice(1),
+    })
     const branchName = `release/${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -296,9 +304,9 @@ tap.test(
 
 tap.test('should delete branch in case of pr failure', async t => {
   const localVersion = 'v0.0.5'
-  const { openPr, stubs } = setup(localVersion)
+  const { openPr, stubs } = setup()
   const { inputs } = DEFAULT_ACTION_DATA
-  await openPr({ inputs })
+  await openPr({ inputs, packageVersion: localVersion.slice(1) })
 
   const branchName = `release/${localVersion}`
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -312,8 +320,8 @@ tap.test('should delete branch in case of pr failure', async t => {
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
   const { openPr, stubs } = setup()
-  const { inputs } = DEFAULT_ACTION_DATA
-  await openPr({ inputs })
+  const { inputs, packageVersion } = DEFAULT_ACTION_DATA
+  await openPr({ inputs, packageVersion })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
   t.pass('failed called')

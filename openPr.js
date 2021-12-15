@@ -38,13 +38,13 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
   })
 }
 
-module.exports = async function ({ context, inputs }) {
+module.exports = async function ({ context, inputs, packageVersion }) {
   const run = runSpawn()
 
-  if (!process.env.NPM_VERSION) {
-    throw new Error('Env var NPM_VERSION is missing!')
+  if (!packageVersion) {
+    throw new Error('packageVersion is missing!')
   }
-  const newVersion = `v${process.env.NPM_VERSION}`
+  const newVersion = `v${packageVersion}`
 
   const branchName = `release/${newVersion}`
 
