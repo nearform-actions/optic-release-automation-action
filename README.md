@@ -62,6 +62,7 @@ jobs:
 
 The above workflow (when manually triggered) will:
 
+- Checkout the repository source code
 - Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
 - Execute the `build-command` if configured
 - Commit the changes and push to the `release/${new semver version}` branch
@@ -113,11 +114,16 @@ jobs:
 When your project needs a build step, you can provide it to this action!
 The `build-command` option accepts a string that will be executed as a shell command (you can use `yarn` or your preferred build tool).
 
-The build's output will be committed to the `release/${new semver version}` branch, unless the project's `.gitignore` blocks it.
-In that case, the build's output will be packed into the Npm package and released.
+It is important to be aware that you are responsible for:
 
-The command will be executed using the current [GitHub runner](https://github.com/actions/runner#github-actions-runner) configuration (e.g. the one set on `runs-on`).
-You can customize it by executing additional steps before the `nearform/optic-release-automation-action` step execution:
+1. The context where the command is executed. <br /> The command will be executed using the current [GitHub runner](https://github.com/actions/runner#github-actions-runner) configuration (e.g. the one set on `runs-on`).
+You can customize it by executing additional steps before the `nearform/optic-release-automation-action` step execution as shown in the next example.
+2. The command to build the project, starting from the installation to the cleanup if needed.<br /> You can set any automations like [git hooks](https://git-scm.com/book/it/v2/Customizing-Git-Git-Hooks) or [`pre/post` scripts](https://docs.npmjs.com/cli/v8/using-npm/scripts#pre--post-scripts) to execute within the `build-command` step.
+
+The build's output will be committed to the `release/${new semver version}` branch, unless the project's `.gitignore` blocks it.  
+In that case, the build's output will be packed into the Npm package during the release process.
+
+Here an example using `npm` to build the project:
 
 ```yml
 # ...
@@ -128,7 +134,7 @@ jobs:
       - name: Optionally configure your preferred runtime
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 14 # setting a specific version of node as an example
 
       - uses: nearform/optic-release-automation-action@v2
         with:
