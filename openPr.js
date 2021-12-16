@@ -38,21 +38,22 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
   })
 }
 
-module.exports = async function ({ context, inputs }) {
+module.exports = async function ({ context, inputs, packageVersion }) {
   const run = runSpawn()
 
-  const newVersion = await run('npm', [
-    'version',
-    '--no-git-tag-version',
-    inputs.semver,
-  ])
+  if (!packageVersion) {
+    throw new Error('packageVersion is missing!')
+  }
+  const newVersion = `v${packageVersion}`
+
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
+  await run('git', ['add', '-A'])
   await run('git', [
     'commit',
-    '-am',
+    '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
   await run('git', ['push', 'origin', branchName])

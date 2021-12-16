@@ -22,13 +22,13 @@ function setup() {
 
   process.env.GITHUB_ACTION_PATH = './'
 
-  const bump = proxyquire('../bump', {
+  const openPr = proxyquire('../openPr', {
     './utils/runSpawn': utilStub,
     '@actions/core': coreStub,
   })
 
   return {
-    bump,
+    openPr,
     stubs: {
       utilStub,
       runSpawnStub,
@@ -43,9 +43,10 @@ tap.afterEach(() => {
 })
 
 const DEFAULT_ACTION_DATA = {
+  packageVersion: TEST_VERSION.slice(1),
   inputs: {
     semver: 'patch',
-    'commit-message': 'Release {version}'
+    'commit-message': 'Release {version}',
   },
   context: {
     eventName: 'pull_request',
@@ -64,20 +65,24 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-tap.test('npm should be called with semver', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+tap.test('it trigger an error when the packageVersion is missing', async t => {
+  const { openPr } = setup()
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
-    'version',
-    '--no-git-tag-version',
-    DEFAULT_ACTION_DATA.inputs.semver,
-  ])
+  try {
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: undefined,
+    })
+    t.fail('should have thrown an error')
+  } catch (error) {
+    t.ok(error)
+    t.match(error.message, 'packageVersion is missing')
+  }
 })
 
 tap.test('should create a new git branch', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+  const { openPr, stubs } = setup()
+  await openPr(DEFAULT_ACTION_DATA)
 
   const branchName = `release/${TEST_VERSION}`
 
@@ -86,9 +91,10 @@ tap.test('should create a new git branch', async () => {
     '-b',
     branchName,
   ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', ['add', '-A'])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
-    '-am',
+    '-m',
     `"Release ${TEST_VERSION}"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -99,11 +105,11 @@ tap.test('should create a new git branch', async () => {
 })
 
 tap.test('should handle custom commit messages', async () => {
-  const { bump, stubs } = setup()
+  const { openPr, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.inputs['commit-message'] =
     '[{version}] The brand new {version} has been released'
-  await bump(data)
+  await openPr(data)
 
   const branchName = `release/${TEST_VERSION}`
 
@@ -114,7 +120,7 @@ tap.test('should handle custom commit messages', async () => {
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
-    '-am',
+    '-m',
     `"[${TEST_VERSION}] The brand new ${TEST_VERSION} has been released"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -125,8 +131,8 @@ tap.test('should handle custom commit messages', async () => {
 })
 
 tap.test('should call the release endpoint with a new version', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+  const { openPr, stubs } = setup()
+  await openPr(DEFAULT_ACTION_DATA)
 
   sinon.assert.calledWithExactly(
     stubs.callApiStub,
@@ -142,8 +148,8 @@ tap.test('should call the release endpoint with a new version', async () => {
 })
 
 tap.test('should call the PR endpoint with a new version', async () => {
-  const { bump, stubs } = setup()
-  await bump(DEFAULT_ACTION_DATA)
+  const { openPr, stubs } = setup()
+  await openPr(DEFAULT_ACTION_DATA)
 
   const branchName = `release/${TEST_VERSION}`
   sinon.assert.calledWithExactly(
@@ -191,10 +197,13 @@ tap.test('should call the PR endpoint with a new version', async () => {
 tap.test(
   'should create the correct release for a version with no minor',
   async () => {
-    const { bump, stubs } = setup()
     const localVersion = 'v2.0.0'
+    const { openPr, stubs } = setup()
     runSpawnStub.returns(localVersion)
-    await bump(DEFAULT_ACTION_DATA)
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: localVersion.slice(1),
+    })
     const branchName = `release/${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -242,10 +251,13 @@ tap.test(
 tap.test(
   'should create the correct release for a version with no major',
   async () => {
-    const { bump, stubs } = setup()
     const localVersion = 'v0.0.5'
+    const { openPr, stubs } = setup()
     runSpawnStub.returns(localVersion)
-    await bump(DEFAULT_ACTION_DATA)
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: localVersion.slice(1),
+    })
     const branchName = `release/${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -291,10 +303,10 @@ tap.test(
 )
 
 tap.test('should delete branch in case of pr failure', async t => {
-  const { bump, stubs } = setup()
   const localVersion = 'v0.0.5'
+  const { openPr, stubs } = setup()
   const { inputs } = DEFAULT_ACTION_DATA
-  await bump({ inputs })
+  await openPr({ inputs, packageVersion: localVersion.slice(1) })
 
   const branchName = `release/${localVersion}`
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -303,12 +315,14 @@ tap.test('should delete branch in case of pr failure', async t => {
     '--delete',
     branchName,
   ])
+  t.pass('branch deleted')
 })
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
-  const { bump, stubs } = setup()
-  const { inputs } = DEFAULT_ACTION_DATA
-  await bump({ inputs })
+  const { openPr, stubs } = setup()
+  const { inputs, packageVersion } = DEFAULT_ACTION_DATA
+  await openPr({ inputs, packageVersion })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
+  t.pass('failed called')
 })

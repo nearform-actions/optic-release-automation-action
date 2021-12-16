@@ -1,23 +1,12 @@
 'use strict'
 
-const bump = require('./bump')
+const openPr = require('./openPr')
 const release = require('./release')
-const { runSpawn } = require('./utils/runSpawn')
 const { logError } = require('./log')
 
-module.exports = async function ({ github, context, inputs }) {
-  const run = runSpawn()
-
-  if (inputs['npm-token']) {
-    await run('npm', [
-      'config',
-      'set',
-      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
-    ])
-  }
-
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
-    return bump({ context, inputs })
+    return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {

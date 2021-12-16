@@ -9,6 +9,9 @@ inputs:
   npm-token:
     description: "Your Npm Publish token, if you do not wish to publish to Npm, skip this"
     required: false
+  build-command:
+    description: "The bash command to execute after the version bump and before opening the PR"
+    required: false
   optic-url:
     description: "URL if you have a custom application that serves OTP"
     required: false
@@ -48,15 +51,45 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v2
-    - run: |
+    - name: Checkout the fresh project
+      uses: actions/checkout@v2
+
+    - name: Configure git
+      run: |
         git config --global user.email "${{ inputs.actor-email }}"
         git config --global user.name "${{ inputs.actor-name }}"
-        npm install
       shell: 'bash'
-    - uses: actions/github-script@v5
+
+    - name: Version bump
+      id: version-bump
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        npm version --no-git-tag-version ${{ inputs.semver }}
+        echo "::set-output name=PACKAGE_VERSION::$(echo $(node -p "require('./package.json').version"))"
+      shell: 'bash'
+
+    - name: Build the package
+      if: ${{ inputs.build-command }}
+      run: |
+        node -v
+        npm -v
+        ${{ inputs.build-command }}
+      shell: 'bash'
+
+    - name: Commit and open PR
+      uses: actions/github-script@v5
+      if: ${{ github.event_name == 'workflow_dispatch' }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, core, inputs: ${{ toJSON(inputs) }} })
+          await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
+
+    - name: Release the package
+      uses: actions/github-script@v5
+      if: ${{ github.event_name == 'pull_request' }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const script = require('${{ github.action_path }}/dist/index.js')
+          await script({ github, context, inputs: ${{ toJSON(inputs) }} })

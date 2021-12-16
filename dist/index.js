@@ -7,24 +7,13 @@
 "use strict";
 
 
-const bump = __nccwpck_require__(1043)
+const openPr = __nccwpck_require__(2411)
 const release = __nccwpck_require__(4315)
-const { runSpawn } = __nccwpck_require__(1914)
 const { logError } = __nccwpck_require__(261)
 
-module.exports = async function ({ github, context, inputs }) {
-  const run = runSpawn()
-
-  if (inputs['npm-token']) {
-    await run('npm', [
-      'config',
-      'set',
-      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
-    ])
-  }
-
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
-    return bump({ context, inputs })
+    return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
@@ -32,109 +21,6 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   logError('Unsupported event')
-}
-
-
-/***/ }),
-
-/***/ 1043:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const fs = __nccwpck_require__(7147)
-const path = __nccwpck_require__(1017)
-const _template = __nccwpck_require__(417)
-const semver = __nccwpck_require__(1383)
-const core = __nccwpck_require__(2186)
-
-const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
-const { runSpawn } = __nccwpck_require__(1914)
-const { callApi } = __nccwpck_require__(8720)
-const transformCommitMessage = __nccwpck_require__(627)
-
-const actionPath = process.env.GITHUB_ACTION_PATH
-const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
-
-const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
-  const tagsToBeUpdated = []
-  const { major, minor } = semver.parse(newVersion)
-
-  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
-  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
-
-  // Should strictly contain only non-sensitive data
-  const releaseMeta = {
-    id: draftRelease.id,
-    version: newVersion,
-    npmTag: inputs['npm-tag'],
-    opticUrl: inputs['optic-url'],
-  }
-
-  return template({
-    releaseMeta,
-    draftRelease,
-    tagsToUpdate: tagsToBeUpdated.join(', '),
-    npmPublish: !!inputs['npm-token'],
-    syncTags: /true/i.test(inputs['sync-semver-tags']),
-  })
-}
-
-module.exports = async function ({ context, inputs }) {
-  const run = runSpawn()
-
-  const newVersion = await run('npm', [
-    'version',
-    '--no-git-tag-version',
-    inputs.semver,
-  ])
-  const branchName = `release/${newVersion}`
-
-  const messageTemplate = inputs['commit-message']
-  await run('git', ['checkout', '-b', branchName])
-  await run('git', [
-    'commit',
-    '-am',
-    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
-  ])
-  await run('git', ['push', 'origin', branchName])
-
-  const { data: draftRelease } = await callApi(
-    {
-      method: 'POST',
-      endpoint: 'release',
-      body: {
-        version: newVersion,
-      },
-    },
-    inputs
-  )
-
-  const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
-  try {
-    await callApi(
-      {
-        method: 'POST',
-        endpoint: 'pr',
-        body: {
-          head: `refs/heads/${branchName}`,
-          base: context.payload.ref,
-          title: `${PR_TITLE_PREFIX} ${branchName}`,
-          body: prBody,
-        },
-      },
-      inputs
-    )
-  } catch (err) {
-    let message = `Unable to create the pull request ${err.message}`
-    try {
-      await run('git', ['push', 'origin', '--delete', branchName])
-    } catch (error) {
-      message += `\n Unable to delete branch ${branchName}:  ${error.message}`
-    }
-    core.setFailed(message)
-  }
 }
 
 
@@ -10798,6 +10684,110 @@ try {
 
 /***/ }),
 
+/***/ 2411:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const fs = __nccwpck_require__(7147)
+const path = __nccwpck_require__(1017)
+const _template = __nccwpck_require__(417)
+const semver = __nccwpck_require__(1383)
+const core = __nccwpck_require__(2186)
+
+const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
+const { runSpawn } = __nccwpck_require__(1914)
+const { callApi } = __nccwpck_require__(8720)
+const transformCommitMessage = __nccwpck_require__(627)
+
+const actionPath = process.env.GITHUB_ACTION_PATH
+const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
+
+const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
+  const tagsToBeUpdated = []
+  const { major, minor } = semver.parse(newVersion)
+
+  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
+  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
+
+  // Should strictly contain only non-sensitive data
+  const releaseMeta = {
+    id: draftRelease.id,
+    version: newVersion,
+    npmTag: inputs['npm-tag'],
+    opticUrl: inputs['optic-url'],
+  }
+
+  return template({
+    releaseMeta,
+    draftRelease,
+    tagsToUpdate: tagsToBeUpdated.join(', '),
+    npmPublish: !!inputs['npm-token'],
+    syncTags: /true/i.test(inputs['sync-semver-tags']),
+  })
+}
+
+module.exports = async function ({ context, inputs, packageVersion }) {
+  const run = runSpawn()
+
+  if (!packageVersion) {
+    throw new Error('packageVersion is missing!')
+  }
+  const newVersion = `v${packageVersion}`
+
+  const branchName = `release/${newVersion}`
+
+  const messageTemplate = inputs['commit-message']
+  await run('git', ['checkout', '-b', branchName])
+  await run('git', ['add', '-A'])
+  await run('git', [
+    'commit',
+    '-m',
+    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
+  ])
+  await run('git', ['push', 'origin', branchName])
+
+  const { data: draftRelease } = await callApi(
+    {
+      method: 'POST',
+      endpoint: 'release',
+      body: {
+        version: newVersion,
+      },
+    },
+    inputs
+  )
+
+  const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
+  try {
+    await callApi(
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body: prBody,
+        },
+      },
+      inputs
+    )
+  } catch (err) {
+    let message = `Unable to create the pull request ${err.message}`
+    try {
+      await run('git', ['push', 'origin', '--delete', branchName])
+    } catch (error) {
+      message += `\n Unable to delete branch ${branchName}:  ${error.message}`
+    }
+    core.setFailed(message)
+  }
+}
+
+
+/***/ }),
+
 /***/ 4315:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -10868,6 +10858,13 @@ module.exports = async function ({ github, context, inputs }) {
   const opticToken = inputs['optic-token']
 
   if (inputs['npm-token']) {
+    await run('npm', [
+      'config',
+      'set',
+      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
+    ])
+
+    await run('npm', ['pack', '--dry-run'])
     if (opticToken) {
       const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
       await run('npm', ['publish', '--otp', otp, '--tag', npmTag])

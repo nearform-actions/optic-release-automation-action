@@ -41,7 +41,7 @@ const DEFAULT_ACTION_DATA = {
         title: PR_TITLE_PREFIX,
         body:
           '<!--\n' +
-          '<release-meta>{"id":54503465,"version":"v5.1.3","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
+          '<release-meta>{"id":54503465,"version":"v5.1.3","npmTag":"latest","opticUrl":"https://optic-test.run.app/api/generate/"}</release-meta>\n' +
           '-->',
       },
     },
@@ -177,7 +177,11 @@ tap.test('Should publish to npm without optic', async () => {
     },
   })
 
-  sinon.assert.calledOnceWithExactly(stubs.runSpawnStub, 'npm', [
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+    'pack',
+    '--dry-run',
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'publish',
     '--tag',
     'latest',
@@ -210,7 +214,7 @@ tap.test('Should not publish to npm if there is no npm token', async () => {
   ])
 })
 
-tap.test('Should publish to npm with optic', async () => {
+tap.test('Should publish to npm with optic', async t => {
   const { release, stubs } = setup()
   await release({
     ...DEFAULT_ACTION_DATA,
@@ -220,13 +224,33 @@ tap.test('Should publish to npm with optic', async () => {
     },
   })
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(0), 'npm', [
+    'config',
+    'set',
+    '//registry.npmjs.org/:_authToken=a-token',
+  ])
+  t.pass('npm config')
+
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(1), 'npm', [
+    'pack',
+    '--dry-run',
+  ])
+  t.pass('npm pack called')
+
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(2), 'curl', [
+    '-s',
+    'https://optic-test.run.app/api/generate/optic-token',
+  ])
+  t.pass('curl called')
+
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(3), 'npm', [
     'publish',
     '--otp',
     'otp123',
     '--tag',
     'latest',
   ])
+  t.pass('npm publish called')
 })
 
 tap.test('Should tag versions', async () => {
