@@ -47,9 +47,9 @@ const DEFAULT_ACTION_DATA = {
   inputs: {
     semver: 'patch',
     'commit-message': 'Release {version}',
-    'actor-name': 'John',
   },
   context: {
+    actor: 'John',
     eventName: 'pull_request',
     repo: {
       repo: {},
@@ -312,8 +312,9 @@ tap.test(
 tap.test('should delete branch in case of pr failure', async t => {
   const localVersion = 'v0.0.5'
   const { openPr, stubs } = setup()
-  const { inputs } = DEFAULT_ACTION_DATA
-  await openPr({ inputs, packageVersion: localVersion.slice(1) })
+  const { context, inputs } = DEFAULT_ACTION_DATA
+  stubs.callApiStub.onCall(1).rejects()
+  await openPr({ context, inputs, packageVersion: localVersion.slice(1) })
 
   const branchName = `release/${localVersion}`
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -327,8 +328,9 @@ tap.test('should delete branch in case of pr failure', async t => {
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
   const { openPr, stubs } = setup()
-  const { inputs, packageVersion } = DEFAULT_ACTION_DATA
-  await openPr({ inputs, packageVersion })
+  const { context, inputs, packageVersion } = DEFAULT_ACTION_DATA
+  stubs.callApiStub.onCall(1).rejects()
+  await openPr({ context, inputs, packageVersion })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
   t.pass('failed called')
