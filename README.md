@@ -35,6 +35,11 @@ on:
         description: "The semver to use"
         required: true
         default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
       tag:
         description: "The npm tag"
         required: false
