@@ -169,7 +169,7 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '\n' +
           `A new **draft** GitHub release [${TEST_VERSION}]() has been created.\n` +
           '\n' +
-          `Release author: [John](https://github.com/John)\n` +
+          `Release author: @John\n` +
           '\n' +
           '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
           '\n' +
@@ -224,7 +224,7 @@ tap.test(
             '\n' +
             `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
             '\n' +
-            `Release author: [John](https://github.com/John)\n` +
+            `Release author: @John\n` +
             '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
@@ -280,7 +280,7 @@ tap.test(
             '\n' +
             `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
             '\n' +
-            `Release author: [John](https://github.com/John)\n` +
+            `Release author: @John\n` +
             '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
