@@ -35,6 +35,7 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
     syncTags: /true/i.test(inputs['sync-semver-tags']),
+    author: inputs['actor-name'],
   })
 }
 

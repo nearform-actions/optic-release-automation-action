@@ -47,6 +47,7 @@ const DEFAULT_ACTION_DATA = {
   inputs: {
     semver: 'patch',
     'commit-message': 'Release {version}',
+    'actor-name': 'John',
   },
   context: {
     eventName: 'pull_request',
@@ -168,6 +169,8 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '\n' +
           `A new **draft** GitHub release [${TEST_VERSION}]() has been created.\n` +
           '\n' +
+          `Release author: [John](https://github.com/John)\n` +
+          '\n' +
           '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
           '\n' +
           '- The GitHub release will be published\n' +
@@ -220,6 +223,8 @@ tap.test(
             'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
             '\n' +
             `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
+            '\n' +
+            `Release author: [John](https://github.com/John)\n` +
             '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
@@ -274,6 +279,8 @@ tap.test(
             'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
             '\n' +
             `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
+            '\n' +
+            `Release author: [John](https://github.com/John)\n` +
             '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
