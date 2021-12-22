@@ -3,12 +3,12 @@
 const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
-const runSpawnAction = require('../utils/runSpawn')
+const runSpawnAction = require('../src/utils/runSpawn')
 
 const setup = () => {
   const runSpawnStub = sinon.stub()
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
-  const tagVersionProxy = proxyquire('../utils/tagVersion', {
+  const tagVersionProxy = proxyquire('../src/utils/tagVersion', {
     './runSpawn': utilStub,
   })
 

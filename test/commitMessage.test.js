@@ -1,7 +1,7 @@
 'use strict'
 
 const tap = require('tap')
-const transformCommitMessage = require('../utils/commitMessage')
+const transformCommitMessage = require('../src/utils/commitMessage')
 
 tap.test('Handles normal commit messages', async t => {
   t.equal(

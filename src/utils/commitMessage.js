@@ -1,4 +1,5 @@
 'use strict'
+
 const format = require('string-format')
 
 const transformCommitMessage = (template, version) => {

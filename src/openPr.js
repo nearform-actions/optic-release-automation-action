@@ -11,8 +11,7 @@ const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 
-const actionPath = process.env.GITHUB_ACTION_PATH
-const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
+const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
 const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
   const tagsToBeUpdated = []
