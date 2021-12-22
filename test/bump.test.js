@@ -49,6 +49,7 @@ const DEFAULT_ACTION_DATA = {
     'commit-message': 'Release {version}',
   },
   context: {
+    actor: 'John',
     eventName: 'pull_request',
     repo: {
       repo: {},
@@ -168,6 +169,8 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '\n' +
           `A new **draft** GitHub release [${TEST_VERSION}]() has been created.\n` +
           '\n' +
+          `Release author: @John\n` +
+          '\n' +
           '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
           '\n' +
           '- The GitHub release will be published\n' +
@@ -220,6 +223,8 @@ tap.test(
             'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
             '\n' +
             `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
+            '\n' +
+            `Release author: @John\n` +
             '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
@@ -275,6 +280,8 @@ tap.test(
             '\n' +
             `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
             '\n' +
+            `Release author: @John\n` +
+            '\n' +
             '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
             '\n' +
             '- The GitHub release will be published\n' +
@@ -305,8 +312,9 @@ tap.test(
 tap.test('should delete branch in case of pr failure', async t => {
   const localVersion = 'v0.0.5'
   const { openPr, stubs } = setup()
-  const { inputs } = DEFAULT_ACTION_DATA
-  await openPr({ inputs, packageVersion: localVersion.slice(1) })
+  const { context, inputs } = DEFAULT_ACTION_DATA
+  stubs.callApiStub.onCall(1).rejects()
+  await openPr({ context, inputs, packageVersion: localVersion.slice(1) })
 
   const branchName = `release/${localVersion}`
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
@@ -320,8 +328,9 @@ tap.test('should delete branch in case of pr failure', async t => {
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
   const { openPr, stubs } = setup()
-  const { inputs, packageVersion } = DEFAULT_ACTION_DATA
-  await openPr({ inputs, packageVersion })
+  const { context, inputs, packageVersion } = DEFAULT_ACTION_DATA
+  stubs.callApiStub.onCall(1).rejects()
+  await openPr({ context, inputs, packageVersion })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
   t.pass('failed called')

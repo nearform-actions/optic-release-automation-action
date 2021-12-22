@@ -14,7 +14,7 @@ const transformCommitMessage = require('./utils/commitMessage')
 const actionPath = process.env.GITHUB_ACTION_PATH
 const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
 
-const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
+const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
   const tagsToBeUpdated = []
   const { major, minor } = semver.parse(newVersion)
 
@@ -35,6 +35,7 @@ const getPRBody = (template, { newVersion, draftRelease, inputs }) => {
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
     syncTags: /true/i.test(inputs['sync-semver-tags']),
+    author,
   })
 }
 
@@ -69,7 +70,12 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     inputs
   )
 
-  const prBody = getPRBody(_template(tpl), { newVersion, draftRelease, inputs })
+  const prBody = getPRBody(_template(tpl), {
+    newVersion,
+    draftRelease,
+    inputs,
+    author: context.actor,
+  })
   try {
     await callApi(
       {

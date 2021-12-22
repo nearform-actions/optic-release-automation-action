@@ -4,6 +4,8 @@ This **draft** PR is opened by Github action [optic-release-automation-action](h
 
 A new **draft** GitHub release [${releaseMeta.version}](${draftRelease.html_url}) has been created.
 
+Release author: @${author}
+
 #### If you want to go ahead with the release, please merge this PR. When you merge:
 
 - The GitHub release will be published
