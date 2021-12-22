@@ -6,9 +6,9 @@ const sinon = require('sinon')
 const core = require('@actions/core')
 const clone = require('lodash.clonedeep')
 
-const runSpawnAction = require('../utils/runSpawn')
-const callApiAction = require('../utils/callApi')
-const { PR_TITLE_PREFIX } = require('../const')
+const runSpawnAction = require('../src/utils/runSpawn')
+const callApiAction = require('../src/utils/callApi')
+const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_VERSION = 'v3.1.1'
 const runSpawnStub = sinon.stub().returns(TEST_VERSION)
@@ -20,9 +20,7 @@ function setup() {
     .stub(callApiAction, 'callApi')
     .resolves({ data: {} })
 
-  process.env.GITHUB_ACTION_PATH = './'
-
-  const openPr = proxyquire('../openPr', {
+  const openPr = proxyquire('../src/openPr', {
     './utils/runSpawn': utilStub,
     '@actions/core': coreStub,
   })

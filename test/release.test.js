@@ -6,12 +6,12 @@ const sinon = require('sinon')
 const core = require('@actions/core')
 const clone = require('lodash.clonedeep')
 
-const runSpawnAction = require('../utils/runSpawn')
-const tagVersionAction = require('../utils/tagVersion')
-const callApiAction = require('../utils/callApi')
+const runSpawnAction = require('../src/utils/runSpawn')
+const tagVersionAction = require('../src/utils/tagVersion')
+const callApiAction = require('../src/utils/callApi')
 
-const { PR_TITLE_PREFIX } = require('../const')
-const actionLog = require('../log')
+const { PR_TITLE_PREFIX } = require('../src/const')
+const actionLog = require('../src/log')
 
 let deleteReleaseStub = sinon.stub().resolves()
 
@@ -64,9 +64,7 @@ function setup() {
     .stub(callApiAction, 'callApi')
     .resolves({ data: {} })
 
-  process.env.GITHUB_ACTION_PATH = './'
-
-  const release = proxyquire('../release', {
+  const release = proxyquire('../src/release', {
     './utils/runSpawn': runSpawnProxy,
     './utils/tagVersion': tagVersionStub,
     '@actions/core': coreStub,

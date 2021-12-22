@@ -4,17 +4,15 @@ const tap = require('tap')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 
-const actionLog = require('../log')
-const { PR_TITLE_PREFIX } = require('../const')
+const actionLog = require('../src/log')
+const { PR_TITLE_PREFIX } = require('../src/const')
 
 function buildStubbedAction() {
   const logStub = sinon.stub(actionLog)
   const releaseStub = sinon.stub()
   const openPrStub = sinon.stub()
 
-  process.env.GITHUB_ACTION_PATH = './'
-
-  const action = proxyquire('../action', {
+  const action = proxyquire('../src/index', {
     './log': logStub,
     './release': releaseStub.resolves(),
     './openPr': openPrStub.resolves(),

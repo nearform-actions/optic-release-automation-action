@@ -3,12 +3,12 @@
 const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
-const actionLog = require('../log')
+const actionLog = require('../src/log')
 
 const setup = status => {
   const logStub = sinon.stub(actionLog)
   const fetchStub = sinon.stub()
-  const callApiProxy = proxyquire('../utils/callApi', {
+  const callApiProxy = proxyquire('../src/utils/callApi', {
     '../log': logStub,
     'node-fetch': fetchStub.resolves({
       status,

@@ -1,63 +1,6 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 4582:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const openPr = __nccwpck_require__(2411)
-const release = __nccwpck_require__(4315)
-const { logError } = __nccwpck_require__(261)
-
-module.exports = async function ({ github, context, inputs, packageVersion }) {
-  if (context.eventName === 'workflow_dispatch') {
-    return openPr({ context, inputs, packageVersion })
-  }
-
-  if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs })
-  }
-
-  logError('Unsupported event')
-}
-
-
-/***/ }),
-
-/***/ 73:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-
-exports.PR_TITLE_PREFIX = '[OPTIC-RELEASE-AUTOMATION]'
-
-
-/***/ }),
-
-/***/ 261:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const { debug, error, info, warning } = __nccwpck_require__(2186)
-
-const stringify = msg =>
-  typeof msg === 'string' ? msg : msg.stack || msg.toString()
-
-const log = logger => message => logger(stringify(message))
-
-exports.logDebug = log(debug)
-exports.logError = log(error)
-exports.logInfo = log(info)
-exports.logWarning = log(warning)
-
-
-/***/ }),
-
 /***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -10684,7 +10627,64 @@ try {
 
 /***/ }),
 
-/***/ 2411:
+/***/ 6818:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+exports.PR_TITLE_PREFIX = '[OPTIC-RELEASE-AUTOMATION]'
+
+
+/***/ }),
+
+/***/ 4351:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const openPr = __nccwpck_require__(1515)
+const release = __nccwpck_require__(2026)
+const { logError } = __nccwpck_require__(653)
+
+module.exports = async function ({ github, context, inputs, packageVersion }) {
+  if (context.eventName === 'workflow_dispatch') {
+    return openPr({ context, inputs, packageVersion })
+  }
+
+  if (context.eventName === 'pull_request') {
+    return release({ github, context, inputs })
+  }
+
+  logError('Unsupported event')
+}
+
+
+/***/ }),
+
+/***/ 653:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { debug, error, info, warning } = __nccwpck_require__(2186)
+
+const stringify = msg =>
+  typeof msg === 'string' ? msg : msg.stack || msg.toString()
+
+const log = logger => message => logger(stringify(message))
+
+exports.logDebug = log(debug)
+exports.logError = log(error)
+exports.logInfo = log(info)
+exports.logWarning = log(warning)
+
+
+/***/ }),
+
+/***/ 1515:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10696,13 +10696,12 @@ const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
 const core = __nccwpck_require__(2186)
 
-const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
-const { runSpawn } = __nccwpck_require__(1914)
-const { callApi } = __nccwpck_require__(8720)
-const transformCommitMessage = __nccwpck_require__(627)
+const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
+const { runSpawn } = __nccwpck_require__(2137)
+const { callApi } = __nccwpck_require__(4235)
+const transformCommitMessage = __nccwpck_require__(6701)
 
-const actionPath = process.env.GITHUB_ACTION_PATH
-const tpl = fs.readFileSync(path.join(actionPath, 'pr.tpl'), 'utf8')
+const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
 const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
   const tagsToBeUpdated = []
@@ -10794,20 +10793,20 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
 /***/ }),
 
-/***/ 4315:
+/***/ 2026:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-const { PR_TITLE_PREFIX } = __nccwpck_require__(73)
+const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const semver = __nccwpck_require__(1383)
 const core = __nccwpck_require__(2186)
 
-const { callApi } = __nccwpck_require__(8720)
-const { tagVersionInGit } = __nccwpck_require__(5405)
-const { runSpawn } = __nccwpck_require__(1914)
-const { logError } = __nccwpck_require__(261)
+const { callApi } = __nccwpck_require__(4235)
+const { tagVersionInGit } = __nccwpck_require__(9143)
+const { runSpawn } = __nccwpck_require__(2137)
+const { logError } = __nccwpck_require__(653)
 
 module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
@@ -10913,14 +10912,14 @@ module.exports = async function ({ github, context, inputs }) {
 
 /***/ }),
 
-/***/ 8720:
+/***/ 4235:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 
 const fetch = __nccwpck_require__(467)
-const { logWarning } = __nccwpck_require__(261)
+const { logWarning } = __nccwpck_require__(653)
 
 const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 
@@ -10948,10 +10947,11 @@ exports.callApi = callApi
 
 /***/ }),
 
-/***/ 627:
+/***/ 6701:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
+
 
 const format = __nccwpck_require__(3259)
 
@@ -10964,7 +10964,7 @@ module.exports = transformCommitMessage
 
 /***/ }),
 
-/***/ 1914:
+/***/ 2137:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -11008,12 +11008,12 @@ exports.runSpawn = runSpawn
 
 /***/ }),
 
-/***/ 5405:
+/***/ 9143:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-const { runSpawn } = __nccwpck_require__(1914)
+const { runSpawn } = __nccwpck_require__(2137)
 
 async function tagVersionInGit(version) {
   const run = runSpawn()
@@ -11218,7 +11218,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(4582);
+/******/ 	var __webpack_exports__ = __nccwpck_require__(4351);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	
 /******/ })()

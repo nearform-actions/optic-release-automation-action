@@ -7,7 +7,7 @@ const core = require('@actions/core')
 
 const setup = () => {
   const coreStub = sinon.stub(core)
-  const logger = proxyquire('../log', {
+  const logger = proxyquire('../src/log', {
     '@actions/core': coreStub,
   })
 
