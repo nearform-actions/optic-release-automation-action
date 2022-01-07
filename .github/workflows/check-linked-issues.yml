@@ -9,8 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check linked issues
     steps:
-      - name: Use the action
-        uses: nearform/github-action-check-linked-issues@v1
+      - uses: nearform/github-action-check-linked-issues@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          exclude-branches: "release/**, dependabot/**"
+          exclude-branches: 'release/**, dependabot/**'
