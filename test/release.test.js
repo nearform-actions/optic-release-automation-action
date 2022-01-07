@@ -264,6 +264,7 @@ tap.test('Should tag versions', async () => {
 
   sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5')
   sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.1')
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.1.3')
 })
 
 tap.test('Should call the release method', async () => {
@@ -401,48 +402,46 @@ tap.test('Should call core.setFailed if the release fails', async () => {
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
 })
 
-tap.test(
-  'Should not tag the minor version in git if there is no minor',
-  async () => {
-    const { release, stubs } = setup()
-    stubs.callApiStub.throws()
+tap.test('Should tag the major, minor & patch correctly for 0', async () => {
+  const { release, stubs } = setup()
+  stubs.callApiStub.throws()
 
-    const data = clone(DEFAULT_ACTION_DATA)
-    data.inputs = {
-      'npm-token': 'a-token',
-      'optic-token': 'optic-token',
-      'sync-semver-tags': 'true',
-    }
-    data.context.payload.pull_request.body =
-      '<!--\n' +
-      '<release-meta>{"id":54503465,"version":"v5.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
-      '-->'
-
-    await release(data)
-
-    sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5')
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.inputs = {
+    'npm-token': 'a-token',
+    'optic-token': 'optic-token',
+    'sync-semver-tags': 'true',
   }
-)
+  data.context.payload.pull_request.body =
+    '<!--\n' +
+    '<release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
+    '-->'
 
-tap.test(
-  'Should not tag the major version in git if there is no major',
-  async () => {
-    const { release, stubs } = setup()
-    stubs.callApiStub.throws()
+  await release(data)
 
-    const data = clone(DEFAULT_ACTION_DATA)
-    data.inputs = {
-      'npm-token': 'a-token',
-      'optic-token': 'optic-token',
-      'sync-semver-tags': 'true',
-    }
-    data.context.payload.pull_request.body =
-      '<!--\n' +
-      '<release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
-      '-->'
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v0')
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v0.0')
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v0.0.1')
+})
 
-    await release(data)
+tap.test('Should tag the major, minor & patch correctly', async () => {
+  const { release, stubs } = setup()
+  stubs.callApiStub.throws()
 
-    sinon.assert.notCalled(stubs.tagVersionStub)
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.inputs = {
+    'npm-token': 'a-token',
+    'optic-token': 'optic-token',
+    'sync-semver-tags': 'true',
   }
-)
+  data.context.payload.pull_request.body =
+    '<!--\n' +
+    '<release-meta>{"id":54503465,"version":"v5.0.0","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
+    '-->'
+
+  await release(data)
+
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5')
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.0')
+  sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.0.0')
+})
