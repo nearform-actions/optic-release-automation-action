@@ -402,7 +402,7 @@ tap.test('Should call core.setFailed if the release fails', async () => {
 })
 
 tap.test(
-  'Should not tag the minor version in git if there is no minor',
+  'Should tag the minor version in git even if the minor is 0, but major is not',
   async () => {
     const { release, stubs } = setup()
     stubs.callApiStub.throws()
@@ -421,6 +421,30 @@ tap.test(
     await release(data)
 
     sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5')
+    sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.0')
+  }
+)
+
+tap.test(
+  'Should not tag the minor version in git when major is 0',
+  async () => {
+    const { release, stubs } = setup()
+    stubs.callApiStub.throws()
+
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
+    data.context.payload.pull_request.body =
+      '<!--\n' +
+      '<release-meta>{"id":54503465,"version":"v0.2.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/"}</release-meta>\n' +
+      '-->'
+
+    await release(data)
+
+    sinon.assert.notCalled(stubs.tagVersionStub)
   }
 )
 
