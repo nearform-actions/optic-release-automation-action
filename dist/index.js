@@ -10847,12 +10847,10 @@ module.exports = async function ({ github, context, inputs }) {
       }),
     ])
 
-    const errors = promises.filter(p => p.reason).map(p => p.reason.message)
-    if (errors.length) {
+    // Verify any errors deleting the Release. Ignore minor issues deleting the branch
+    if (promises[1].reason) {
       core.setFailed(
-        `Something went wrong while deleting the branch or release. \n Errors: ${errors.join(
-          '\n'
-        )}`
+        `Something went wrong while deleting the release. \n Errors: ${promises[1].reason.message}`
       )
     }
 
