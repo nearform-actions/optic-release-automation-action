@@ -108,7 +108,7 @@ tap.test('Should delete the release if the pr is not merged', async () => {
 })
 
 tap.test(
-  'Should delete the release even if deleting the branch failed',
+  'Should delete the release even if deleting the branch failed and should not fail',
   async () => {
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
@@ -117,10 +117,7 @@ tap.test(
 
     await release(data)
 
-    sinon.assert.calledOnceWithExactly(
-      stubs.coreStub.setFailed,
-      `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the branch`
-    )
+    sinon.assert.notCalled(stubs.coreStub.setFailed)
     sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
       owner: DEFAULT_ACTION_DATA.context.repo.owner,
       repo: DEFAULT_ACTION_DATA.context.repo.repo,
@@ -139,7 +136,7 @@ tap.test('Should log an error if deleting the release fails', async () => {
 
   sinon.assert.calledOnceWithExactly(
     stubs.coreStub.setFailed,
-    `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the release`
+    `Something went wrong while deleting the release. \n Errors: Something went wrong in the release`
   )
 })
 
@@ -156,7 +153,7 @@ tap.test(
 
     sinon.assert.calledOnceWithExactly(
       stubs.coreStub.setFailed,
-      `Something went wrong while deleting the branch or release. \n Errors: Something went wrong in the branch\nSomething went wrong in the release`
+      `Something went wrong while deleting the release. \n Errors: Something went wrong in the release`
     )
     sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
       'publish',
