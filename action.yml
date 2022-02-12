@@ -7,46 +7,46 @@ inputs:
     description: "Your Github token, it's already available to your Github action"
     required: true
   npm-token:
-    description: "Your Npm Publish token, if you do not wish to publish to Npm, skip this"
+    description: 'Your Npm Publish token, if you do not wish to publish to Npm, skip this'
     required: false
   build-command:
-    description: "The bash command to execute after the version bump and before opening the PR"
+    description: 'The bash command to execute after the version bump and before opening the PR'
     required: false
   optic-url:
-    description: "URL if you have a custom application that serves OTP"
+    description: 'URL if you have a custom application that serves OTP'
     required: false
-    default: "https://optic-zf3votdk5a-ew.a.run.app/api/generate/"
+    default: 'https://optic-zf3votdk5a-ew.a.run.app/api/generate/'
   optic-token:
-    description: "Your Optic token. You can add your Npm secret to the Optic app, generate a new token and pass it to this input. Required only if you want to pubish to Npm and have MFA enabled for your account"
+    description: 'Your Optic token. You can add your Npm secret to the Optic app, generate a new token and pass it to this input. Required only if you want to pubish to Npm and have MFA enabled for your account'
     required: false
   actor-name:
-    description: "The name you want to see in the new release commit."
+    description: 'The name you want to see in the new release commit.'
     required: false
-    default: "${{ github.actor }}"
+    default: '${{ github.actor }}'
   actor-email:
-    description: "The email you want to see in the new release commit"
+    description: 'The email you want to see in the new release commit'
     required: false
-    default: "actions@users.noreply.github.com"
+    default: 'actions@users.noreply.github.com'
   semver:
-    description: "The semver to use for this new release"
+    description: 'The semver to use for this new release'
     required: true
-    default: "patch"
+    default: 'patch'
   npm-tag:
-    description: "If you want to release to the Npm with a custom tag, pass it here"
+    description: 'If you want to release to the Npm with a custom tag, pass it here'
     required: false
-    default: "latest"
+    default: 'latest'
   api-url:
-    description: "Url of the API where the application is running"
+    description: 'Url of the API where the application is running'
     required: false
-    default: "https://optic-release-automation-ocrlhra4va-ue.a.run.app/"
+    default: 'https://optic-release-automation-ocrlhra4va-ue.a.run.app/'
   sync-semver-tags:
-    description: "If you want to keep the major and minor versions tag synced to the latest appropriate commit"
+    description: 'If you want to keep the major and minor versions tag synced to the latest appropriate commit'
     required: false
-    default: "false"
+    default: 'false'
   commit-message:
-    description: "The commit message template. The keyword \"{version}\" will be replaced with the new version"
+    description: 'The commit message template. The keyword "{version}" will be replaced with the new version'
     required: false
-    default: "Release {version}"
+    default: 'Release {version}'
 
 runs:
   using: 'composite'
@@ -86,7 +86,7 @@ runs:
           await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
 
     - name: Release the package
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       if: ${{ github.event_name == 'pull_request' }}
       with:
         github-token: ${{ inputs.github-token }}
