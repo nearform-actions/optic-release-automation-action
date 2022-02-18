@@ -4,14 +4,14 @@
 
 This action allows you to automate the release process of your npm modules, apps and actions. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
-### What does it do?
+## What does it do?
 
 - When run, it opens a new PR for the release.
 - When/if the PR gets merged, it publishes a new Npm release and a new GitHub release with change logs
 
 You can also use it for releases without Npm. In that case, when the PR merges, a new GitHub release will be published. Which you can use to trigger another workflow that deploys the app somewhere (GCP, AWS etc).
 
-### Usage
+## Usage
 
 - Install the [optic-release-automation](https://github.com/apps/optic-release-automation) GitHub app to your organization (or selected repositories)
 - Create a new workflow file at `.github/workflows/release.yml` (from example below) with one step that uses this action and supply the inputs.
@@ -21,7 +21,7 @@ Note that the `on` triggers are mandatory:
 - `workflow_dispatch`: to start the new release process
 - `pull_request` when `closed`: to complete the release process when the PR is merged
 
-### Example
+## Example
 
 This example shows how to configure this action to release a new Npm package version:
 
@@ -84,18 +84,19 @@ When you merge this PR:
 
 When you close the PR without merging it: nothing will happen.
 
-### Multiple user scenario
+## Multiple user scenario
 
 In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets.
 Following is an example of a way to use different tokens depending on the user who merged the pull request.
 
-#### Example:
-  - Use only default tokens:
-    *e.g.* `npm-token: ${{ secrets.NPM_TOKEN }}`
-  - Use only user-related tokens:
-    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}`
-  - Use both user-related and default token:
-    *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}`
+### Example
+
+- Use only default tokens:
+  *e.g.* `npm-token: ${{ secrets.NPM_TOKEN }}`
+- Use only user-related tokens:
+  *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] }}`
+- Use both user-related and default token:
+  *e.g.* `npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}`
 
 ```yml
 # ...
@@ -112,9 +113,9 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-*Note*: Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work. 
+> Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work. 
 
-### How to add a build step to your workflow
+## How to add a build step to your workflow
 
 When your project needs a build step, you can provide it to this action!
 The `build-command` option accepts a string that will be executed as a shell command (you can use `yarn` or your preferred build tool).
@@ -152,7 +153,7 @@ jobs:
             npm run build
 ```
 
-### Inputs
+## Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
