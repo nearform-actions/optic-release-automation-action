@@ -10811,7 +10811,7 @@ const core = __nccwpck_require__(2186)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { runSpawn } = __nccwpck_require__(2137)
-const { logError, logInfo } = __nccwpck_require__(653)
+const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -10824,7 +10824,7 @@ module.exports = async function ({ github, context, inputs }) {
     pr.user.login !== 'optic-release-automation[bot]' ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
   ) {
-    logInfo('skipping release.')
+    logWarning('skipping release.')
     return
   }
 
@@ -10885,7 +10885,7 @@ module.exports = async function ({ github, context, inputs }) {
       await run('npm', ['publish', '--tag', npmTag])
     }
   } else {
-    logInfo('missing npm-token')
+    logWarning('missing npm-token')
   }
 
   try {
@@ -10898,7 +10898,7 @@ module.exports = async function ({ github, context, inputs }) {
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
     } else {
-      logInfo('missing sync-semver')
+      logError('missing sync-semver')
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
