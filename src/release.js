@@ -7,9 +7,10 @@ const core = require('@actions/core')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { runSpawn } = require('./utils/runSpawn')
-const { logError } = require('./log')
+const { logError, logInfo } = require('./log')
 
 module.exports = async function ({ github, context, inputs }) {
+  logInfo('** Starting Release **')
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -19,6 +20,7 @@ module.exports = async function ({ github, context, inputs }) {
     pr.user.login !== 'optic-release-automation[bot]' ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
   ) {
+    logInfo('skipping release.')
     return
   }
 
@@ -39,6 +41,9 @@ module.exports = async function ({ github, context, inputs }) {
   const run = runSpawn()
   if (!pr.merged) {
     const branchName = `release/${version}`
+
+    logInfo(`deleting ${branchName}`)
+
     const promises = await Promise.allSettled([
       run('git', ['push', 'origin', '--delete', branchName]),
       github.rest.repos.deleteRelease({
@@ -75,6 +80,8 @@ module.exports = async function ({ github, context, inputs }) {
     } else {
       await run('npm', ['publish', '--tag', npmTag])
     }
+  } else {
+    logInfo('missing npm-token')
   }
 
   try {
@@ -86,6 +93,8 @@ module.exports = async function ({ github, context, inputs }) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
+    } else {
+      logInfo('missing sync-semver')
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
@@ -104,6 +113,8 @@ module.exports = async function ({ github, context, inputs }) {
       },
       inputs
     )
+
+    logInfo('** Released! **')
   } catch (err) {
     core.setFailed(`Unable to publish the release ${err.message}`)
   }

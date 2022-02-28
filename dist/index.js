@@ -10700,6 +10700,7 @@ const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
+const { logInfo } = __nccwpck_require__(653)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -10729,6 +10730,7 @@ const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
 }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
+  logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
   if (!packageVersion) {
@@ -10759,6 +10761,8 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     inputs
   )
 
+  logInfo(`New version ${newVersion}`)
+
   const prBody = getPRBody(_template(tpl), {
     newVersion,
     draftRelease,
@@ -10779,6 +10783,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+    logInfo('** Finished! **')
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
@@ -10806,9 +10811,10 @@ const core = __nccwpck_require__(2186)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { runSpawn } = __nccwpck_require__(2137)
-const { logError } = __nccwpck_require__(653)
+const { logError, logInfo } = __nccwpck_require__(653)
 
 module.exports = async function ({ github, context, inputs }) {
+  logInfo('** Starting Release **')
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -10818,6 +10824,7 @@ module.exports = async function ({ github, context, inputs }) {
     pr.user.login !== 'optic-release-automation[bot]' ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
   ) {
+    logInfo('skipping release.')
     return
   }
 
@@ -10838,6 +10845,9 @@ module.exports = async function ({ github, context, inputs }) {
   const run = runSpawn()
   if (!pr.merged) {
     const branchName = `release/${version}`
+
+    logInfo(`deleting ${branchName}`)
+
     const promises = await Promise.allSettled([
       run('git', ['push', 'origin', '--delete', branchName]),
       github.rest.repos.deleteRelease({
@@ -10874,6 +10884,8 @@ module.exports = async function ({ github, context, inputs }) {
     } else {
       await run('npm', ['publish', '--tag', npmTag])
     }
+  } else {
+    logInfo('missing npm-token')
   }
 
   try {
@@ -10885,6 +10897,8 @@ module.exports = async function ({ github, context, inputs }) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
+    } else {
+      logInfo('missing sync-semver')
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
@@ -10903,6 +10917,8 @@ module.exports = async function ({ github, context, inputs }) {
       },
       inputs
     )
+
+    logInfo('** Released! **')
   } catch (err) {
     core.setFailed(`Unable to publish the release ${err.message}`)
   }

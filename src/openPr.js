@@ -10,6 +10,7 @@ const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
+const { logInfo } = require('./log')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -39,6 +40,7 @@ const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
 }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
+  logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
   if (!packageVersion) {
@@ -69,6 +71,8 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     inputs
   )
 
+  logInfo(`New version ${newVersion}`)
+
   const prBody = getPRBody(_template(tpl), {
     newVersion,
     draftRelease,
@@ -89,6 +93,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+    logInfo('** Finished! **')
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
