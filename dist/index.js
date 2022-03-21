@@ -10897,8 +10897,6 @@ module.exports = async function ({ github, context, inputs }) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
-    } else {
-      logWarning('missing sync-semver')
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
