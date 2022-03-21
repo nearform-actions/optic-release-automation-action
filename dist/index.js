@@ -10848,7 +10848,7 @@ module.exports = async function ({ github, context, inputs }) {
 
     logInfo(`deleting ${branchName}`)
 
-    const promises = await Promise.allSettled([
+    const [, deleteRelease] = await Promise.allSettled([
       run('git', ['push', 'origin', '--delete', branchName]),
       github.rest.repos.deleteRelease({
         owner,
@@ -10858,9 +10858,9 @@ module.exports = async function ({ github, context, inputs }) {
     ])
 
     // Verify any errors deleting the Release. Ignore minor issues deleting the branch
-    if (promises[1].reason) {
+    if (deleteRelease.reason) {
       core.setFailed(
-        `Something went wrong while deleting the release. \n Errors: ${promises[1].reason.message}`
+        `Something went wrong while deleting the release. \n Errors: ${deleteRelease.reason.message}`
       )
     }
 
@@ -10897,8 +10897,6 @@ module.exports = async function ({ github, context, inputs }) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
-    } else {
-      logError('missing sync-semver')
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
