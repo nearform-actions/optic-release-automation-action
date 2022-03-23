@@ -58,7 +58,15 @@ function setup() {
   const coreStub = sinon.stub(core)
   deleteReleaseStub.resetHistory()
   deleteReleaseStub.resolves()
-  const runSpawnStub = sinon.stub().returns('otp123')
+
+  const runSpawnStub = sinon.stub()
+  runSpawnStub
+    .withArgs('curl', [
+      '-s',
+      'https://optic-test.run.app/api/generate/optic-token',
+    ])
+    .returns('otp123')
+
   const runSpawnProxy = sinon
     .stub(runSpawnAction, 'runSpawn')
     .returns(runSpawnStub)
@@ -159,11 +167,7 @@ tap.test(
       stubs.coreStub.setFailed,
       `Something went wrong while deleting the release. \n Errors: Something went wrong in the release`
     )
-    sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
-      'publish',
-      '--tag',
-      'latest',
-    ])
+    sinon.assert.notCalled(stubs.publishToNpmStub)
   }
 )
 
@@ -195,18 +199,7 @@ tap.test('Should not publish to npm if there is no npm token', async () => {
     },
   })
 
-  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
-    'publish',
-    '--tag',
-    'latest',
-  ])
-  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
-    'publish',
-    '--otp',
-    'otp123',
-    '--tag',
-    'latest',
-  ])
+  sinon.assert.notCalled(stubs.publishToNpmStub)
 })
 
 tap.test('Should publish to npm with optic', async () => {
@@ -298,11 +291,7 @@ tap.test("Should NOT use npm if the pr wasn't merged", async () => {
     'sync-semver-tags': 'true',
   }
   await release(data)
-  sinon.assert.neverCalledWith(stubs.runSpawnStub, 'npm', [
-    'publish',
-    '--tag',
-    'latest',
-  ])
+  sinon.assert.notCalled(stubs.publishToNpmStub)
 })
 
 tap.test("Should NOT tag version in git if the pr wasn't merged", async () => {
