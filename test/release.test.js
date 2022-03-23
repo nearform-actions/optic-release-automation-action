@@ -99,17 +99,10 @@ tap.afterEach(() => {
 })
 
 tap.test('Should delete the release if the pr is not merged', async () => {
-  const { release, stubs } = setup()
+  const { release } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.merged = false
   await release(data)
-
-  sinon.assert.calledOnceWithExactly(stubs.runSpawnStub, 'git', [
-    'push',
-    'origin',
-    '--delete',
-    `release/v5.1.3`,
-  ])
 
   sinon.assert.calledOnceWithExactly(deleteReleaseStub, {
     owner: DEFAULT_ACTION_DATA.context.repo.owner,
@@ -448,3 +441,51 @@ tap.test('Should tag the major, minor & patch correctly', async () => {
   sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.0')
   sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.0.0')
 })
+
+tap.test(
+  'Should delete the release branch ALWAYS when the PR is closed',
+  async () => {
+    const { release, stubs } = setup()
+
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'optic-token': 'optic-token',
+        'sync-semver-tags': 'true',
+      },
+    })
+
+    // We check that it's actually the first command line command to be executed
+    sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(0), 'git', [
+      'push',
+      'origin',
+      '--delete',
+      'release/v5.1.3',
+    ])
+  }
+)
+
+tap.test(
+  'Should NOT delete the release branch if the PR is not closed',
+  async () => {
+    const { release, stubs } = setup()
+
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs = {
+      'npm-token': 'a-token',
+      'optic-token': 'optic-token',
+      'sync-semver-tags': 'true',
+    }
+    data.context.payload.action = 'something_else' // Not closed
+
+    await release(data)
+
+    sinon.assert.neverCalledWith(stubs.runSpawnStub, 'git', [
+      'push',
+      'origin',
+      '--delete',
+      'release/v5.1.3',
+    ])
+  }
+)
