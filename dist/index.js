@@ -10843,24 +10843,29 @@ module.exports = async function ({ github, context, inputs }) {
   const { opticUrl, npmTag, version, id } = releaseMeta
 
   const run = runSpawn()
-  if (!pr.merged) {
-    const branchName = `release/${version}`
+  const branchName = `release/${version}`
 
+  try {
+    // We "always" delete the release branch, if anything fails, the whole
+    // workflow has to be restarted from scratch.
     logInfo(`deleting ${branchName}`)
+    await run('git', ['push', 'origin', '--delete', branchName])
+  } catch (err) {
+    // That's not a big problem, so we don't want to mark the action as failed.
+    logWarning('Unable to delete the release branch')
+  }
 
-    const [, deleteRelease] = await Promise.allSettled([
-      run('git', ['push', 'origin', '--delete', branchName]),
-      github.rest.repos.deleteRelease({
+  if (!pr.merged) {
+    try {
+      await github.rest.repos.deleteRelease({
         owner,
         repo,
         release_id: id,
-      }),
-    ])
-
-    // Verify any errors deleting the Release. Ignore minor issues deleting the branch
-    if (deleteRelease.reason) {
+      })
+    } catch (reason) {
+      // Verify any errors deleting the Release. Ignore minor issues deleting the branch
       core.setFailed(
-        `Something went wrong while deleting the release. \n Errors: ${deleteRelease.reason.message}`
+        `Something went wrong while deleting the release. \n Errors: ${reason.message}`
       )
     }
 
