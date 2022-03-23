@@ -10811,6 +10811,7 @@ const core = __nccwpck_require__(2186)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { runSpawn } = __nccwpck_require__(2137)
+const { revertCommit } = __nccwpck_require__(5765)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
 module.exports = async function ({ github, context, inputs }) {
@@ -10870,22 +10871,31 @@ module.exports = async function ({ github, context, inputs }) {
 
   const opticToken = inputs['optic-token']
 
-  if (inputs['npm-token']) {
-    await run('npm', [
-      'config',
-      'set',
-      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
-    ])
+  try {
+    if (inputs['npm-token']) {
+      await run('npm', [
+        'config',
+        'set',
+        `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
+      ])
 
-    await run('npm', ['pack', '--dry-run'])
-    if (opticToken) {
-      const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
-      await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      await run('npm', ['pack', '--dry-run'])
+      if (opticToken) {
+        const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
+        await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      } else {
+        await run('npm', ['publish', '--tag', npmTag])
+      }
     } else {
-      await run('npm', ['publish', '--tag', npmTag])
+      logWarning('missing npm-token')
     }
-  } else {
-    logWarning('missing npm-token')
+  } catch (err) {
+    if (pr.merged) {
+      await revertCommit(pr.base.ref, version)
+      logInfo('Release commit reverted.')
+    }
+    core.setFailed(`Unable to publish to npm: ${err.message}`)
+    return
   }
 
   try {
@@ -10918,6 +10928,10 @@ module.exports = async function ({ github, context, inputs }) {
 
     logInfo('** Released! **')
   } catch (err) {
+    if (pr.merged) {
+      await revertCommit(pr.base.ref, version)
+      logInfo('Release commit reverted.')
+    }
     core.setFailed(`Unable to publish the release ${err.message}`)
   }
 }
@@ -10973,6 +10987,26 @@ const transformCommitMessage = (template, version) => {
 }
 
 module.exports = transformCommitMessage
+
+
+/***/ }),
+
+/***/ 5765:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { runSpawn } = __nccwpck_require__(2137)
+
+async function revertCommit(baseRef, version) {
+  const run = runSpawn()
+
+  await run('git', ['revert', 'HEAD'])
+  await run('git', ['commit', '-m', `Revert commit ${version}`])
+  await run('git', ['push', 'origin', baseRef])
+}
+
+exports.revertCommit = revertCommit
 
 
 /***/ }),

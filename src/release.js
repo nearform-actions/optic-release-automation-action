@@ -7,6 +7,7 @@ const core = require('@actions/core')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { runSpawn } = require('./utils/runSpawn')
+const { revertCommit } = require('./utils/revertCommit')
 const { logError, logInfo, logWarning } = require('./log')
 
 module.exports = async function ({ github, context, inputs }) {
@@ -66,22 +67,31 @@ module.exports = async function ({ github, context, inputs }) {
 
   const opticToken = inputs['optic-token']
 
-  if (inputs['npm-token']) {
-    await run('npm', [
-      'config',
-      'set',
-      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
-    ])
+  try {
+    if (inputs['npm-token']) {
+      await run('npm', [
+        'config',
+        'set',
+        `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
+      ])
 
-    await run('npm', ['pack', '--dry-run'])
-    if (opticToken) {
-      const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
-      await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      await run('npm', ['pack', '--dry-run'])
+      if (opticToken) {
+        const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
+        await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      } else {
+        await run('npm', ['publish', '--tag', npmTag])
+      }
     } else {
-      await run('npm', ['publish', '--tag', npmTag])
+      logWarning('missing npm-token')
     }
-  } else {
-    logWarning('missing npm-token')
+  } catch (err) {
+    if (pr.merged) {
+      await revertCommit(pr.base.ref, version)
+      logInfo('Release commit reverted.')
+    }
+    core.setFailed(`Unable to publish to npm: ${err.message}`)
+    return
   }
 
   try {
@@ -114,6 +124,10 @@ module.exports = async function ({ github, context, inputs }) {
 
     logInfo('** Released! **')
   } catch (err) {
+    if (pr.merged) {
+      await revertCommit(pr.base.ref, version)
+      logInfo('Release commit reverted.')
+    }
     core.setFailed(`Unable to publish the release ${err.message}`)
   }
 }
