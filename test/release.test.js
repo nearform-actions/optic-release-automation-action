@@ -8,6 +8,7 @@ const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../src/utils/runSpawn')
 const tagVersionAction = require('../src/utils/tagVersion')
+const revertCommitAction = require('../src/utils/revertCommit')
 const callApiAction = require('../src/utils/callApi')
 
 const { PR_TITLE_PREFIX } = require('../src/const')
@@ -36,6 +37,9 @@ const DEFAULT_ACTION_DATA = {
       ref: 'ref',
       action: 'closed',
       pull_request: {
+        base: {
+          ref: 'base-ref',
+        },
         merged: true,
         user: { login: 'optic-release-automation[bot]' },
         title: PR_TITLE_PREFIX,
@@ -59,6 +63,7 @@ function setup() {
     .returns(runSpawnStub)
 
   const tagVersionStub = sinon.stub(tagVersionAction, 'tagVersionInGit')
+  const revertCommitStub = sinon.stub(revertCommitAction, 'revertCommit')
 
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
@@ -67,6 +72,7 @@ function setup() {
   const release = proxyquire('../src/release', {
     './utils/runSpawn': runSpawnProxy,
     './utils/tagVersion': tagVersionStub,
+    './utils/revertCommit': revertCommitStub,
     '@actions/core': coreStub,
   })
 
@@ -74,6 +80,7 @@ function setup() {
     release,
     stubs: {
       tagVersionStub,
+      revertCommitStub,
       runSpawnProxy,
       runSpawnStub,
       callApiStub,
@@ -396,8 +403,29 @@ tap.test('Should call core.setFailed if the release fails', async () => {
     },
   })
 
+  sinon.assert.calledWithExactly(stubs.revertCommitStub, 'base-ref')
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
 })
+
+tap.test(
+  'Should call core.setFailed and revert the commit when publish to npm fails',
+  async () => {
+    const { release, stubs } = setup()
+    stubs.runSpawnStub.throws()
+
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'optic-token': 'optic-token',
+        'sync-semver-tags': 'true',
+      },
+    })
+
+    sinon.assert.calledWithExactly(stubs.revertCommitStub, 'base-ref')
+    sinon.assert.calledOnce(stubs.coreStub.setFailed)
+  }
+)
 
 tap.test('Should tag the major, minor & patch correctly for 0', async () => {
   const { release, stubs } = setup()

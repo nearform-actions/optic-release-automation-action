@@ -87,7 +87,7 @@ module.exports = async function ({ github, context, inputs }) {
     }
   } catch (err) {
     if (pr.merged) {
-      await revertCommit(pr.base.ref, version)
+      await revertCommit(pr.base.ref)
       logInfo('Release commit reverted.')
     }
     core.setFailed(`Unable to publish to npm: ${err.message}`)
@@ -125,7 +125,7 @@ module.exports = async function ({ github, context, inputs }) {
     logInfo('** Released! **')
   } catch (err) {
     if (pr.merged) {
-      await revertCommit(pr.base.ref, version)
+      await revertCommit(pr.base.ref)
       logInfo('Release commit reverted.')
     }
     core.setFailed(`Unable to publish the release ${err.message}`)
