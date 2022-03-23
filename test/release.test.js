@@ -8,6 +8,7 @@ const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../src/utils/runSpawn')
 const tagVersionAction = require('../src/utils/tagVersion')
+const publishToNpmAction = require('../src/utils/publishToNpm')
 const revertCommitAction = require('../src/utils/revertCommit')
 const callApiAction = require('../src/utils/callApi')
 
@@ -64,6 +65,7 @@ function setup() {
 
   const tagVersionStub = sinon.stub(tagVersionAction, 'tagVersionInGit')
   const revertCommitStub = sinon.stub(revertCommitAction, 'revertCommit')
+  const publishToNpmStub = sinon.stub(publishToNpmAction, 'publishToNpm')
 
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
@@ -73,6 +75,7 @@ function setup() {
     './utils/runSpawn': runSpawnProxy,
     './utils/tagVersion': tagVersionStub,
     './utils/revertCommit': revertCommitStub,
+    './utils/publishToNpm': publishToNpmStub,
     '@actions/core': coreStub,
   })
 
@@ -81,6 +84,7 @@ function setup() {
     stubs: {
       tagVersionStub,
       revertCommitStub,
+      publishToNpmStub,
       runSpawnProxy,
       runSpawnStub,
       callApiStub,
@@ -179,15 +183,11 @@ tap.test('Should publish to npm without optic', async () => {
     },
   })
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
-    'pack',
-    '--dry-run',
-  ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
-    'publish',
-    '--tag',
-    'latest',
-  ])
+  sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+    npmToken: 'a-token',
+    opticUrl: 'https://optic-test.run.app/api/generate/',
+    npmTag: 'latest',
+  })
 })
 
 tap.test('Should not publish to npm if there is no npm token', async () => {
@@ -216,7 +216,7 @@ tap.test('Should not publish to npm if there is no npm token', async () => {
   ])
 })
 
-tap.test('Should publish to npm with optic', async t => {
+tap.test('Should publish to npm with optic', async () => {
   const { release, stubs } = setup()
   await release({
     ...DEFAULT_ACTION_DATA,
@@ -226,33 +226,11 @@ tap.test('Should publish to npm with optic', async t => {
     },
   })
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(0), 'npm', [
-    'config',
-    'set',
-    '//registry.npmjs.org/:_authToken=a-token',
-  ])
-  t.pass('npm config')
-
-  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(1), 'npm', [
-    'pack',
-    '--dry-run',
-  ])
-  t.pass('npm pack called')
-
-  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(2), 'curl', [
-    '-s',
-    'https://optic-test.run.app/api/generate/optic-token',
-  ])
-  t.pass('curl called')
-
-  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(3), 'npm', [
-    'publish',
-    '--otp',
-    'otp123',
-    '--tag',
-    'latest',
-  ])
-  t.pass('npm publish called')
+  sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+    npmToken: 'a-token',
+    opticUrl: 'https://optic-test.run.app/api/generate/',
+    npmTag: 'latest',
+  })
 })
 
 tap.test('Should tag versions', async () => {
@@ -411,7 +389,7 @@ tap.test(
   'Should call core.setFailed and revert the commit when publish to npm fails',
   async () => {
     const { release, stubs } = setup()
-    stubs.runSpawnStub.throws()
+    stubs.publishToNpmStub.throws()
 
     await release({
       ...DEFAULT_ACTION_DATA,
