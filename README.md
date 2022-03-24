@@ -84,6 +84,23 @@ When you merge this PR:
 
 When you close the PR without merging it: nothing will happen.
 
+## Using branches filter
+
+In case you want to reduce the amount of the relase workflow runs, you can configure a workflow to run only for pull requests that target specific branches.
+Example:
+
+```yml
+name: release
+
+on:
+  ...
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+      - 'release/**'
+```
+
 ## Multiple user scenario
 
 In case there are multiple users who have access to trigger the release automation action, you can define Npm and Optic tokens for different users in GitHub secrets.
