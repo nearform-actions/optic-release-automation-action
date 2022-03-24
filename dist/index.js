@@ -10811,6 +10811,8 @@ const core = __nccwpck_require__(2186)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { runSpawn } = __nccwpck_require__(2137)
+const { revertCommit } = __nccwpck_require__(5765)
+const { publishToNpm } = __nccwpck_require__(1433)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
 module.exports = async function ({ github, context, inputs }) {
@@ -10873,24 +10875,22 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
-  const opticToken = inputs['optic-token']
+  try {
+    const opticToken = inputs['optic-token']
+    const npmToken = inputs['npm-token']
 
-  if (inputs['npm-token']) {
-    await run('npm', [
-      'config',
-      'set',
-      `//registry.npmjs.org/:_authToken=${inputs['npm-token']}`,
-    ])
-
-    await run('npm', ['pack', '--dry-run'])
-    if (opticToken) {
-      const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
-      await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+    if (npmToken) {
+      await publishToNpm({ npmToken, opticToken, opticUrl, npmTag })
     } else {
-      await run('npm', ['publish', '--tag', npmTag])
+      logWarning('missing npm-token')
     }
-  } else {
-    logWarning('missing npm-token')
+  } catch (err) {
+    if (pr.merged) {
+      await revertCommit(pr.base.ref)
+      logInfo('Release commit reverted.')
+    }
+    core.setFailed(`Unable to publish to npm: ${err.message}`)
+    return
   }
 
   try {
@@ -10923,6 +10923,10 @@ module.exports = async function ({ github, context, inputs }) {
 
     logInfo('** Released! **')
   } catch (err) {
+    if (pr.merged) {
+      await revertCommit(pr.base.ref)
+      logInfo('Release commit reverted.')
+    }
     core.setFailed(`Unable to publish the release ${err.message}`)
   }
 }
@@ -10978,6 +10982,55 @@ const transformCommitMessage = (template, version) => {
 }
 
 module.exports = transformCommitMessage
+
+
+/***/ }),
+
+/***/ 1433:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { runSpawn } = __nccwpck_require__(2137)
+
+async function publishToNpm({ npmToken, opticToken, opticUrl, npmTag }) {
+  const run = runSpawn()
+
+  await run('npm', [
+    'config',
+    'set',
+    `//registry.npmjs.org/:_authToken=${npmToken}`,
+  ])
+
+  await run('npm', ['pack', '--dry-run'])
+  if (opticToken) {
+    const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
+    await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+  } else {
+    await run('npm', ['publish', '--tag', npmTag])
+  }
+}
+
+exports.publishToNpm = publishToNpm
+
+
+/***/ }),
+
+/***/ 5765:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { runSpawn } = __nccwpck_require__(2137)
+
+async function revertCommit(baseRef) {
+  const run = runSpawn()
+
+  await run('git', ['revert', 'HEAD'])
+  await run('git', ['push', 'origin', baseRef])
+}
+
+exports.revertCommit = revertCommit
 
 
 /***/ }),
