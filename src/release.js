@@ -16,6 +16,7 @@ module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
+  const shouldRevertCommit = inputs['revert-commit-after-failure']
 
   if (
     context.payload.action !== 'closed' ||
@@ -81,7 +82,7 @@ module.exports = async function ({ github, context, inputs }) {
       logWarning('missing npm-token')
     }
   } catch (err) {
-    if (pr.merged) {
+    if (pr.merged && shouldRevertCommit) {
       await revertCommit(pr.base.ref)
       logInfo('Release commit reverted.')
     }
@@ -119,7 +120,7 @@ module.exports = async function ({ github, context, inputs }) {
 
     logInfo('** Released! **')
   } catch (err) {
-    if (pr.merged) {
+    if (pr.merged && shouldRevertCommit) {
       await revertCommit(pr.base.ref)
       logInfo('Release commit reverted.')
     }

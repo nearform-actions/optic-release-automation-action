@@ -47,6 +47,11 @@ inputs:
     description: 'The commit message template. The keyword "{version}" will be replaced with the new version'
     required: false
     default: 'Release {version}'
+  revert-commit-after-failure:
+    description: 'If the release fails while publishing to NPM and to GitHub, setting this flag to "true", will revert the release commit. When using this flag, make sure the action is able to push directly to the main branch'
+    required: false
+    type: boolean
+    default: 'false'
 
 runs:
   using: 'composite'
