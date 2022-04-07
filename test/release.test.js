@@ -383,7 +383,7 @@ tap.test(
       },
     })
 
-    sinon.assert.neverCalledWith(stubs.revertCommitStub, 'base-ref')
+    sinon.assert.notCalled(stubs.revertCommitStub)
     sinon.assert.calledOnce(stubs.coreStub.setFailed)
   }
 )
