@@ -360,12 +360,33 @@ tap.test('Should call core.setFailed if the release fails', async () => {
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
+      'revert-commit-after-failure': 'true',
     },
   })
 
   sinon.assert.calledWithExactly(stubs.revertCommitStub, 'base-ref')
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
 })
+
+tap.test(
+  'Should call core.setFailed but not revert the commit when publish to npm fails',
+  async () => {
+    const { release, stubs } = setup()
+    stubs.publishToNpmStub.throws()
+
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'optic-token': 'optic-token',
+        'sync-semver-tags': 'true',
+      },
+    })
+
+    sinon.assert.neverCalledWith(stubs.revertCommitStub, 'base-ref')
+    sinon.assert.calledOnce(stubs.coreStub.setFailed)
+  }
+)
 
 tap.test(
   'Should call core.setFailed and revert the commit when publish to npm fails',
@@ -379,6 +400,7 @@ tap.test(
         'npm-token': 'a-token',
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
+        'revert-commit-after-failure': 'true',
       },
     })
 
