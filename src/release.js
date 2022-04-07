@@ -71,7 +71,7 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
-  const shouldRevertCommit = core.getBooleanInput('revert-commit-after-failure')
+  const shouldRevertCommit = /true/i.test(inputs['revert-commit-after-failure'])
 
   try {
     const opticToken = inputs['optic-token']
