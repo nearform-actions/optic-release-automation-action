@@ -21,7 +21,7 @@
     "@actions/github": "^5.0.1",
     "lodash.template": "^4.5.0",
     "node-fetch": "^2.6.6",
-    "semver": "^7.3.5",
+    "semver": "^7.3.6",
     "string-format": "^2.0.0"
   },
   "devDependencies": {
