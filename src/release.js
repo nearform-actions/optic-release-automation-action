@@ -16,7 +16,6 @@ module.exports = async function ({ github, context, inputs }) {
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
-  const shouldRevertCommit = inputs['revert-commit-after-failure']
 
   if (
     context.payload.action !== 'closed' ||
@@ -71,6 +70,8 @@ module.exports = async function ({ github, context, inputs }) {
     // Return early after an attempt at deleting the branch and release
     return
   }
+
+  const shouldRevertCommit = /true/i.test(inputs['revert-commit-after-failure'])
 
   try {
     const opticToken = inputs['optic-token']
