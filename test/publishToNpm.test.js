@@ -125,7 +125,7 @@ tap.test('Should stop action if package info retrieval fails', async t => {
   const { publishToNpmProxy, runSpawnStub } = setup()
 
   runSpawnStub
-    .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+    .withArgs('npm', ['view', '--json'])
     .throws(new Error('Network Error'))
 
   try {
@@ -155,3 +155,69 @@ tap.test('Should stop action if package info retrieval fails', async t => {
   ])
   t.pass('package is not published without otp code')
 })
+
+tap.test(
+  'Should stop action if package version info retrieval fails',
+  async t => {
+    t.plan(3)
+    const { publishToNpmProxy, runSpawnStub } = setup()
+
+    runSpawnStub
+      .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+      .throws(new Error('Network Error'))
+
+    try {
+      await publishToNpmProxy.publishToNpm({
+        npmToken: 'a-token',
+        opticUrl: 'https://optic-test.run.app/api/generate/',
+        npmTag: 'latest',
+        version: 'v5.1.3',
+      })
+    } catch (e) {
+      t.equal(e.message, 'Network Error')
+    }
+
+    sinon.assert.neverCalledWith(runSpawnStub, 'npm', [
+      'publish',
+      '--otp',
+      'otp123',
+      '--tag',
+      'latest',
+    ])
+    t.pass('package is not published with otp code')
+
+    sinon.assert.neverCalledWith(runSpawnStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+    t.pass('package is not published without otp code')
+  }
+)
+
+tap.test(
+  'Should continue action if package info returns not found',
+  async () => {
+    const { publishToNpmProxy, runSpawnStub } = setup()
+
+    runSpawnStub
+      .withArgs('npm', ['view', '--json'])
+      .throws(new Error('code E404'))
+
+    runSpawnStub.withArgs('npm', ['view', 'fakeTestPkg@v5.1.3']).returns('')
+
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
+
+    sinon.assert.calledWithExactly(runSpawnStub, 'npm', ['pack', '--dry-run'])
+    sinon.assert.calledWithExactly(runSpawnStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  }
+)
