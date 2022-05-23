@@ -521,8 +521,6 @@ tap.test('Should call notifyIssues function correctly', async () => {
     },
   })
 
-  console.log(stubs.notifyIssuesStub.getCall(0).args)
-
   sinon.assert.calledWith(
     stubs.notifyIssuesStub,
     DEFAULT_ACTION_DATA.github,
