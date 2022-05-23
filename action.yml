@@ -73,6 +73,13 @@ runs:
         echo "::set-output name=PACKAGE_VERSION::$(echo $(node -p "require('./package.json').version"))"
       shell: 'bash'
 
+    - name: Get package name
+      id: get-package-name
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        echo "::set-output name=PACKAGE_NAME::$(echo $(node -p "require('./package.json').name"))"
+      shell: 'bash'
+
     - name: Build the package
       if: ${{ inputs.build-command }}
       run: |
@@ -97,4 +104,4 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
+          await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}", packageName: "${{ steps.get-package-version.outputs.PACKAGE_NAME }}" })

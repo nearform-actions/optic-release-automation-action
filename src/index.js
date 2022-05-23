@@ -10,7 +10,7 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
   }
 
   if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs })
+    return release({ github, context, inputs, packageVersion })
   }
 
   logError('Unsupported event')
