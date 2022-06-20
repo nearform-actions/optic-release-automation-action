@@ -1,32 +1,45 @@
 'use strict'
 
+const util = require('util')
 const md = require('markdown-it')()
 const issueParser = require('issue-parser')
 const parse = issueParser('github')
 
-async function getPossibleLinkedIssuesNumbers(
-  prNumber,
-  githubClient,
-  owner,
-  repo
-) {
-  const pr = await githubClient.rest.pulls.get({
-    owner,
-    repo,
-    pull_number: prNumber,
-  })
+const { logError, logWarning } = require('../log')
 
-  let issueNumbers = []
-  if (pr.data.body !== null) {
-    const parsedPrBody = parse(pr.data.body)
-    if (parsedPrBody.actions.close.length > 0) {
-      parsedPrBody.actions.close.forEach(parsedAction => {
-        issueNumbers.push(parsedAction.issue)
-      })
+function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
+  return octokit
+    .graphql(
+      `
+    query getLinkedIssues($repoOwner: String!, $repoName: String!, $prNumber: Int!) {
+      repository(owner: $repoOwner, name: $repoName) {
+        pullRequest(number: $prNumber) {
+          id
+          closingIssuesReferences(first: 100) {
+            nodes {
+              id
+              number
+            }
+          }
+        }
+      }
     }
-  }
+    `,
+      {
+        repoOwner,
+        repoName,
+        prNumber,
+      }
+    )
+    .then(queryResult => {
+      const linkedIssues =
+        queryResult?.repository?.pullRequest?.closingIssuesReferences?.nodes
+      if (!Boolean(linkedIssues)) {
+        return []
+      }
 
-  return issueNumbers
+      return linkedIssues.map(issue => issue.number)
+    })
 }
 
 async function notifyIssues(
@@ -42,19 +55,30 @@ async function notifyIssues(
 
   const prTokens = result.filter(token => token.type === 'inline').slice(1)
 
-  const prNumbers = prTokens.map(token =>
+  const potentialPrNumbers = prTokens.map(token =>
     token.content
       .match(/\bhttps?:\/\/\S+/gi)[0]
       .split('/')
       .pop()
   )
 
-  const unresolvedPromises = prNumbers.map(prNumber =>
-    getPossibleLinkedIssuesNumbers(prNumber, githubClient, owner, repo)
+  // Filter out the full change log numbers such as v1.0.1...v1.0.2
+  const prNumbers = potentialPrNumbers.filter(prNumber =>
+    prNumber.match(/^\d+$/)
   )
-  const issueNumbersToNotify = (await Promise.all(unresolvedPromises))
-    .filter(issues => issues.length > 0)
-    .flat()
+
+  const issueNumbersToNotify = (
+    await Promise.all(
+      prNumbers.map(async prNumber =>
+        getLinkedIssueNumbers({
+          octokit: githubClient,
+          prNumber: parseInt(prNumber, 10),
+          repoOwner: owner,
+          repoName: repo,
+        })
+      )
+    )
+  ).flat()
 
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${npmVersion}`
 

@@ -3,6 +3,7 @@
 const { PR_TITLE_PREFIX } = require('./const')
 const semver = require('semver')
 const core = require('@actions/core')
+const util = require('util')
 
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
@@ -20,6 +21,7 @@ module.exports = async function ({
   packageName,
 }) {
   logInfo('** Starting Release **')
+
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -133,12 +135,13 @@ module.exports = async function ({
         github,
         release.body,
         packageVersion, // npm version format ie no 'v' in front of version
+        owner,
         repo,
         release.html_url,
         packageName
       )
     } catch (err) {
-      logWarning('Failed to notify any issues')
+      logWarning('Failed to notify any/all issues')
       logError(err)
     }
 
