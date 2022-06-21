@@ -512,23 +512,43 @@ tap.test(
   }
 )
 
-tap.test('Should call notifyIssues function correctly', async () => {
-  const { release, stubs } = setup()
-  await release({
-    ...DEFAULT_ACTION_DATA,
-    inputs: {
-      'npm-token': 'a-token',
-    },
-  })
+tap.test(
+  'Should call notifyIssues function correctly when feature is enabled',
+  async () => {
+    const { release, stubs } = setup()
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'notify-on-the-issue': 'true',
+      },
+    })
 
-  sinon.assert.calledWith(
-    stubs.notifyIssuesStub,
-    DEFAULT_ACTION_DATA.github,
-    'test_body',
-    '1.1.1',
-    'test',
-    'repo',
-    'test_url',
-    'testPackageName'
-  )
-})
+    sinon.assert.calledWith(
+      stubs.notifyIssuesStub,
+      DEFAULT_ACTION_DATA.github,
+      'test_body',
+      '1.1.1',
+      'test',
+      'repo',
+      'test_url',
+      'testPackageName'
+    )
+  }
+)
+
+tap.test(
+  'Should not call notifyIssues function when feature is disabled',
+  async () => {
+    const { release, stubs } = setup()
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'notify-on-the-issue': 'false',
+      },
+    })
+
+    sinon.assert.notCalled(stubs.notifyIssuesStub)
+  }
+)

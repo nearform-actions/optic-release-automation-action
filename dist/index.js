@@ -19776,21 +19776,25 @@ module.exports = async function ({
       inputs
     )
 
-    try {
-      // post a comment about release on npm to any linked issues in the
-      // any of the PRs in this release
-      await notifyIssues(
-        github,
-        release.body,
-        packageVersion, // npm version format ie no 'v' in front of version
-        owner,
-        repo,
-        release.html_url,
-        packageName
-      )
-    } catch (err) {
-      logWarning('Failed to notify any/all issues')
-      logError(err)
+    const shouldNotifyOnTheIssue = /true/i.test(inputs['notify-on-the-issue'])
+
+    if (shouldNotifyOnTheIssue) {
+      try {
+        // post a comment about release on npm to any linked issues in the
+        // any of the PRs in this release
+        await notifyIssues(
+          github,
+          release.body,
+          packageVersion, // npm version format ie no 'v' in front of version
+          owner,
+          repo,
+          release.html_url,
+          packageName
+        )
+      } catch (err) {
+        logWarning('Failed to notify any/all issues')
+        logError(err)
+      }
     }
 
     logInfo('** Released! **')
