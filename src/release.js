@@ -3,7 +3,6 @@
 const { PR_TITLE_PREFIX } = require('./const')
 const semver = require('semver')
 const core = require('@actions/core')
-const util = require('util')
 
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')

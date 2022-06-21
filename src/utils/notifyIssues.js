@@ -1,11 +1,6 @@
 'use strict'
 
-const util = require('util')
 const md = require('markdown-it')()
-const issueParser = require('issue-parser')
-const parse = issueParser('github')
-
-const { logError, logWarning } = require('../log')
 
 function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
   return octokit
@@ -34,7 +29,7 @@ function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
     .then(queryResult => {
       const linkedIssues =
         queryResult?.repository?.pullRequest?.closingIssuesReferences?.nodes
-      if (!Boolean(linkedIssues)) {
+      if (!linkedIssues) {
         return []
       }
 
