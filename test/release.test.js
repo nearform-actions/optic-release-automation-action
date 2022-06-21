@@ -526,6 +526,7 @@ tap.test('Should call notifyIssues function correctly', async () => {
     DEFAULT_ACTION_DATA.github,
     'test_body',
     '1.1.1',
+    'test',
     'repo',
     'test_url',
     'testPackageName'
