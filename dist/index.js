@@ -19871,7 +19871,7 @@ module.exports = transformCommitMessage
 "use strict";
 
 
-const md = __nccwpck_require__(8561)()
+const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 
 function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
   const data = octokit.graphql(
@@ -19916,21 +19916,7 @@ async function notifyIssues(
   releaseUrl,
   packageName
 ) {
-  const result = md.parse(releaseNotes.split('##')[1])
-
-  const prTokens = result.filter(token => token.type === 'inline').slice(1)
-
-  const potentialPrNumbers = prTokens.map(token =>
-    token.content
-      .match(/\bhttps?:\/\/\S+/gi)[0]
-      .split('/')
-      .pop()
-  )
-
-  // Filter out the full change log numbers such as v1.0.1...v1.0.2
-  const prNumbers = potentialPrNumbers.filter(prNumber =>
-    prNumber.match(/^\d+$/)
-  )
+  const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)
 
   const issueNumbersToNotify = (
     await Promise.all(
@@ -20033,6 +20019,45 @@ async function publishToNpm({
 }
 
 exports.publishToNpm = publishToNpm
+
+
+/***/ }),
+
+/***/ 4098:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const md = __nccwpck_require__(8561)()
+
+function getPrNumbersFromReleaseNotes(releaseNotes) {
+  const parsedReleaseNotes = md.parse(releaseNotes)
+  const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
+
+  return prTokens
+    .map(token => {
+      const urlMatch = token.content.match(/\bhttps?:\/\/\S+/gi)
+
+      if (!urlMatch) {
+        return
+      }
+
+      const lastUrlPart = urlMatch[0].split('/').pop()
+
+      // Filter out the full change log numbers such as v1.0.1...v1.0.2
+      const prNumberMatch = lastUrlPart.match(/^\d+$/)
+
+      if (!prNumberMatch) {
+        return
+      }
+
+      return prNumberMatch[0]
+    })
+    .filter(prNumber => Boolean(prNumber))
+}
+
+exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes
 
 
 /***/ }),

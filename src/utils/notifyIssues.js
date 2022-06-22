@@ -1,6 +1,6 @@
 'use strict'
 
-const md = require('markdown-it')()
+const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
 function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
   const data = octokit.graphql(
@@ -45,21 +45,7 @@ async function notifyIssues(
   releaseUrl,
   packageName
 ) {
-  const result = md.parse(releaseNotes.split('##')[1])
-
-  const prTokens = result.filter(token => token.type === 'inline').slice(1)
-
-  const potentialPrNumbers = prTokens.map(token =>
-    token.content
-      .match(/\bhttps?:\/\/\S+/gi)[0]
-      .split('/')
-      .pop()
-  )
-
-  // Filter out the full change log numbers such as v1.0.1...v1.0.2
-  const prNumbers = potentialPrNumbers.filter(prNumber =>
-    prNumber.match(/^\d+$/)
-  )
+  const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)
 
   const issueNumbersToNotify = (
     await Promise.all(
