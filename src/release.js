@@ -1,7 +1,6 @@
 'use strict'
 
 const core = require('@actions/core')
-const fs = require('fs')
 const semver = require('semver')
 
 const { PR_TITLE_PREFIX } = require('./const')
@@ -27,20 +26,6 @@ module.exports = async function ({ github, context, inputs }) {
   ) {
     logWarning('skipping release.')
     return
-  }
-
-  let packageName
-  let packageVersion
-
-  try {
-    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-    const packageJson = JSON.parse(packageJsonFile)
-
-    packageName = packageJson.name
-    packageVersion = packageJson.version
-  } catch (err) {
-    logWarning('Failed to get package info')
-    logError(err)
   }
 
   let releaseMeta
@@ -142,15 +127,7 @@ module.exports = async function ({ github, context, inputs }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(
-          github,
-          release.body,
-          packageVersion, // npm version format ie no 'v' in front of version
-          owner,
-          repo,
-          release.html_url,
-          packageName
-        )
+        await notifyIssues(github, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)

@@ -19770,7 +19770,6 @@ module.exports = async function ({ github, context, inputs }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        // await notifyIssues(github, release.body, owner, repo, release.html_url)
         await notifyIssues(github, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')

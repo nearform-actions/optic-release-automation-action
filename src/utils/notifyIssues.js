@@ -1,5 +1,9 @@
 'use strict'
 
+const fs = require('fs')
+const pMap = require('p-map')
+
+const { logError, logWarning } = require('../log')
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
 function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
@@ -36,15 +40,23 @@ function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(
-  githubClient,
-  releaseNotes,
-  npmVersion,
-  owner,
-  repo,
-  releaseUrl,
-  packageName
-) {
+async function notifyIssues(githubClient, owner, repo, release) {
+  let packageName
+  let packageVersion
+
+  try {
+    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+    const packageJson = JSON.parse(packageJsonFile)
+
+    packageName = packageJson.name
+    packageVersion = packageJson.version
+  } catch (err) {
+    logWarning('Failed to get package info')
+    logError(err)
+  }
+
+  const { body: releaseNotes, html_url: releaseUrl } = release
+
   const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)
 
   const issueNumbersToNotify = (
@@ -60,20 +72,22 @@ async function notifyIssues(
     )
   ).flat()
 
-  const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${npmVersion}`
+  const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
-  const body = `🎉 This issue has been resolved in version ${npmVersion} 🎉 \n\n 
+  const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n 
   The release is available on: \n * [npm package (@latest dist-tag)](${npmUrl}) \n 
   * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic)** bot 📦🚀`
 
-  issueNumbersToNotify.forEach(async issueNumber => {
+  const mapper = async issueNumber => {
     await githubClient.rest.issues.createComment({
       owner,
       repo,
       issue_number: issueNumber,
       body,
     })
-  })
+  }
+
+  await pMap(issueNumbersToNotify, mapper, { concurrency: 20 })
 }
 
 exports.notifyIssues = notifyIssues
