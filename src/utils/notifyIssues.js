@@ -3,9 +3,8 @@
 const md = require('markdown-it')()
 
 function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
-  return octokit
-    .graphql(
-      `
+  const data = octokit.graphql(
+    `
     query getLinkedIssues($repoOwner: String!, $repoName: String!, $prNumber: Int!) {
       repository(owner: $repoOwner, name: $repoName) {
         pullRequest(number: $prNumber) {
@@ -20,21 +19,21 @@ function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
       }
     }
     `,
-      {
-        repoOwner,
-        repoName,
-        prNumber,
-      }
-    )
-    .then(queryResult => {
-      const linkedIssues =
-        queryResult?.repository?.pullRequest?.closingIssuesReferences?.nodes
-      if (!linkedIssues) {
-        return []
-      }
+    {
+      repoOwner,
+      repoName,
+      prNumber,
+    }
+  )
 
-      return linkedIssues.map(issue => issue.number)
-    })
+  const linkedIssues =
+    data?.repository?.pullRequest?.closingIssuesReferences?.nodes
+
+  if (!linkedIssues) {
+    return []
+  }
+
+  return linkedIssues.map(issue => issue.number)
 }
 
 async function notifyIssues(
@@ -64,7 +63,7 @@ async function notifyIssues(
 
   const issueNumbersToNotify = (
     await Promise.all(
-      prNumbers.map(async prNumber =>
+      prNumbers.map(prNumber =>
         getLinkedIssueNumbers({
           octokit: githubClient,
           prNumber: parseInt(prNumber, 10),
