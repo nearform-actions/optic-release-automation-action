@@ -19487,19 +19487,13 @@ const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
 const { logError } = __nccwpck_require__(653)
 
-module.exports = async function ({
-  github,
-  context,
-  inputs,
-  packageVersion,
-  packageName,
-}) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
     return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs, packageVersion, packageName })
+    return release({ github, context, inputs })
   }
 
   logError('Unsupported event')
@@ -19649,10 +19643,11 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 "use strict";
 
 
-const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
-const semver = __nccwpck_require__(1383)
 const core = __nccwpck_require__(2186)
+const fs = __nccwpck_require__(7147)
+const semver = __nccwpck_require__(1383)
 
+const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { runSpawn } = __nccwpck_require__(2137)
@@ -19661,13 +19656,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
-module.exports = async function ({
-  github,
-  context,
-  inputs,
-  packageVersion,
-  packageName,
-}) {
+module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -19681,6 +19670,20 @@ module.exports = async function ({
   ) {
     logWarning('skipping release.')
     return
+  }
+
+  let packageName
+  let packageVersion
+
+  try {
+    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+    const packageJson = JSON.parse(packageJsonFile)
+
+    packageName = packageJson.name
+    packageVersion = packageJson.version
+  } catch (err) {
+    logWarning('Failed to get package info')
+    logError(err)
   }
 
   let releaseMeta

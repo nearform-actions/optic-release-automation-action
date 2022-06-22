@@ -1,9 +1,10 @@
 'use strict'
 
-const { PR_TITLE_PREFIX } = require('./const')
-const semver = require('semver')
 const core = require('@actions/core')
+const fs = require('fs')
+const semver = require('semver')
 
+const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { runSpawn } = require('./utils/runSpawn')
@@ -12,13 +13,7 @@ const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 
-module.exports = async function ({
-  github,
-  context,
-  inputs,
-  packageVersion,
-  packageName,
-}) {
+module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -32,6 +27,20 @@ module.exports = async function ({
   ) {
     logWarning('skipping release.')
     return
+  }
+
+  let packageName
+  let packageVersion
+
+  try {
+    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+    const packageJson = JSON.parse(packageJsonFile)
+
+    packageName = packageJson.name
+    packageVersion = packageJson.version
+  } catch (err) {
+    logWarning('Failed to get package info')
+    logError(err)
   }
 
   let releaseMeta
