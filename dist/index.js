@@ -20085,14 +20085,14 @@ module.exports = transformCommitMessage
 "use strict";
 
 
-// const fs = require('fs')
+const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
 
 const { logError, logWarning } = __nccwpck_require__(653)
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 
-async function getLinkedIssueNumbers(octokit, prNumber, repoOwner, repoName) {
-  const data = await octokit.graphql(
+async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
+  const data = await github.graphql(
     `
     query getLinkedIssues($repoOwner: String!, $repoName: String!, $prNumber: Int!) {
       repository(owner: $repoOwner, name: $repoName) {
@@ -20126,22 +20126,12 @@ async function getLinkedIssueNumbers(octokit, prNumber, repoOwner, repoName) {
 }
 
 async function notifyIssues(githubClient, owner, repo, release) {
-  console.log({
-    m: 'notifyIssues - inputs',
-    githubClient,
-    owner,
-    repo,
-    release,
-  })
-
   let packageName
   let packageVersion
 
   try {
     const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
     const packageJson = JSON.parse(packageJsonFile)
-
-    console.log({ m: 'notifyIssues - file content', packageJson })
 
     packageName = packageJson.name
     packageVersion = packageJson.version
@@ -20156,12 +20146,16 @@ async function notifyIssues(githubClient, owner, repo, release) {
 
   const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)
 
-  const getLinkedIssuesCallback = prNumber =>
-    getLinkedIssueNumbers(githubClient, parseInt(prNumber, 10), owner, repo)
-
   const issueNumbersToNotify = (
-    await pMap(prNumbers, getLinkedIssuesCallback)
+    await pMap(prNumbers, prNumber =>
+      getLinkedIssueNumbers(githubClient, parseInt(prNumber, 10), owner, repo)
+    )
   ).flat()
+
+  console.log({
+    m: 'notifyIssues - issueNumbersToNotify',
+    issueNumbersToNotify,
+  })
 
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
@@ -20169,16 +20163,18 @@ async function notifyIssues(githubClient, owner, repo, release) {
   The release is available on: \n * [npm package](${npmUrl}) \n
   * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic)** bot 📦🚀`
 
-  const createCommentCallback = issueNumber => {
-    githubClient.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: issueNumber,
-      body,
-    })
-  }
-
-  await pMap(issueNumbersToNotify, createCommentCallback, { concurrency: 20 })
+  await pMap(
+    issueNumbersToNotify,
+    issueNumber => {
+      githubClient.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: issueNumber,
+        body,
+      })
+    },
+    { concurrency: 10 }
+  )
 }
 
 exports.notifyIssues = notifyIssues

@@ -1,7 +1,4 @@
-ts: false
-jsx: false
-flow: false
 statements: 80
 lines: 80
-functions: 80
+functions: 75
 branches: 80
