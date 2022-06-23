@@ -1,9 +1,8 @@
 'use strict'
 
-const fs = require('fs')
 const pMap = require('p-map')
+const path = require('path')
 
-const { logError, logWarning } = require('../log')
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
 async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
@@ -40,22 +39,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(githubClient, owner, repo, release) {
-  let packageName
-  let packageVersion
-
-  try {
-    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-    const packageJson = JSON.parse(packageJsonFile)
-
-    packageName = packageJson.name
-    packageVersion = packageJson.version
-  } catch (err) {
-    logWarning('Failed to get package info')
-    logError(err)
-  }
-
-  console.log({ m: 'notifyIssues - file read', packageName, packageVersion })
+async function notifyIssues(githubClient, workspace, owner, repo, release) {
+  const { name: packageName, version: packageVersion } = require(path.join(
+    workspace,
+    'package.json'
+  ))
 
   const { body: releaseNotes, html_url: releaseUrl } = release
 

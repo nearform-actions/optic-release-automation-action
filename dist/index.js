@@ -19722,13 +19722,19 @@ const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
 const { logError } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs, packageVersion }) {
+module.exports = async function ({
+  github,
+  context,
+  inputs,
+  packageVersion,
+  workspace,
+}) {
   if (context.eventName === 'workflow_dispatch') {
     return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs })
+    return release({ github, context, inputs, workspace })
   }
 
   logError('Unsupported event')
@@ -19890,7 +19896,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs }) {
+module.exports = async function ({ github, context, inputs, workspace }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -20007,7 +20013,7 @@ module.exports = async function ({ github, context, inputs }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(github, owner, repo, release)
+        await notifyIssues(github, workspace, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)
@@ -20085,10 +20091,9 @@ module.exports = transformCommitMessage
 "use strict";
 
 
-const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
+const path = __nccwpck_require__(1017)
 
-const { logError, logWarning } = __nccwpck_require__(653)
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 
 async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
@@ -20125,22 +20130,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(githubClient, owner, repo, release) {
-  let packageName
-  let packageVersion
-
-  try {
-    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-    const packageJson = JSON.parse(packageJsonFile)
-
-    packageName = packageJson.name
-    packageVersion = packageJson.version
-  } catch (err) {
-    logWarning('Failed to get package info')
-    logError(err)
-  }
-
-  console.log({ m: 'notifyIssues - file read', packageName, packageVersion })
+async function notifyIssues(githubClient, workspace, owner, repo, release) {
+  const { name: packageName, version: packageVersion } = require(path.join(
+    workspace,
+    'package.json'
+  ))
 
   const { body: releaseNotes, html_url: releaseUrl } = release
 

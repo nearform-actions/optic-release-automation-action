@@ -102,4 +102,4 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
+          await script({ github, context, inputs: ${{ toJSON(inputs) }}, workspace: '${{ github.workspace }}' })
