@@ -20085,8 +20085,8 @@ module.exports = transformCommitMessage
 "use strict";
 
 
+const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
-const path = __nccwpck_require__(1017)
 
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 

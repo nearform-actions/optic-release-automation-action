@@ -1,7 +1,7 @@
 'use strict'
 
+const fs = require('fs')
 const pMap = require('p-map')
-const path = require('path')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
