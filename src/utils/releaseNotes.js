@@ -6,7 +6,7 @@ function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes)
   const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
 
-  return prTokens
+  const allPrNumbers = prTokens
     .map(token => {
       const urlMatch = token.content.match(/\bhttps?:\/\/\S+/gi)
 
@@ -26,6 +26,8 @@ function getPrNumbersFromReleaseNotes(releaseNotes) {
       return prNumberMatch[0]
     })
     .filter(prNumber => Boolean(prNumber))
+
+  return [...new Set(allPrNumbers)]
 }
 
 exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes
