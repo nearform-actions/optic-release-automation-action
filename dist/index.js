@@ -20152,11 +20152,6 @@ async function notifyIssues(githubClient, owner, repo, release) {
     )
   ).flat()
 
-  console.log({
-    m: 'notifyIssues - issueNumbersToNotify',
-    issueNumbersToNotify,
-  })
-
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
   const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
