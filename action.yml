@@ -53,7 +53,7 @@ inputs:
     type: boolean
     default: 'false'
   notify-on-the-issue:
-    description: 'If the flag is set to "true", a comment will be posted on each issue that is linked to the pull requests for this release. The default setting is "true".'
+    description: 'If the flag is set to "true", a comment will be posted on each issue that is linked to the pull requests included in each release. The default setting is "true".'
     required: false
     type: boolean
     default: 'true'
