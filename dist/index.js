@@ -20138,9 +20138,8 @@ async function notifyIssues(githubClient, owner, repo, release) {
   let packageVersion
 
   try {
-    // const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-    // const packageJson = JSON.parse(packageJsonFile)
-    const packageJson = __nccwpck_require__(7358)
+    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+    const packageJson = JSON.parse(packageJsonFile)
 
     console.log({ m: 'notifyIssues - file content', packageJson })
 
@@ -20378,14 +20377,6 @@ async function tagVersionInGit(version) {
 }
 
 exports.tagVersionInGit = tagVersionInGit
-
-
-/***/ }),
-
-/***/ 7358:
-/***/ ((module) => {
-
-module.exports = eval("require")("./package.json");
 
 
 /***/ }),
