@@ -6,8 +6,13 @@ const pMap = require('p-map')
 const { logError, logWarning } = require('../log')
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
-function getLinkedIssueNumbers({ octokit, prNumber, repoOwner, repoName }) {
-  const data = octokit.graphql(
+async function getLinkedIssueNumbers({
+  octokit,
+  prNumber,
+  repoOwner,
+  repoName,
+}) {
+  const data = await octokit.graphql(
     `
     query getLinkedIssues($repoOwner: String!, $repoName: String!, $prNumber: Int!) {
       repository(owner: $repoOwner, name: $repoName) {
