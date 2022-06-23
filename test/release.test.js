@@ -527,12 +527,9 @@ tap.test(
     sinon.assert.calledWith(
       stubs.notifyIssuesStub,
       DEFAULT_ACTION_DATA.github,
-      'test_body',
-      '1.1.1',
       'test',
       'repo',
-      'test_url',
-      'testPackageName'
+      { body: 'test_body', html_url: 'test_url' }
     )
   }
 )
