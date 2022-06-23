@@ -1,6 +1,6 @@
 'use strict'
 
-const fs = require('fs')
+// const fs = require('fs')
 const pMap = require('p-map')
 
 const { logError, logWarning } = require('../log')
@@ -41,12 +41,23 @@ async function getLinkedIssueNumbers(octokit, prNumber, repoOwner, repoName) {
 }
 
 async function notifyIssues(githubClient, owner, repo, release) {
+  console.log({
+    m: 'notifyIssues - inputs',
+    githubClient,
+    owner,
+    repo,
+    release,
+  })
+
   let packageName
   let packageVersion
 
   try {
-    const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-    const packageJson = JSON.parse(packageJsonFile)
+    // const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+    // const packageJson = JSON.parse(packageJsonFile)
+    const packageJson = require('./package.json')
+
+    console.log({ m: 'notifyIssues - file content', packageJson })
 
     packageName = packageJson.name
     packageVersion = packageJson.version
@@ -54,6 +65,8 @@ async function notifyIssues(githubClient, owner, repo, release) {
     logWarning('Failed to get package info')
     logError(err)
   }
+
+  console.log({ m: 'notifyIssues - file read', packageName, packageVersion })
 
   const { body: releaseNotes, html_url: releaseUrl } = release
 
@@ -68,8 +81,8 @@ async function notifyIssues(githubClient, owner, repo, release) {
 
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
-  const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n 
-  The release is available on: \n * [npm package](${npmUrl}) \n 
+  const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
+  The release is available on: \n * [npm package](${npmUrl}) \n
   * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic)** bot 📦🚀`
 
   const createCommentCallback = issueNumber => {
