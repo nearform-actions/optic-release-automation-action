@@ -43,14 +43,15 @@ tap.afterEach(() => {
 tap.test('Should not call createComment if no linked issues', async () => {
   const { notifyIssues } = setup()
 
-  const releaseNotes =
-    "## What's Changed\n" +
-    '* chore 15 by @people in https://github.com/owner/repo/pull/13\n' +
-    '* chore 18 by @people in https://github.com/owner/repo/pull/15\n' +
-    '* chore 19 by @people in https://github.com/owner/repo/pull/16\n' +
-    '\n' +
-    '\n' +
-    '**Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0'
+  const releaseNotes = `
+    ## What's Changed\n +
+    * chore 15 by @people in https://github.com/owner/repo/pull/13\n
+    * chore 18 by @people in https://github.com/owner/repo/pull/15\n
+    * chore 19 by @people in https://github.com/owner/repo/pull/16\n
+    \n
+    \n
+    **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
+  `
 
   const release = { body: releaseNotes, html_url: 'some_url' }
 
@@ -64,12 +65,13 @@ tap.test(
   async () => {
     const { notifyIssues } = setup()
 
-    const releaseNotes =
-      "## What's Changed\n" +
-      '* chore 15 by @people in https://github.com/owner/repo/pull/13\n' +
-      '\n' +
-      '\n' +
-      '**Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0'
+    const releaseNotes = `
+      ## What's Changed\n +
+      * chore 15 by @people in https://github.com/owner/repo/pull/13\n
+      \n
+      \n
+      **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
+    `
 
     const release = { body: releaseNotes, html_url: 'some_url' }
 
