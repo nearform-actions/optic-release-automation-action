@@ -39,12 +39,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(githubClient, workspace, owner, repo, release) {
-  const { name: packageName, version: packageVersion } = require(path.join(
-    workspace,
-    'package.json'
-  ))
+async function notifyIssues(githubClient, owner, repo, release) {
+  const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+  const packageJson = JSON.parse(packageJsonFile)
 
+  const { name: packageName, version: packageVersion } = packageJson
   const { body: releaseNotes, html_url: releaseUrl } = release
 
   const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)

@@ -12,7 +12,7 @@ const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 
-module.exports = async function ({ github, context, inputs, workspace }) {
+module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -129,7 +129,7 @@ module.exports = async function ({ github, context, inputs, workspace }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(github, workspace, owner, repo, release)
+        await notifyIssues(github, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)

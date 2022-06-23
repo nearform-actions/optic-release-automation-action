@@ -19722,19 +19722,13 @@ const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
 const { logError } = __nccwpck_require__(653)
 
-module.exports = async function ({
-  github,
-  context,
-  inputs,
-  packageVersion,
-  workspace,
-}) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
     return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs, workspace })
+    return release({ github, context, inputs })
   }
 
   logError('Unsupported event')
@@ -19896,7 +19890,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs, workspace }) {
+module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -20013,7 +20007,7 @@ module.exports = async function ({ github, context, inputs, workspace }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(github, workspace, owner, repo, release)
+        await notifyIssues(github, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)
@@ -20130,12 +20124,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(githubClient, workspace, owner, repo, release) {
-  const { name: packageName, version: packageVersion } = require(path.join(
-    workspace,
-    'package.json'
-  ))
+async function notifyIssues(githubClient, owner, repo, release) {
+  const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+  const packageJson = JSON.parse(packageJsonFile)
 
+  const { name: packageName, version: packageVersion } = packageJson
   const { body: releaseNotes, html_url: releaseUrl } = release
 
   const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)

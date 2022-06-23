@@ -1,6 +1,5 @@
 'use strict'
 
-// const fs = require('fs')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const tap = require('tap')
