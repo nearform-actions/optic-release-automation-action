@@ -520,7 +520,7 @@ tap.test(
       ...DEFAULT_ACTION_DATA,
       inputs: {
         'npm-token': 'a-token',
-        'notify-on-the-issue': 'true',
+        'notify-linked-issues': 'true',
       },
     })
 
@@ -542,7 +542,7 @@ tap.test(
       ...DEFAULT_ACTION_DATA,
       inputs: {
         'npm-token': 'a-token',
-        'notify-on-the-issue': 'false',
+        'notify-linked-issues': 'false',
       },
     })
 

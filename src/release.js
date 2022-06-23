@@ -121,9 +121,11 @@ module.exports = async function ({ github, context, inputs }) {
       inputs
     )
 
-    const shouldNotifyOnTheIssue = /true/i.test(inputs['notify-on-the-issue'])
+    const shouldNotifyLinkedIssues = /true/i.test(
+      inputs['notify-linked-issues']
+    )
 
-    if (shouldNotifyOnTheIssue) {
+    if (shouldNotifyLinkedIssues) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
