@@ -54,7 +54,7 @@ tap.test('Should not call createComment if no linked issues', async () => {
 
   const release = { body: releaseNotes, html_url: 'some_url' }
 
-  await notifyIssues(DEFAULT_GITHUB_CLIENT, undefined, 'owner', 'repo', release)
+  await notifyIssues(DEFAULT_GITHUB_CLIENT, false, 'owner', 'repo', release)
 
   sinon.assert.notCalled(createCommentStub)
 })
@@ -86,7 +86,7 @@ tap.test(
 
     await notifyIssues(
       { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
-      'npm-token',
+      true,
       'owner',
       'repo',
       release
@@ -140,7 +140,7 @@ tap.test(
 
     await notifyIssues(
       { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
-      undefined,
+      false,
       'owner',
       'repo',
       release
