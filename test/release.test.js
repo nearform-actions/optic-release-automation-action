@@ -9,6 +9,7 @@ const clone = require('lodash.clonedeep')
 const runSpawnAction = require('../src/utils/runSpawn')
 const tagVersionAction = require('../src/utils/tagVersion')
 const publishToNpmAction = require('../src/utils/publishToNpm')
+const notifyIssuesAction = require('../src/utils/notifyIssues')
 const revertCommitAction = require('../src/utils/revertCommit')
 const callApiAction = require('../src/utils/callApi')
 
@@ -17,12 +18,17 @@ const actionLog = require('../src/log')
 
 let deleteReleaseStub = sinon.stub().resolves()
 
+let pullsGetStub = sinon.stub()
+let createCommentStub = sinon.stub()
+
 const DEFAULT_ACTION_DATA = {
   github: {
     rest: {
       repos: {
         deleteRelease: deleteReleaseStub,
       },
+      issues: { createComment: createCommentStub },
+      pulls: { get: pullsGetStub },
     },
   },
   inputs: {
@@ -51,6 +57,8 @@ const DEFAULT_ACTION_DATA = {
       },
     },
   },
+  packageVersion: '1.1.1',
+  packageName: 'testPackageName',
 }
 
 function setup() {
@@ -74,16 +82,18 @@ function setup() {
   const tagVersionStub = sinon.stub(tagVersionAction, 'tagVersionInGit')
   const revertCommitStub = sinon.stub(revertCommitAction, 'revertCommit')
   const publishToNpmStub = sinon.stub(publishToNpmAction, 'publishToNpm')
+  const notifyIssuesStub = sinon.stub(notifyIssuesAction, 'notifyIssues')
 
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
-    .resolves({ data: {} })
+    .resolves({ data: { body: 'test_body', html_url: 'test_url' } })
 
   const release = proxyquire('../src/release', {
     './utils/runSpawn': runSpawnProxy,
     './utils/tagVersion': tagVersionStub,
     './utils/revertCommit': revertCommitStub,
     './utils/publishToNpm': publishToNpmStub,
+    './utils/notifyIssues': notifyIssuesStub,
     '@actions/core': coreStub,
   })
 
@@ -93,6 +103,7 @@ function setup() {
       tagVersionStub,
       revertCommitStub,
       publishToNpmStub,
+      notifyIssuesStub,
       runSpawnProxy,
       runSpawnStub,
       callApiStub,
@@ -498,5 +509,43 @@ tap.test(
       '--delete',
       'release/v5.1.3',
     ])
+  }
+)
+
+tap.test(
+  'Should call notifyIssues function correctly when feature is enabled',
+  async () => {
+    const { release, stubs } = setup()
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'notify-linked-issues': 'true',
+      },
+    })
+
+    sinon.assert.calledWith(
+      stubs.notifyIssuesStub,
+      DEFAULT_ACTION_DATA.github,
+      'test',
+      'repo',
+      { body: 'test_body', html_url: 'test_url' }
+    )
+  }
+)
+
+tap.test(
+  'Should not call notifyIssues function when feature is disabled',
+  async () => {
+    const { release, stubs } = setup()
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'npm-token': 'a-token',
+        'notify-linked-issues': 'false',
+      },
+    })
+
+    sinon.assert.notCalled(stubs.notifyIssuesStub)
   }
 )

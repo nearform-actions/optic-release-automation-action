@@ -1,18 +1,20 @@
 'use strict'
 
-const { PR_TITLE_PREFIX } = require('./const')
-const semver = require('semver')
 const core = require('@actions/core')
+const semver = require('semver')
 
+const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { runSpawn } = require('./utils/runSpawn')
 const { revertCommit } = require('./utils/revertCommit')
 const { publishToNpm } = require('./utils/publishToNpm')
+const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
+
   const pr = context.payload.pull_request
   const owner = context.repo.owner
   const repo = context.repo.repo
@@ -107,7 +109,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
   try {
-    await callApi(
+    const { data: release } = await callApi(
       {
         endpoint: 'release',
         method: 'PATCH',
@@ -118,6 +120,21 @@ module.exports = async function ({ github, context, inputs }) {
       },
       inputs
     )
+
+    const shouldNotifyLinkedIssues = /true/i.test(
+      inputs['notify-linked-issues']
+    )
+
+    if (shouldNotifyLinkedIssues) {
+      try {
+        // post a comment about release on npm to any linked issues in the
+        // any of the PRs in this release
+        await notifyIssues(github, owner, repo, release)
+      } catch (err) {
+        logWarning('Failed to notify any/all issues')
+        logError(err)
+      }
+    }
 
     logInfo('** Released! **')
   } catch (err) {

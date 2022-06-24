@@ -7,7 +7,7 @@ This action allows you to automate the release process of your npm modules, apps
 ## What does it do?
 
 - When run, it opens a new PR for the release.
-- When/if the PR gets merged, it publishes a new Npm release and a new GitHub release with change logs
+- When/if the PR gets merged, it publishes a new Npm release, a new GitHub release with change logs and it adds a comment for each issues linked to the release with links to the release deatils. This feature can be turned off by the `notify-linked-issues` flag.
 
 You can also use it for releases without Npm. In that case, when the PR merges, a new GitHub release will be published. Which you can use to trigger another workflow that deploys the app somewhere (GCP, AWS etc).
 
@@ -81,6 +81,7 @@ When you merge this PR:
 - _(Optional)_ You can define Npm and Optic tokens in GitHub secrets for each user that will receive the OTP. This is required only in case you want to publish to Npm.
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
+- Leave a comment on each issues that are linked to the pull reqeuests of this release. This feature can be turned off by the `notify-on-the-issue` flag.
 
 When you close the PR without merging it: nothing will happen.
 
@@ -186,6 +187,7 @@ jobs:
 | `build-command`| No       | An optional build commit to run after the version bump and before releasing the package |
 | `api-url`      | No       | GitHub App URL. You wouldn't need to set this unless you're deploying a custom GitHub app instead of [optic-release-automation](https://github.com/apps/optic-release-automation). <br /> (_Default: `https://optic-release-automation-ocrlhra4va-ue.a.run.app/`_) |
 | `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
+| `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 
 ## Motivation
 
