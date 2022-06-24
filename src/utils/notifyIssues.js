@@ -47,12 +47,12 @@ function createCommentBody(
 ) {
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
-  if (shouldPostNpmLink || true) {
-    return `🎉 This issue has been resolved in version ${packageVersion} 🎉 
+  if (shouldPostNpmLink) {
+    return `🎉 This issue has been resolved in version ${packageVersion} 🎉
 
 
   The release is available on:
-  * [npm package](${npmUrl}) 
+  * [npm package](${npmUrl})
   * [GitHub release](${releaseUrl})
 
 
@@ -63,8 +63,8 @@ function createCommentBody(
 
 
   The release is available on:
-  * [GitHub release](${releaseUrl}) 
-  
+  * [GitHub release](${releaseUrl})
+
 
   Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 }

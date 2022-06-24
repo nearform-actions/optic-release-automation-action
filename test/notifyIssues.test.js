@@ -92,10 +92,15 @@ tap.test(
       release
     )
 
-    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉 \n\n
-  The release is available on: \n * [npm package](https://www.npmjs.com/package/packageName/v/1.0.0) 
-  \n * [GitHub release](some_url) 
-  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉
+
+
+  The release is available on:
+  * [npm package](https://www.npmjs.com/package/packageName/v/1.0.0)
+  * [GitHub release](some_url)
+
+
+  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 
     sinon.assert.calledWith(createCommentStub, {
       owner: 'owner',
@@ -146,9 +151,14 @@ tap.test(
       release
     )
 
-    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉 \n\n
-  The release is available on: \n * [GitHub release](some_url) 
-  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉
+
+
+  The release is available on:
+  * [GitHub release](some_url)
+
+
+  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 
     sinon.assert.calledWith(createCommentStub, {
       owner: 'owner',
