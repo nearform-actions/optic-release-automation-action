@@ -47,16 +47,26 @@ function createCommentBody(
 ) {
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
-  if (shouldPostNpmLink) {
-    return `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
-  The release is available on: \n * [npm package](${npmUrl}) 
-  \n * [GitHub release](${releaseUrl}) 
-  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  if (shouldPostNpmLink || true) {
+    return `🎉 This issue has been resolved in version ${packageVersion} 🎉 
+
+
+  The release is available on:
+  * [npm package](${npmUrl}) 
+  * [GitHub release](${releaseUrl})
+
+
+  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
   }
 
-  return `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
-  The release is available on: \n * [GitHub release](${releaseUrl}) 
-  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  return `🎉 This issue has been resolved in version ${packageVersion} 🎉
+
+
+  The release is available on:
+  * [GitHub release](${releaseUrl}) 
+  
+
+  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 }
 
 async function notifyIssues(
