@@ -19953,10 +19953,10 @@ module.exports = async function ({ github, context, inputs }) {
 
   const shouldRevertCommit = /true/i.test(inputs['revert-commit-after-failure'])
 
-  const opticToken = inputs['optic-token']
-  const npmToken = inputs['npm-token']
-
   try {
+    const opticToken = inputs['optic-token']
+    const npmToken = inputs['npm-token']
+
     if (npmToken) {
       await publishToNpm({ npmToken, opticToken, opticUrl, npmTag, version })
     } else {
@@ -20007,7 +20007,9 @@ module.exports = async function ({ github, context, inputs }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(github, npmToken, owner, repo, release)
+        const shouldPostNpmLink = Boolean(inputs['npm-token'])
+
+        await notifyIssues(github, shouldPostNpmLink, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)
@@ -20124,10 +20126,15 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-function createCommentBody(npmToken, packageName, packageVersion, releaseUrl) {
+function createCommentBody(
+  shouldPostNpmLink,
+  packageName,
+  packageVersion,
+  releaseUrl
+) {
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
-  if (npmToken) {
+  if (shouldPostNpmLink) {
     return `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
   The release is available on: \n * [npm package](${npmUrl}) 
   \n * [GitHub release](${releaseUrl}) 
@@ -20139,7 +20146,13 @@ function createCommentBody(npmToken, packageName, packageVersion, releaseUrl) {
   \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 }
 
-async function notifyIssues(githubClient, npmToken, owner, repo, release) {
+async function notifyIssues(
+  githubClient,
+  shouldPostNpmLink,
+  owner,
+  repo,
+  release
+) {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
   const packageJson = JSON.parse(packageJsonFile)
 
@@ -20155,7 +20168,7 @@ async function notifyIssues(githubClient, npmToken, owner, repo, release) {
   ).flat()
 
   const body = createCommentBody(
-    npmToken,
+    shouldPostNpmLink,
     packageName,
     packageVersion,
     releaseUrl

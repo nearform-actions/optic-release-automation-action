@@ -39,10 +39,15 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-function createCommentBody(npmToken, packageName, packageVersion, releaseUrl) {
+function createCommentBody(
+  shouldPostNpmLink,
+  packageName,
+  packageVersion,
+  releaseUrl
+) {
   const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
 
-  if (npmToken) {
+  if (shouldPostNpmLink) {
     return `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
   The release is available on: \n * [npm package](${npmUrl}) 
   \n * [GitHub release](${releaseUrl}) 
@@ -54,7 +59,13 @@ function createCommentBody(npmToken, packageName, packageVersion, releaseUrl) {
   \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 }
 
-async function notifyIssues(githubClient, npmToken, owner, repo, release) {
+async function notifyIssues(
+  githubClient,
+  shouldPostNpmLink,
+  owner,
+  repo,
+  release
+) {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
   const packageJson = JSON.parse(packageJsonFile)
 
@@ -70,7 +81,7 @@ async function notifyIssues(githubClient, npmToken, owner, repo, release) {
   ).flat()
 
   const body = createCommentBody(
-    npmToken,
+    shouldPostNpmLink,
     packageName,
     packageVersion,
     releaseUrl

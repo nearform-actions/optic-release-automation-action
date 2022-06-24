@@ -527,7 +527,7 @@ tap.test(
     sinon.assert.calledWith(
       stubs.notifyIssuesStub,
       DEFAULT_ACTION_DATA.github,
-      'a-token',
+      true,
       'test',
       'repo',
       { body: 'test_body', html_url: 'test_url' }
