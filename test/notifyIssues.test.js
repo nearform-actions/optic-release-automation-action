@@ -93,7 +93,7 @@ tap.test(
 
     const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉 \n\n
   The release is available on: \n * [npm package](https://www.npmjs.com/package/packageName/v/1.0.0) \n
-  * [GitHub release](some_url) \n\n Your **[optic](https://github.com/nearform/optic)** bot 📦🚀`
+  * [GitHub release](some_url) \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 
     sinon.assert.calledWith(createCommentStub, {
       owner: 'owner',

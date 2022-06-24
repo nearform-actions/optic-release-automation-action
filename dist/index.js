@@ -20143,7 +20143,7 @@ async function notifyIssues(githubClient, owner, repo, release) {
 
   const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
   The release is available on: \n * [npm package](${npmUrl}) \n
-  * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic)** bot 📦🚀`
+  * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 
   await pMap(
     issueNumbersToNotify,
