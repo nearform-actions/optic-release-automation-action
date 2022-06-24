@@ -20007,7 +20007,9 @@ module.exports = async function ({ github, context, inputs }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(github, owner, repo, release)
+        const shouldPostNpmLink = Boolean(inputs['npm-token'])
+
+        await notifyIssues(github, shouldPostNpmLink, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)
@@ -20124,7 +20126,43 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(githubClient, owner, repo, release) {
+function createCommentBody(
+  shouldPostNpmLink,
+  packageName,
+  packageVersion,
+  releaseUrl
+) {
+  const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
+
+  if (shouldPostNpmLink) {
+    return `🎉 This issue has been resolved in version ${packageVersion} 🎉
+
+
+  The release is available on:
+  * [npm package](${npmUrl})
+  * [GitHub release](${releaseUrl})
+
+
+  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  }
+
+  return `🎉 This issue has been resolved in version ${packageVersion} 🎉
+
+
+  The release is available on:
+  * [GitHub release](${releaseUrl})
+
+
+  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+}
+
+async function notifyIssues(
+  githubClient,
+  shouldPostNpmLink,
+  owner,
+  repo,
+  release
+) {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
   const packageJson = JSON.parse(packageJsonFile)
 
@@ -20139,11 +20177,12 @@ async function notifyIssues(githubClient, owner, repo, release) {
     )
   ).flat()
 
-  const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
-
-  const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
-  The release is available on: \n * [npm package](${npmUrl}) \n
-  * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic)** bot 📦🚀`
+  const body = createCommentBody(
+    shouldPostNpmLink,
+    packageName,
+    packageVersion,
+    releaseUrl
+  )
 
   await pMap(
     issueNumbersToNotify,
