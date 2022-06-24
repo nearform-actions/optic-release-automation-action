@@ -75,10 +75,10 @@ module.exports = async function ({ github, context, inputs }) {
 
   const shouldRevertCommit = /true/i.test(inputs['revert-commit-after-failure'])
 
-  try {
-    const opticToken = inputs['optic-token']
-    const npmToken = inputs['npm-token']
+  const opticToken = inputs['optic-token']
+  const npmToken = inputs['npm-token']
 
+  try {
     if (npmToken) {
       await publishToNpm({ npmToken, opticToken, opticUrl, npmTag, version })
     } else {
@@ -129,7 +129,7 @@ module.exports = async function ({ github, context, inputs }) {
       try {
         // post a comment about release on npm to any linked issues in the
         // any of the PRs in this release
-        await notifyIssues(github, owner, repo, release)
+        await notifyIssues(github, npmToken, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)

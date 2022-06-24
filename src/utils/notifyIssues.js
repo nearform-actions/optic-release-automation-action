@@ -39,7 +39,22 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   return linkedIssues.map(issue => issue.number)
 }
 
-async function notifyIssues(githubClient, owner, repo, release) {
+function createCommentBody(npmToken, packageName, packageVersion, releaseUrl) {
+  const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
+
+  if (npmToken) {
+    return `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
+  The release is available on: \n * [npm package](${npmUrl}) 
+  \n * [GitHub release](${releaseUrl}) 
+  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  }
+
+  return `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
+  The release is available on: \n * [GitHub release](${releaseUrl}) 
+  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+}
+
+async function notifyIssues(githubClient, npmToken, owner, repo, release) {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
   const packageJson = JSON.parse(packageJsonFile)
 
@@ -54,11 +69,12 @@ async function notifyIssues(githubClient, owner, repo, release) {
     )
   ).flat()
 
-  const npmUrl = `https://www.npmjs.com/package/${packageName}/v/${packageVersion}`
-
-  const body = `🎉 This issue has been resolved in version ${packageVersion} 🎉 \n\n
-  The release is available on: \n * [npm package](${npmUrl}) \n
-  * [GitHub release](${releaseUrl}) \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  const body = createCommentBody(
+    npmToken,
+    packageName,
+    packageVersion,
+    releaseUrl
+  )
 
   await pMap(
     issueNumbersToNotify,

@@ -54,13 +54,13 @@ tap.test('Should not call createComment if no linked issues', async () => {
 
   const release = { body: releaseNotes, html_url: 'some_url' }
 
-  await notifyIssues(DEFAULT_GITHUB_CLIENT, 'owner', 'repo', release)
+  await notifyIssues(DEFAULT_GITHUB_CLIENT, undefined, 'owner', 'repo', release)
 
   sinon.assert.notCalled(createCommentStub)
 })
 
 tap.test(
-  'Should call createComment with correct arguments for linked issues',
+  'Should call createComment with correct arguments for linked issues with npm link',
   async () => {
     const { notifyIssues } = setup()
 
@@ -86,14 +86,69 @@ tap.test(
 
     await notifyIssues(
       { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+      'npm-token',
       'owner',
       'repo',
       release
     )
 
     const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉 \n\n
-  The release is available on: \n * [npm package](https://www.npmjs.com/package/packageName/v/1.0.0) \n
-  * [GitHub release](some_url) \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  The release is available on: \n * [npm package](https://www.npmjs.com/package/packageName/v/1.0.0) 
+  \n * [GitHub release](some_url) 
+  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+
+    sinon.assert.calledWith(createCommentStub, {
+      owner: 'owner',
+      repo: 'repo',
+      issue_number: '10',
+      body: expectedCommentBody,
+    })
+
+    sinon.assert.calledWith(createCommentStub, {
+      owner: 'owner',
+      repo: 'repo',
+      issue_number: '15',
+      body: expectedCommentBody,
+    })
+  }
+)
+
+tap.test(
+  'Should call createComment with correct arguments for linked issues without npm link',
+  async () => {
+    const { notifyIssues } = setup()
+
+    const releaseNotes = `
+      ## What's Changed\n +
+      * chore 15 by @people in https://github.com/owner/repo/pull/13\n
+      \n
+      \n
+      **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
+    `
+
+    const release = { body: releaseNotes, html_url: 'some_url' }
+
+    const graphqlStub = sinon.stub().resolves({
+      repository: {
+        pullRequest: {
+          closingIssuesReferences: {
+            nodes: [{ number: '10' }, { number: '15' }],
+          },
+        },
+      },
+    })
+
+    await notifyIssues(
+      { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+      undefined,
+      'owner',
+      'repo',
+      release
+    )
+
+    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉 \n\n
+  The release is available on: \n * [GitHub release](some_url) 
+  \n\n Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 
     sinon.assert.calledWith(createCommentStub, {
       owner: 'owner',
