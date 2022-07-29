@@ -21,7 +21,7 @@ Release author: @${author}
 - No major or minor tags will be updated as configured
 <% } %>
 
-### Artifacts
+#### Artifacts
 <% if (artifactAttached) { %>
 - An artifact will be attached to the release
 <% } else { %>

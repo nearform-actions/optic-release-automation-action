@@ -186,7 +186,7 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '- No major or minor tags will be updated as configured\n' +
           '\n' +
           '\n' +
-          '### Artifacts\n' +
+          '#### Artifacts\n' +
           '\n' +
           '- No artifacts will be attached to the release\n' +
           '\n' +
@@ -246,7 +246,7 @@ tap.test(
             '- No major or minor tags will be updated as configured\n' +
             '\n' +
             '\n' +
-            '### Artifacts\n' +
+            '#### Artifacts\n' +
             '\n' +
             '- No artifacts will be attached to the release\n' +
             '\n' +
@@ -307,7 +307,7 @@ tap.test(
             '- No major or minor tags will be updated as configured\n' +
             '\n' +
             '\n' +
-            '### Artifacts\n' +
+            '#### Artifacts\n' +
             '\n' +
             '- No artifacts will be attached to the release\n' +
             '\n' +
