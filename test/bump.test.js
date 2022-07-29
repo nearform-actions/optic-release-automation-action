@@ -356,15 +356,12 @@ tap.test('Should call core.setFailed if it fails to create a PR', async t => {
 })
 
 tap.test(
-  'should call attachArtifact if release-artifact-build-folder input is present',
+  'should call attachArtifact if artifact-path input is present',
   async () => {
     const { openPr, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
-    data.inputs['release-artifact-build-folder'] = 'dist'
-    await openPr({
-      ...data,
-      inputs: { ...data.inputs, ['release-artifact-build-folder']: 'dist' },
-    })
+    data.inputs['artifact-path'] = 'dist'
+    await openPr(data)
 
     sinon.assert.calledOnce(stubs.attachArtifactStub)
   }

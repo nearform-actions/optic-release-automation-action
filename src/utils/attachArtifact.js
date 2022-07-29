@@ -1,6 +1,6 @@
 'use strict'
 
-const fs = require('fs')
+const { stat, readFile } = require('fs/promises')
 const { zip } = require('zip-a-folder')
 const github = require('@actions/github')
 const { ASSET_LABEL, ASSET_FILENAME } = require('../const')
@@ -16,29 +16,29 @@ const attachArtifact = async (buildDir, releaseId, token) => {
   }
 
   // determine content-length for header to upload asset
-  const contentLength = filePath => fs.statSync(filePath).size
+  const { size: contentLength } = await stat(outFile)
 
   // setup headers fro the API call
   const headers = {
     'content-type': 'application/zip',
-    'content-length': contentLength(outFile),
+    'content-length': contentLength,
   }
 
   try {
+    const data = await readFile(outFile)
+
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
     await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
-      data: fs.readFileSync(outFile),
+      data,
       name: outFile,
       label: ASSET_LABEL,
       headers,
     })
-    return
   } catch (err) {
-    console.log('error: ', err)
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
   }
 }
