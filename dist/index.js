@@ -53017,6 +53017,7 @@ const attachArtifact = async (buildDir, releaseId, token) => {
     })
     return
   } catch (err) {
+    console.log('error: ', err)
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
   }
 }
