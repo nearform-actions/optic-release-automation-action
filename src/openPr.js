@@ -111,14 +111,14 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   // manage Release Artifact
   const artifactBuildFolder = inputs['release-artifact-build-folder']
-  logInfo('artifact build folder: ', artifactBuildFolder)
+  logInfo('artifact build folder: ' + artifactBuildFolder)
 
   if (artifactBuildFolder) {
     const archiveFileName = 'asset.zip'
-    const archivePath = __dirname + `/${archiveFileName}`
-    logInfo('archive path: ', archivePath)
+    const archivePath = `${archiveFileName}`
+    logInfo('archive path: ' + archivePath)
     try {
-      await zip(__dirname + `/${artifactBuildFolder}`, archivePath)
+      await zip(`${artifactBuildFolder}`, archivePath)
     } catch (err) {
       logInfo('An error occurred while zipping the build folder')
       core.setFailed(`Unable to zip the build folder: ${err.message}`)
@@ -149,6 +149,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       label: 'Release asset',
       headers,
     })
-    logInfo('uploadAssetResponse: ', uploadAssetResponse)
+    logInfo('uploadAssetResponse: ' + JSON.stringify(uploadAssetResponse))
   }
 }
