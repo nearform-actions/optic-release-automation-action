@@ -5,10 +5,10 @@ const { zip } = require('zip-a-folder')
 const github = require('@actions/github')
 const { ASSET_LABEL, ASSET_FILENAME } = require('../const')
 
-const attachArtifact = async (buildDir, releaseId, token) => {
+const attachArtifact = async (artifactPath, releaseId, token) => {
   const outFile = ASSET_FILENAME
   try {
-    await zip(buildDir, outFile)
+    await zip(artifactPath, outFile)
   } catch (err) {
     throw new Error(
       'An error occurred while zipping the build folder: ' + err.message
