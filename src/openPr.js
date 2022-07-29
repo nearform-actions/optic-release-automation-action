@@ -1,18 +1,17 @@
 'use strict'
 
 const fs = require('fs')
-const { zip } = require('zip-a-folder')
 const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
 const core = require('@actions/core')
-const { Octokit } = require('@octokit/rest')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
+const attachArtifact = require('./utils/attachArtifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -44,8 +43,6 @@ const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
-
-  logInfo('HELLO WORLD!')
 
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
@@ -97,6 +94,25 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+
+    // attach artifact
+    const buildDir = inputs['release-artifact-build-folder']
+
+    if (buildDir) {
+      logInfo('** Attaching artifact **')
+
+      const token = inputs['github-token']
+      const { id: releaseId } = draftRelease
+      try {
+        await attachArtifact(buildDir, releaseId, token)
+      } catch (err) {
+        logInfo(err.message)
+        core.setFailed(err.message)
+      }
+
+      logInfo('** Artifact attached! **')
+    }
+
     logInfo('** Finished! **')
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
@@ -106,49 +122,5 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       message += `\n Unable to delete branch ${branchName}:  ${error.message}`
     }
     core.setFailed(message)
-  }
-  logInfo('end first part')
-
-  // manage Release Artifact
-  const artifactBuildFolder = inputs['release-artifact-build-folder']
-  logInfo('artifact build folder: ' + artifactBuildFolder)
-
-  if (artifactBuildFolder) {
-    const archiveFileName = 'asset.zip'
-    const archivePath = `${archiveFileName}`
-    logInfo('archive path: ' + archivePath)
-    try {
-      await zip(`${artifactBuildFolder}`, archivePath)
-    } catch (err) {
-      logInfo('An error occurred while zipping the build folder')
-      core.setFailed(`Unable to zip the build folder: ${err.message}`)
-      return
-    }
-
-    // determine content-length for header to upload asset
-    const contentLength = filePath => fs.statSync(filePath).size
-
-    // setup headers fro the API call
-    const headers = {
-      'content-type': 'application/zip',
-      'content-length': contentLength(archivePath),
-    }
-
-    const owner = context.repo.owner
-    const repo = context.repo.repo
-
-    logInfo('here')
-
-    const octokit = new Octokit({ auth: inputs['github-token'] })
-    const uploadAssetResponse = await octokit.repos.uploadReleaseAsset({
-      owner,
-      repo,
-      release_id: draftRelease.id,
-      data: fs.readFileSync(archivePath),
-      name: archiveFileName,
-      label: 'Release asset',
-      headers,
-    })
-    logInfo('uploadAssetResponse: ' + JSON.stringify(uploadAssetResponse))
   }
 }

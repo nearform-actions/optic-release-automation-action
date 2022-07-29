@@ -8,6 +8,7 @@ const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../src/utils/runSpawn')
 const callApiAction = require('../src/utils/callApi')
+const attachArtifactAction = require('../src/utils/attachArtifact')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_VERSION = 'v3.1.1'
@@ -19,9 +20,13 @@ function setup() {
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
     .resolves({ data: {} })
+  const attachArtifactStub = sinon
+    .stub(attachArtifactAction, 'attachArtifact')
+    .returns({})
 
   const openPr = proxyquire('../src/openPr', {
     './utils/runSpawn': utilStub,
+    './utils/attachArtifact': attachArtifactStub,
     '@actions/core': coreStub,
   })
 
@@ -32,6 +37,7 @@ function setup() {
       runSpawnStub,
       callApiStub,
       coreStub,
+      attachArtifactStub,
     },
   }
 }
@@ -333,3 +339,18 @@ tap.test('Should call core.setFailed if it fails to create a PR', async t => {
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
   t.pass('failed called')
 })
+
+tap.test(
+  'should call attachArtifact if release-artifact-build-folder input is present',
+  async () => {
+    const { openPr, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs['release-artifact-build-folder'] = 'dist'
+    await openPr({
+      ...data,
+      inputs: { ...data.inputs, ['release-artifact-build-folder']: 'dist' },
+    })
+
+    sinon.assert.calledOnce(stubs.attachArtifactStub)
+  }
+)
