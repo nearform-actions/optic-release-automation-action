@@ -11,7 +11,7 @@ const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
-const attachArtifact = require('./utils/attachArtifact')
+const { attachArtifact } = require('./utils/attachArtifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 

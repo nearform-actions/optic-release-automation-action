@@ -52699,7 +52699,7 @@ const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
 const { logInfo } = __nccwpck_require__(653)
-const attachArtifact = __nccwpck_require__(4096)
+const { attachArtifact } = __nccwpck_require__(4096)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
