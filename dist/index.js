@@ -52723,7 +52723,7 @@ const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
-    artifactAttached: inputs['release-artifact-build-folder'],
+    artifactAttached: inputs['artifact-path'],
     syncTags: /true/i.test(inputs['sync-semver-tags']),
     author,
   })
@@ -52783,26 +52783,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
-
-    // attach artifact
-    const buildDir = inputs['release-artifact-build-folder']
-
-    if (buildDir) {
-      logInfo('** Attaching artifact **')
-
-      const token = inputs['github-token']
-      const { id: releaseId } = draftRelease
-      try {
-        await attachArtifact(buildDir, releaseId, token)
-      } catch (err) {
-        logInfo(err.message)
-        core.setFailed(err.message)
-      }
-
-      logInfo('** Artifact attached! **')
-    }
-
-    logInfo('** Finished! **')
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
@@ -52812,6 +52792,26 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     }
     core.setFailed(message)
   }
+
+  // attach artifact
+  const buildDir = inputs['artifact-path']
+
+  if (buildDir) {
+    logInfo('** Attaching artifact **')
+
+    const token = inputs['github-token']
+    const { id: releaseId } = draftRelease
+    try {
+      await attachArtifact(buildDir, releaseId, token)
+    } catch (err) {
+      logInfo(err.message)
+      core.setFailed(err.message)
+    }
+
+    logInfo('** Artifact attached! **')
+  }
+
+  logInfo('** Finished! **')
 }
 
 
@@ -52980,15 +52980,15 @@ module.exports = async function ({ github, context, inputs }) {
 "use strict";
 
 
-const fs = __nccwpck_require__(7147)
+const { stat, readFile } = __nccwpck_require__(3292)
 const { zip } = __nccwpck_require__(6602)
 const github = __nccwpck_require__(5438)
 const { ASSET_LABEL, ASSET_FILENAME } = __nccwpck_require__(6818)
 
-const attachArtifact = async (buildDir, releaseId, token) => {
+const attachArtifact = async (artifactPath, releaseId, token) => {
   const outFile = ASSET_FILENAME
   try {
-    await zip(buildDir, outFile)
+    await zip(artifactPath, outFile)
   } catch (err) {
     throw new Error(
       'An error occurred while zipping the build folder: ' + err.message
@@ -52996,29 +52996,29 @@ const attachArtifact = async (buildDir, releaseId, token) => {
   }
 
   // determine content-length for header to upload asset
-  const contentLength = filePath => fs.statSync(filePath).size
+  const { size: contentLength } = await stat(outFile)
 
   // setup headers fro the API call
   const headers = {
     'content-type': 'application/zip',
-    'content-length': contentLength(outFile),
+    'content-length': contentLength,
   }
 
   try {
+    const data = await readFile(outFile)
+
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
     await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
-      data: fs.readFileSync(outFile),
+      data,
       name: outFile,
       label: ASSET_LABEL,
       headers,
     })
-    return
   } catch (err) {
-    console.log('error: ', err)
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
   }
 }
@@ -53450,6 +53450,14 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 3292:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
 
 /***/ }),
 
