@@ -21,6 +21,10 @@ Release author: @${author}
 - No major or minor tags will be updated as configured
 <% } %>
 
+<% if (artifactAttached) { %>
+- An artifact will be attached to the release
+<% } %>
+
 #### If you close the PR
 
 - The new draft release will be deleted and nothing will change
