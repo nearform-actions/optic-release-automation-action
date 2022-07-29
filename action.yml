@@ -57,6 +57,9 @@ inputs:
     required: false
     type: boolean
     default: 'true'
+  release-artifact-build-folder:
+    description: 'If this property is populated, the folder specified here will be used as the artifact to zip and attach to the release.'
+    required: false
 
 runs:
   using: 'composite'

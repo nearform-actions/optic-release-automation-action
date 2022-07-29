@@ -1,7 +1,10 @@
 'use strict'
 
+const fs = require('fs')
 const core = require('@actions/core')
+const { Octokit } = require('@octokit/rest')
 const semver = require('semver')
+const { zip } = require('zip-a-folder')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
@@ -145,5 +148,41 @@ module.exports = async function ({ github, context, inputs }) {
       logInfo('Release commit reverted.')
     }
     core.setFailed(`Unable to publish the release ${err.message}`)
+  }
+
+  // manage Release Artifact
+  const artifactBuildFolder = inputs['release-artifact-build-folder']
+
+  if (artifactBuildFolder) {
+    const archiveFileName = 'asset.zip'
+    const archivePath = __dirname + `/${archiveFileName}`
+    try {
+      await zip(artifactBuildFolder, archivePath)
+    } catch (err) {
+      logWarning('An error occurred while zipping the build folder')
+      core.setFailed(`Unable to zip the build folder: ${err.message}`)
+      return
+    }
+
+    // determine content-length for header to upload asset
+    const contentLength = filePath => fs.statSync(filePath).size
+
+    // setup headers fro the API call
+    const headers = {
+      'content-type': 'application/zip',
+      'content-length': contentLength(archivePath),
+    }
+
+    const octokit = new Octokit({ auth: inputs['github-token'] })
+    const uploadAssetResponse = await octokit.repos.uploadReleaseAsset({
+      owner,
+      repo,
+      release_id: id,
+      data: fs.readFileSync(archivePath),
+      name: archiveFileName,
+      label: 'Release asset',
+      headers,
+    })
+    console.log('uploadAssetResponse: ', uploadAssetResponse)
   }
 }
