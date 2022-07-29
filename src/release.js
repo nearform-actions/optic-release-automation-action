@@ -157,7 +157,7 @@ module.exports = async function ({ github, context, inputs }) {
     const archiveFileName = 'asset.zip'
     const archivePath = __dirname + `/${archiveFileName}`
     try {
-      await zip(artifactBuildFolder, archivePath)
+      await zip(__dirname + `/${artifactBuildFolder}`, archivePath)
     } catch (err) {
       logWarning('An error occurred while zipping the build folder')
       core.setFailed(`Unable to zip the build folder: ${err.message}`)
