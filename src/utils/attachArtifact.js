@@ -3,7 +3,6 @@
 const fs = require('fs')
 const { zip } = require('zip-a-folder')
 const github = require('@actions/github')
-const { Octokit } = require('@octokit/rest')
 const { ASSET_LABEL, ASSET_FILENAME } = require('../const')
 
 const attachArtifact = async (buildDir, releaseId, token) => {
@@ -26,10 +25,9 @@ const attachArtifact = async (buildDir, releaseId, token) => {
   }
 
   try {
-    const { owner, repo } = github.context
-    const octokit = new Octokit({ auth: token })
-    //const octokit = github.getOctokit(token)
-    await octokit.repos.uploadReleaseAsset({
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+    await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
@@ -38,15 +36,6 @@ const attachArtifact = async (buildDir, releaseId, token) => {
       label: ASSET_LABEL,
       headers,
     })
-    /*await octokit.rest.repos.uploadReleaseAsset({
-      owner,
-      repo,
-      release_id: releaseId,
-      data: fs.readFileSync(outFile),
-      name: outFile,
-      label: ASSET_LABEL,
-      headers,
-    })*/
     return
   } catch (err) {
     console.log('error: ', err)
