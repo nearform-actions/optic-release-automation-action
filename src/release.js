@@ -152,6 +152,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   // manage Release Artifact
   const artifactBuildFolder = inputs['release-artifact-build-folder']
+  console.log('artifact build folder: ', artifactBuildFolder)
 
   if (artifactBuildFolder) {
     const archiveFileName = 'asset.zip'
