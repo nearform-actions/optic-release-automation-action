@@ -1,10 +1,12 @@
 'use strict'
 
 const fs = require('fs')
+const { zip } = require('zip-a-folder')
 const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
 const core = require('@actions/core')
+const { Octokit } = require('@octokit/rest')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
@@ -102,5 +104,48 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       message += `\n Unable to delete branch ${branchName}:  ${error.message}`
     }
     core.setFailed(message)
+  }
+
+  // manage Release Artifact
+  const artifactBuildFolder = inputs['release-artifact-build-folder']
+  console.log('artifact build folder: ', artifactBuildFolder)
+
+  if (artifactBuildFolder) {
+    const archiveFileName = 'asset.zip'
+    const archivePath = __dirname + `/${archiveFileName}`
+    console.log('archive path: ', archivePath)
+    try {
+      await zip(__dirname + `/${artifactBuildFolder}`, archivePath)
+    } catch (err) {
+      logInfo('An error occurred while zipping the build folder')
+      core.setFailed(`Unable to zip the build folder: ${err.message}`)
+      return
+    }
+
+    // determine content-length for header to upload asset
+    const contentLength = filePath => fs.statSync(filePath).size
+
+    // setup headers fro the API call
+    const headers = {
+      'content-type': 'application/zip',
+      'content-length': contentLength(archivePath),
+    }
+
+    const owner = context.repo.owner
+    const repo = context.repo.repo
+
+    console.log('here')
+
+    const octokit = new Octokit({ auth: inputs['github-token'] })
+    const uploadAssetResponse = await octokit.repos.uploadReleaseAsset({
+      owner,
+      repo,
+      release_id: draftRelease.id,
+      data: fs.readFileSync(archivePath),
+      name: archiveFileName,
+      label: 'Release asset',
+      headers,
+    })
+    console.log('uploadAssetResponse: ', uploadAssetResponse)
   }
 }
