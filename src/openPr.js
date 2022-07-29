@@ -45,6 +45,8 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
+  logInfo('HELLO WORLD!')
+
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
   }
