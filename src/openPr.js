@@ -105,15 +105,16 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     }
     core.setFailed(message)
   }
+  logInfo('end first part')
 
   // manage Release Artifact
   const artifactBuildFolder = inputs['release-artifact-build-folder']
-  console.log('artifact build folder: ', artifactBuildFolder)
+  logInfo('artifact build folder: ', artifactBuildFolder)
 
   if (artifactBuildFolder) {
     const archiveFileName = 'asset.zip'
     const archivePath = __dirname + `/${archiveFileName}`
-    console.log('archive path: ', archivePath)
+    logInfo('archive path: ', archivePath)
     try {
       await zip(__dirname + `/${artifactBuildFolder}`, archivePath)
     } catch (err) {
@@ -134,7 +135,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     const owner = context.repo.owner
     const repo = context.repo.repo
 
-    console.log('here')
+    logInfo('here')
 
     const octokit = new Octokit({ auth: inputs['github-token'] })
     const uploadAssetResponse = await octokit.repos.uploadReleaseAsset({
@@ -146,6 +147,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       label: 'Release asset',
       headers,
     })
-    console.log('uploadAssetResponse: ', uploadAssetResponse)
+    logInfo('uploadAssetResponse: ', uploadAssetResponse)
   }
 }
