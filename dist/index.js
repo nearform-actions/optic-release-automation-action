@@ -25911,7 +25911,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
-    const response = await octokit.rest.repos.uploadReleaseAsset({
+    const postAssetResponse = await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
@@ -25921,11 +25921,29 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       headers,
     })
 
-    if (!response.data) {
-      throw new Error('Reponse data not available')
+    if (!postAssetResponse.data) {
+      throw new Error('POST asset response data not available')
     }
 
-    const { url, label } = response.data
+    const { id: assetId, label } = postAssetResponse.data
+
+    const getAssetResponse = await octokit.request(
+      'GET /repos/{owner}/{repo}/releases/assets/{asset_id}',
+      {
+        owner,
+        repo,
+        asset_id: assetId,
+      }
+    )
+
+    if (!getAssetResponse.data) {
+      throw new Error('GET asset response data not available')
+    }
+
+    const { browser_download_url: url } = getAssetResponse.data
+
+    console.log('getAssetResponse: ', getAssetResponse.data)
+
     return {
       artifact: {
         isPresent: true,
