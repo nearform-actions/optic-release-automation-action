@@ -25480,8 +25480,6 @@ try {
 
 
 exports.PR_TITLE_PREFIX = '[OPTIC-RELEASE-AUTOMATION]'
-exports.ASSET_FILENAME = 'asset.zip'
-exports.ASSET_LABEL = 'RELEASE ASSET'
 
 
 /***/ }),
@@ -25629,9 +25627,17 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     logInfo('** Attaching artifact **')
 
     const token = inputs['github-token']
+    const artifactFilename = inputs['artifact-filename']
+    const artifactLabel = inputs['artifact-label']
     const { id: releaseId } = draftRelease
     try {
-      ;({ artifact } = await attachArtifact(artifactPath, releaseId, token))
+      ;({ artifact } = await attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      ))
     } catch (err) {
       logInfo(err.message)
       core.setFailed(err.message)
@@ -25885,20 +25891,17 @@ module.exports = {
 
 const { stat, readFile } = __nccwpck_require__(3292)
 const github = __nccwpck_require__(5438)
-const { ASSET_LABEL, ASSET_FILENAME } = __nccwpck_require__(6818)
 const { archiveItem } = __nccwpck_require__(9255)
 
-const attachArtifact = async (artifactPath, releaseId, token) => {
-  const outFile = ASSET_FILENAME
-
+const attachArtifact = async (path, filename, label, releaseId, token) => {
   try {
-    await archiveItem(artifactPath, outFile)
+    await archiveItem(path, filename)
   } catch (err) {
     throw new Error(err.message)
   }
 
   // determine content-length for header to upload asset
-  const { size: contentLength } = await stat(outFile)
+  const { size: contentLength } = await stat(filename)
 
   // setup headers fro the API call
   const headers = {
@@ -25907,7 +25910,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
   }
 
   try {
-    const data = await readFile(outFile)
+    const data = await readFile(filename)
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
@@ -25916,8 +25919,8 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       repo,
       release_id: releaseId,
       data,
-      name: outFile,
-      label: ASSET_LABEL,
+      name: filename,
+      label,
       headers,
     })
 
@@ -25925,7 +25928,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       throw new Error('POST asset response data not available')
     }
 
-    const { id: assetId, label } = postAssetResponse.data
+    const { id: assetId, label: assetLabel } = postAssetResponse.data
 
     const getAssetResponse = await octokit.request(
       'GET /repos/{owner}/{repo}/releases/assets/{asset_id}',
@@ -25942,13 +25945,11 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
 
     const { browser_download_url: url } = getAssetResponse.data
 
-    console.log('getAssetResponse: ', getAssetResponse.data)
-
     return {
       artifact: {
         isPresent: true,
         url,
-        label,
+        label: assetLabel,
       },
     }
   } catch (err) {

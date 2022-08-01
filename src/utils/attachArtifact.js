@@ -2,20 +2,17 @@
 
 const { stat, readFile } = require('fs/promises')
 const github = require('@actions/github')
-const { ASSET_LABEL, ASSET_FILENAME } = require('../const')
 const { archiveItem } = require('./archiver')
 
-const attachArtifact = async (artifactPath, releaseId, token) => {
-  const outFile = ASSET_FILENAME
-
+const attachArtifact = async (path, filename, label, releaseId, token) => {
   try {
-    await archiveItem(artifactPath, outFile)
+    await archiveItem(path, filename)
   } catch (err) {
     throw new Error(err.message)
   }
 
   // determine content-length for header to upload asset
-  const { size: contentLength } = await stat(outFile)
+  const { size: contentLength } = await stat(filename)
 
   // setup headers fro the API call
   const headers = {
@@ -24,7 +21,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
   }
 
   try {
-    const data = await readFile(outFile)
+    const data = await readFile(filename)
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
@@ -33,8 +30,8 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       repo,
       release_id: releaseId,
       data,
-      name: outFile,
-      label: ASSET_LABEL,
+      name: filename,
+      label,
       headers,
     })
 
@@ -42,7 +39,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       throw new Error('POST asset response data not available')
     }
 
-    const { id: assetId, label } = postAssetResponse.data
+    const { id: assetId, label: assetLabel } = postAssetResponse.data
 
     const getAssetResponse = await octokit.request(
       'GET /repos/{owner}/{repo}/releases/assets/{asset_id}',
@@ -63,7 +60,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       artifact: {
         isPresent: true,
         url,
-        label,
+        label: assetLabel,
       },
     }
   } catch (err) {

@@ -60,6 +60,14 @@ inputs:
   artifact-path:
     description: 'If this property is populated, the item (folder or file) specified here will be used as the artifact to zip and attach to the release.'
     required: false
+  artifact-filename:
+    description: 'The artifact file name.'
+    required: false
+    default: 'asset.zip'
+  artifact-label:
+    description: 'The artifact label that will be shown in the pull request and in the release.'
+    required: false
+    default: 'RELEASE ASSET'
 
 runs:
   using: 'composite'

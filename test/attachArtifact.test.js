@@ -3,7 +3,9 @@
 const tap = require('tap')
 
 const DEFAULT_INPUT_DATA = {
-  buildDir: 'dist',
+  artifactPath: 'dist',
+  artifactFilename: 'filename.zip',
+  artifactLabel: 'label',
   releaseId: '1',
   token: 'token',
 }
@@ -40,9 +42,16 @@ tap.test(
       },
     })
 
-    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const { artifactPath, artifactFilename, artifactLabel, releaseId, token } =
+      DEFAULT_INPUT_DATA
     tap.doesNotThrow(async () => {
-      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+      await attachArtifactModule.attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      )
     })
   }
 )
@@ -59,12 +68,19 @@ tap.test(
       },
     })
 
-    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const { artifactPath, artifactFilename, artifactLabel, releaseId, token } =
+      DEFAULT_INPUT_DATA
 
     const expectedError = new Error('file not found')
 
     try {
-      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+      await attachArtifactModule.attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      )
     } catch (err) {
       tap.equal(err.message, expectedError.message)
     }
@@ -106,12 +122,19 @@ tap.test(
       },
     })
 
-    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const { artifactPath, artifactFilename, artifactLabel, releaseId, token } =
+      DEFAULT_INPUT_DATA
     const expectedError = new Error(
       'Unable to upload the asset to the release: Generic HTTP error'
     )
     try {
-      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+      await attachArtifactModule.attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      )
     } catch (err) {
       tap.equal(err.message, expectedError.message)
     }
@@ -150,12 +173,19 @@ tap.test(
       },
     })
 
-    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const { artifactPath, artifactFilename, artifactLabel, releaseId, token } =
+      DEFAULT_INPUT_DATA
     const expectedError = new Error(
       'Unable to upload the asset to the release: POST asset response data not available'
     )
     try {
-      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+      await attachArtifactModule.attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      )
     } catch (err) {
       tap.equal(err.message, expectedError.message)
     }
@@ -197,12 +227,19 @@ tap.test(
       },
     })
 
-    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const { artifactPath, artifactFilename, artifactLabel, releaseId, token } =
+      DEFAULT_INPUT_DATA
     const expectedError = new Error(
       'Unable to upload the asset to the release: GET asset response data not available'
     )
     try {
-      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+      await attachArtifactModule.attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      )
     } catch (err) {
       tap.equal(err.message, expectedError.message)
     }

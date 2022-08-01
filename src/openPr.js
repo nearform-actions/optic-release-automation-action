@@ -91,9 +91,17 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     logInfo('** Attaching artifact **')
 
     const token = inputs['github-token']
+    const artifactFilename = inputs['artifact-filename']
+    const artifactLabel = inputs['artifact-label']
     const { id: releaseId } = draftRelease
     try {
-      ;({ artifact } = await attachArtifact(artifactPath, releaseId, token))
+      ;({ artifact } = await attachArtifact(
+        artifactPath,
+        artifactFilename,
+        artifactLabel,
+        releaseId,
+        token
+      ))
     } catch (err) {
       logInfo(err.message)
       core.setFailed(err.message)
