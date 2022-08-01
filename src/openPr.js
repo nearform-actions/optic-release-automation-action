@@ -6,7 +6,7 @@ const _template = require('lodash.template')
 const semver = require('semver')
 const core = require('@actions/core')
 
-const { PR_TITLE_PREFIX } = require('./const')
+const { PR_TITLE_PREFIX, ZIP_EXTENSION } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
@@ -44,6 +44,28 @@ const getPRBody = (
   })
 }
 
+const addArtifact = async (inputs, releaseId) => {
+  const artifactPath = inputs['artifact-path']
+
+  if (artifactPath) {
+    logInfo('** Attaching artifact **')
+
+    const token = inputs['github-token']
+    const artifactFilename =
+      inputs['artifact-filename'] ?? deriveFilename(artifactPath, ZIP_EXTENSION)
+
+    const artifact = await attach(
+      artifactPath,
+      artifactFilename,
+      releaseId,
+      token
+    )
+
+    logInfo('** Artifact attached! **')
+    return artifact
+  }
+}
+
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
@@ -78,29 +100,12 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
-  // attach artifact
-  const artifactPath = inputs['artifact-path']
   let artifact
-
-  if (artifactPath) {
-    logInfo('** Attaching artifact **')
-
-    const token = inputs['github-token']
-    const artifactFilename =
-      inputs['artifact-filename'] ?? deriveFilename(artifactPath, '.zip')
-    try {
-      artifact = await attach(
-        artifactPath,
-        artifactFilename,
-        draftRelease.id,
-        token
-      )
-    } catch (err) {
-      logInfo(err.message)
-      core.setFailed(err.message)
-    }
-
-    logInfo('** Artifact attached! **')
+  try {
+    artifact = await addArtifact(inputs, draftRelease.id)
+  } catch (err) {
+    logInfo(err.message)
+    core.setFailed(err.message)
   }
 
   const prBody = getPRBody(_template(tpl), {

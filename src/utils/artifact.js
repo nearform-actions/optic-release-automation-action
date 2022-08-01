@@ -4,12 +4,15 @@ const { stat, readFile } = require('fs/promises')
 const github = require('@actions/github')
 const path = require('path')
 const { archiveItem } = require('./archiver')
+const { ZIP_EXTENSION } = require('../const')
 
 const attach = async (path, filename, releaseId, token) => {
-  try {
-    await archiveItem(path, filename)
-  } catch (err) {
-    throw new Error(err.message)
+  if (!path.endsWith(ZIP_EXTENSION)) {
+    try {
+      await archiveItem(path, filename)
+    } catch (err) {
+      throw new Error(err.message)
+    }
   }
 
   // determine content-length for header to upload asset

@@ -58,10 +58,10 @@ inputs:
     type: boolean
     default: 'true'
   artifact-path:
-    description: 'If this property is populated, the item (folder or file) specified here will be used as the artifact to zip and attach to the release.'
+    description: 'Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.'
     required: false
   artifact-filename:
-    description: 'The artifact file name with the specific extension.'
+    description: 'The artifact file name will be derived from the artifact-path. If you want to set a custom filename you can specify it with this input variable.'
     required: false
 
 runs:

@@ -25480,6 +25480,7 @@ try {
 
 
 exports.PR_TITLE_PREFIX = '[OPTIC-RELEASE-AUTOMATION]'
+exports.ZIP_EXTENSION = '.zip'
 
 
 /***/ }),
@@ -25542,7 +25543,7 @@ const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
 const core = __nccwpck_require__(2186)
 
-const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
+const { PR_TITLE_PREFIX, ZIP_EXTENSION } = __nccwpck_require__(6818)
 const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
@@ -25580,6 +25581,28 @@ const getPRBody = (
   })
 }
 
+const addArtifact = async (inputs, releaseId) => {
+  const artifactPath = inputs['artifact-path']
+
+  if (artifactPath) {
+    logInfo('** Attaching artifact **')
+
+    const token = inputs['github-token']
+    const artifactFilename =
+      inputs['artifact-filename'] ?? deriveFilename(artifactPath, ZIP_EXTENSION)
+
+    const artifact = await attach(
+      artifactPath,
+      artifactFilename,
+      releaseId,
+      token
+    )
+
+    logInfo('** Artifact attached! **')
+    return artifact
+  }
+}
+
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
@@ -25614,29 +25637,12 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
-  // attach artifact
-  const artifactPath = inputs['artifact-path']
   let artifact
-
-  if (artifactPath) {
-    logInfo('** Attaching artifact **')
-
-    const token = inputs['github-token']
-    const artifactFilename =
-      inputs['artifact-filename'] ?? deriveFilename(artifactPath, '.zip')
-    try {
-      artifact = await attach(
-        artifactPath,
-        artifactFilename,
-        draftRelease.id,
-        token
-      )
-    } catch (err) {
-      logInfo(err.message)
-      core.setFailed(err.message)
-    }
-
-    logInfo('** Artifact attached! **')
+  try {
+    artifact = await addArtifact(inputs, draftRelease.id)
+  } catch (err) {
+    logInfo(err.message)
+    core.setFailed(err.message)
   }
 
   const prBody = getPRBody(_template(tpl), {
@@ -25887,12 +25893,15 @@ const { stat, readFile } = __nccwpck_require__(3292)
 const github = __nccwpck_require__(5438)
 const path = __nccwpck_require__(1017)
 const { archiveItem } = __nccwpck_require__(9255)
+const { ZIP_EXTENSION } = __nccwpck_require__(6818)
 
 const attach = async (path, filename, releaseId, token) => {
-  try {
-    await archiveItem(path, filename)
-  } catch (err) {
-    throw new Error(err.message)
+  if (!path.endsWith(ZIP_EXTENSION)) {
+    try {
+      await archiveItem(path, filename)
+    } catch (err) {
+      throw new Error(err.message)
+    }
   }
 
   // determine content-length for header to upload asset

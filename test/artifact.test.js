@@ -19,7 +19,7 @@ tap.test(
       'fs/promises': {
         stat: async () => 100,
         lstat: async () => ({ isDirectory: () => true }),
-        readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
+        readFile: async () => Buffer.from('hello world'),
       },
       '@actions/github': {
         context: {
@@ -85,7 +85,7 @@ tap.test(
       'fs/promises': {
         stat: async () => 100,
         lstat: async () => ({ isDirectory: () => true }),
-        readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
+        readFile: async () => Buffer.from('hello world'),
       },
       '@actions/github': {
         context: {
@@ -125,7 +125,7 @@ tap.test(
       'fs/promises': {
         stat: async () => 100,
         lstat: async () => ({ isDirectory: () => true }),
-        readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
+        readFile: async () => Buffer.from('hello world'),
       },
       '@actions/github': {
         context: {
