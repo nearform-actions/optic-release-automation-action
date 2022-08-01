@@ -22,8 +22,8 @@ Release author: @${author}
 <% } %>
 
 #### Artifacts
-<% if (artifactAttached) { %>
-- An artifact will be attached to the release
+<% if (artifact.isPresent) { %>
+- An artifact will be attached to the release -> [${artifact.label}](${artifact.url})
 <% } else { %>
 - No artifacts will be attached to the release
 <% } %>

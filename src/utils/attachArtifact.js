@@ -1,18 +1,17 @@
 'use strict'
 
 const { stat, readFile } = require('fs/promises')
-const { zip } = require('zip-a-folder')
 const github = require('@actions/github')
 const { ASSET_LABEL, ASSET_FILENAME } = require('../const')
+const { archiveItem } = require('./archiver')
 
 const attachArtifact = async (artifactPath, releaseId, token) => {
   const outFile = ASSET_FILENAME
+
   try {
-    await zip(artifactPath, outFile)
+    await archiveItem(artifactPath, outFile)
   } catch (err) {
-    throw new Error(
-      'An error occurred while zipping the build folder: ' + err.message
-    )
+    throw new Error(err.message)
   }
 
   // determine content-length for header to upload asset
@@ -29,7 +28,7 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
-    await octokit.rest.repos.uploadReleaseAsset({
+    const response = await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
@@ -38,6 +37,19 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
       label: ASSET_LABEL,
       headers,
     })
+
+    if (!response.data) {
+      throw new Error('Reponse data not available')
+    }
+
+    const { url, label } = response.data
+    return {
+      artifact: {
+        isPresent: true,
+        url,
+        label,
+      },
+    }
   } catch (err) {
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
   }

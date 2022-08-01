@@ -22,7 +22,13 @@ function setup() {
     .resolves({ data: {} })
   const attachArtifactStub = sinon
     .stub(attachArtifactAction, 'attachArtifact')
-    .returns({})
+    .returns({
+      artifact: {
+        isPresent: true,
+        url: 'https://example.com',
+        label: 'label',
+      },
+    })
 
   const openPr = proxyquire('../src/openPr', {
     './utils/runSpawn': utilStub,

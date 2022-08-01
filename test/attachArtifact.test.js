@@ -12,11 +12,12 @@ tap.test(
   'attachArtifact does not throw errors with proper inputs',
   async () => {
     const attachArtifactModule = tap.mock('../src/utils/attachArtifact.js', {
-      'zip-a-folder': {
-        zip: async () => null,
+      '../src/utils/archiver.js': {
+        archiveItem: () => null,
       },
       'fs/promises': {
         stat: () => 100,
+        lstat: () => ({ isDirectory: () => true }),
         readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
       },
       '@actions/github': {
@@ -29,7 +30,7 @@ tap.test(
         getOctokit: () => ({
           rest: {
             repos: {
-              uploadReleaseAsset: async () => ({ status: 201 }),
+              uploadReleaseAsset: async () => ({ status: 201, data: {} }),
             },
           },
         }),
@@ -48,8 +49,8 @@ tap.test(
   async () => {
     const error = new Error('file not found')
     const attachArtifactModule = tap.mock('../src/utils/attachArtifact.js', {
-      'zip-a-folder': {
-        zip: async () => {
+      '../src/utils/archiver.js': {
+        archiveItem: () => {
           throw error
         },
       },
@@ -57,9 +58,7 @@ tap.test(
 
     const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
 
-    const expectedError = new Error(
-      'An error occurred while zipping the build folder: file not found'
-    )
+    const expectedError = new Error('file not found')
 
     try {
       await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
@@ -74,11 +73,12 @@ tap.test(
   async () => {
     const error = new Error('Generic HTTP error')
     const attachArtifactModule = tap.mock('../src/utils/attachArtifact.js', {
-      'zip-a-folder': {
-        zip: async () => null,
+      '../src/utils/archiver.js': {
+        archiveItem: () => null,
       },
       'fs/promises': {
         stat: async () => 100,
+        lstat: () => ({ isDirectory: () => true }),
         readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
       },
       '@actions/github': {
@@ -103,6 +103,47 @@ tap.test(
     const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
     const expectedError = new Error(
       'Unable to upload the asset to the release: Generic HTTP error'
+    )
+    try {
+      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+    } catch (err) {
+      tap.equal(err.message, expectedError.message)
+    }
+  }
+)
+
+tap.test(
+  'attachArtifact throws an error if response data is not available',
+  async () => {
+    const attachArtifactModule = tap.mock('../src/utils/attachArtifact.js', {
+      '../src/utils/archiver.js': {
+        archiveItem: () => null,
+      },
+      'fs/promises': {
+        stat: async () => 100,
+        lstat: () => ({ isDirectory: () => true }),
+        readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
+      },
+      '@actions/github': {
+        context: {
+          repo: {
+            repo: 'repo',
+            owner: 'owner',
+          },
+        },
+        getOctokit: () => ({
+          rest: {
+            repos: {
+              uploadReleaseAsset: async () => ({ status: 500 }),
+            },
+          },
+        }),
+      },
+    })
+
+    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const expectedError = new Error(
+      'Unable to upload the asset to the release: Reponse data not available'
     )
     try {
       await attachArtifactModule.attachArtifact(buildDir, releaseId, token)

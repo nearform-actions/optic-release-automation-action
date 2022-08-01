@@ -15,7 +15,10 @@ const { attachArtifact } = require('./utils/attachArtifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
-const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
+const getPRBody = (
+  template,
+  { newVersion, draftRelease, inputs, author, artifact }
+) => {
   const tagsToBeUpdated = []
   const { major, minor } = semver.parse(newVersion)
 
@@ -35,7 +38,7 @@ const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
-    artifactAttached: inputs['artifact-path'],
+    artifact,
     syncTags: /true/i.test(inputs['sync-semver-tags']),
     author,
   })
@@ -75,11 +78,36 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
+  // attach artifact
+  const artifactPath = inputs['artifact-path']
+
+  let artifact = {
+    isPresent: false,
+    url: null,
+    label: null,
+  }
+
+  if (artifactPath) {
+    logInfo('** Attaching artifact **')
+
+    const token = inputs['github-token']
+    const { id: releaseId } = draftRelease
+    try {
+      ;({ artifact } = await attachArtifact(artifactPath, releaseId, token))
+    } catch (err) {
+      logInfo(err.message)
+      core.setFailed(err.message)
+    }
+
+    logInfo('** Artifact attached! **')
+  }
+
   const prBody = getPRBody(_template(tpl), {
     newVersion,
     draftRelease,
     inputs,
     author: context.actor,
+    artifact,
   })
   try {
     await callApi(
@@ -103,24 +131,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       message += `\n Unable to delete branch ${branchName}:  ${error.message}`
     }
     core.setFailed(message)
-  }
-
-  // attach artifact
-  const buildDir = inputs['artifact-path']
-
-  if (buildDir) {
-    logInfo('** Attaching artifact **')
-
-    const token = inputs['github-token']
-    const { id: releaseId } = draftRelease
-    try {
-      await attachArtifact(buildDir, releaseId, token)
-    } catch (err) {
-      logInfo(err.message)
-      core.setFailed(err.message)
-    }
-
-    logInfo('** Artifact attached! **')
   }
 
   logInfo('** Finished! **')
