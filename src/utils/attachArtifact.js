@@ -59,6 +59,8 @@ const attachArtifact = async (artifactPath, releaseId, token) => {
 
     const { browser_download_url: url } = getAssetResponse.data
 
+    console.log('getAssetResponse: ', getAssetResponse.data)
+
     return {
       artifact: {
         isPresent: true,
