@@ -33,6 +33,9 @@ tap.test(
               uploadReleaseAsset: async () => ({ status: 201, data: {} }),
             },
           },
+          request: async () => ({
+            data: { browser_download_url: 'https://example.com' },
+          }),
         }),
       },
     })
@@ -96,6 +99,9 @@ tap.test(
               },
             },
           },
+          request: async () => ({
+            data: { browser_download_url: 'https://example.com' },
+          }),
         }),
       },
     })
@@ -113,7 +119,7 @@ tap.test(
 )
 
 tap.test(
-  'attachArtifact throws an error if response data is not available',
+  'attachArtifact throws an error if response data for POST asset is not available',
   async () => {
     const attachArtifactModule = tap.mock('../src/utils/attachArtifact.js', {
       '../src/utils/archiver.js': {
@@ -137,13 +143,63 @@ tap.test(
               uploadReleaseAsset: async () => ({ status: 500 }),
             },
           },
+          request: async () => ({
+            data: { browser_download_url: 'https://example.com' },
+          }),
         }),
       },
     })
 
     const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
     const expectedError = new Error(
-      'Unable to upload the asset to the release: Reponse data not available'
+      'Unable to upload the asset to the release: POST asset response data not available'
+    )
+    try {
+      await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
+    } catch (err) {
+      tap.equal(err.message, expectedError.message)
+    }
+  }
+)
+
+tap.test(
+  'attachArtifact throws an error if response data for GET asset is not available',
+  async () => {
+    const attachArtifactModule = tap.mock('../src/utils/attachArtifact.js', {
+      '../src/utils/archiver.js': {
+        archiveItem: () => null,
+      },
+      'fs/promises': {
+        stat: async () => 100,
+        lstat: () => ({ isDirectory: () => true }),
+        readFile: async () => Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]),
+      },
+      '@actions/github': {
+        context: {
+          repo: {
+            repo: 'repo',
+            owner: 'owner',
+          },
+        },
+        getOctokit: () => ({
+          rest: {
+            repos: {
+              uploadReleaseAsset: async () => ({
+                status: 201,
+                data: { label: 'label', id: 1 },
+              }),
+            },
+          },
+          request: async () => ({
+            data: null,
+          }),
+        }),
+      },
+    })
+
+    const { buildDir, releaseId, token } = DEFAULT_INPUT_DATA
+    const expectedError = new Error(
+      'Unable to upload the asset to the release: GET asset response data not available'
     )
     try {
       await attachArtifactModule.attachArtifact(buildDir, releaseId, token)
