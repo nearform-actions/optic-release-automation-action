@@ -25928,22 +25928,8 @@ const attachArtifact = async (path, filename, label, releaseId, token) => {
       throw new Error('POST asset response data not available')
     }
 
-    const { id: assetId, label: assetLabel } = postAssetResponse.data
-
-    const getAssetResponse = await octokit.request(
-      'GET /repos/{owner}/{repo}/releases/assets/{asset_id}',
-      {
-        owner,
-        repo,
-        asset_id: assetId,
-      }
-    )
-
-    if (!getAssetResponse.data) {
-      throw new Error('GET asset response data not available')
-    }
-
-    const { browser_download_url: url } = getAssetResponse.data
+    const { browser_download_url: url, label: assetLabel } =
+      postAssetResponse.data
 
     return {
       artifact: {
