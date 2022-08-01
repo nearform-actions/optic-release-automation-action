@@ -189,8 +189,7 @@ jobs:
 | `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | If this property is populated, the item (folder or file) specified here will be used as the artifact to zip and attach to the release.                                                                  |
-| `artifact-filename`| No       | The artifact file name. <br /> (_Default: `asset.zip`_)                                                                  |
-| `artifact-label`| No       | The artifact label that will be shown in the pull request and in the release. <br /> (_Default: `RELEASE ASSET`_)                                                                  |
+| `artifact-filename`| No       | The artifact file name with the specific extension.                                                                 |
 
 ## Motivation
 

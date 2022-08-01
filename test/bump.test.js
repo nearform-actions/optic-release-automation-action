@@ -8,7 +8,7 @@ const clone = require('lodash.clonedeep')
 
 const runSpawnAction = require('../src/utils/runSpawn')
 const callApiAction = require('../src/utils/callApi')
-const attachArtifactAction = require('../src/utils/attachArtifact')
+const artifactAction = require('../src/utils/artifact')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_VERSION = 'v3.1.1'
@@ -20,19 +20,17 @@ function setup() {
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
     .resolves({ data: {} })
-  const attachArtifactStub = sinon
-    .stub(attachArtifactAction, 'attachArtifact')
-    .returns({
-      artifact: {
-        isPresent: true,
-        url: 'https://example.com',
-        label: 'label',
-      },
-    })
+  const attachArtifactStub = sinon.stub(artifactAction, 'attach').returns({
+    artifact: {
+      isPresent: true,
+      url: 'https://example.com',
+      label: 'label',
+    },
+  })
 
   const openPr = proxyquire('../src/openPr', {
     './utils/runSpawn': utilStub,
-    './utils/attachArtifact': attachArtifactStub,
+    './utils/artifact': attachArtifactStub,
     '@actions/core': coreStub,
   })
 
@@ -192,9 +190,6 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '- No major or minor tags will be updated as configured\n' +
           '\n' +
           '\n' +
-          '#### Artifacts\n' +
-          '\n' +
-          '- No artifacts will be attached to the release\n' +
           '\n' +
           '\n' +
           '#### If you close the PR\n' +
@@ -252,9 +247,6 @@ tap.test(
             '- No major or minor tags will be updated as configured\n' +
             '\n' +
             '\n' +
-            '#### Artifacts\n' +
-            '\n' +
-            '- No artifacts will be attached to the release\n' +
             '\n' +
             '\n' +
             '#### If you close the PR\n' +
@@ -313,9 +305,6 @@ tap.test(
             '- No major or minor tags will be updated as configured\n' +
             '\n' +
             '\n' +
-            '#### Artifacts\n' +
-            '\n' +
-            '- No artifacts will be attached to the release\n' +
             '\n' +
             '\n' +
             '#### If you close the PR\n' +

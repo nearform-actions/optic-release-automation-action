@@ -13,9 +13,5 @@ tap.test('throws an error if path not found', async () => {
     },
   })
 
-  try {
-    await archiverModule.archiveItem()
-  } catch (err) {
-    tap.type(err, Error)
-  }
+  tap.rejects(archiverModule.archiveItem())
 })

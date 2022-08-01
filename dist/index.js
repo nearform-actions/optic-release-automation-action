@@ -25547,7 +25547,7 @@ const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
 const { logInfo } = __nccwpck_require__(653)
-const { attachArtifact } = __nccwpck_require__(4096)
+const { attach, deriveFilename } = __nccwpck_require__(930)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -25616,28 +25616,21 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   // attach artifact
   const artifactPath = inputs['artifact-path']
-
-  let artifact = {
-    isPresent: false,
-    url: null,
-    label: null,
-  }
+  let artifact
 
   if (artifactPath) {
     logInfo('** Attaching artifact **')
 
     const token = inputs['github-token']
-    const artifactFilename = inputs['artifact-filename']
-    const artifactLabel = inputs['artifact-label']
-    const { id: releaseId } = draftRelease
+    const artifactFilename =
+      inputs['artifact-filename'] ?? deriveFilename(artifactPath, '.zip')
     try {
-      ;({ artifact } = await attachArtifact(
+      artifact = await attach(
         artifactPath,
         artifactFilename,
-        artifactLabel,
-        releaseId,
+        draftRelease.id,
         token
-      ))
+      )
     } catch (err) {
       logInfo(err.message)
       core.setFailed(err.message)
@@ -25841,7 +25834,7 @@ module.exports = async function ({ github, context, inputs }) {
 /***/ }),
 
 /***/ 9255:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
@@ -25850,19 +25843,11 @@ const { lstat } = __nccwpck_require__(3292)
 const AdmZip = __nccwpck_require__(6761)
 
 const archiveItem = async (path, out) => {
-  let isDirectory = false
-  try {
-    const stat = await lstat(path)
-    isDirectory = stat.isDirectory()
-  } catch (err) {
-    throw new Error(
-      'An error occurred while checking if file or directory: ' + err.message
-    )
-  }
+  const itemIsDirectory = await isDirectory(path)
 
   const zip = new AdmZip()
   try {
-    if (isDirectory) {
+    if (itemIsDirectory) {
       await zip.addLocalFolderPromise(path)
     } else {
       zip.addLocalFile(path)
@@ -25876,14 +25861,23 @@ const archiveItem = async (path, out) => {
   }
 }
 
-module.exports = {
-  archiveItem,
+const isDirectory = async path => {
+  try {
+    const stat = await lstat(path)
+    return stat.isDirectory()
+  } catch (err) {
+    throw new Error(
+      'An error occurred while checking if file or directory: ' + err.message
+    )
+  }
 }
+
+exports.archiveItem = archiveItem
 
 
 /***/ }),
 
-/***/ 4096:
+/***/ 930:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -25891,9 +25885,10 @@ module.exports = {
 
 const { stat, readFile } = __nccwpck_require__(3292)
 const github = __nccwpck_require__(5438)
+const path = __nccwpck_require__(1017)
 const { archiveItem } = __nccwpck_require__(9255)
 
-const attachArtifact = async (path, filename, label, releaseId, token) => {
+const attach = async (path, filename, releaseId, token) => {
   try {
     await archiveItem(path, filename)
   } catch (err) {
@@ -25914,36 +25909,37 @@ const attachArtifact = async (path, filename, label, releaseId, token) => {
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
-    const postAssetResponse = await octokit.rest.repos.uploadReleaseAsset({
+    const response = await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
       data,
       name: filename,
-      label,
+      label: filename,
       headers,
     })
 
-    if (!postAssetResponse.data) {
-      throw new Error('POST asset response data not available')
+    if (response.data.state !== 'uploaded') {
+      throw new Error('The asset has not been uploaded properly.')
     }
 
-    const { browser_download_url: url, label: assetLabel } =
-      postAssetResponse.data
+    const { browser_download_url: url, label: assetLabel } = response.data
 
     return {
-      artifact: {
-        isPresent: true,
-        url,
-        label: assetLabel,
-      },
+      url,
+      label: assetLabel,
     }
   } catch (err) {
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
   }
 }
 
-exports.attachArtifact = attachArtifact
+const deriveFilename = (filePath, extension) => {
+  return `${path.basename(filePath)}.${extension}`
+}
+
+exports.attach = attach
+exports.deriveFilename = deriveFilename
 
 
 /***/ }),

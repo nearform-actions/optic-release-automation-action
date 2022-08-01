@@ -11,7 +11,7 @@ const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
-const { attachArtifact } = require('./utils/attachArtifact')
+const { attach, deriveFilename } = require('./utils/artifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -80,28 +80,21 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   // attach artifact
   const artifactPath = inputs['artifact-path']
-
-  let artifact = {
-    isPresent: false,
-    url: null,
-    label: null,
-  }
+  let artifact
 
   if (artifactPath) {
     logInfo('** Attaching artifact **')
 
     const token = inputs['github-token']
-    const artifactFilename = inputs['artifact-filename']
-    const artifactLabel = inputs['artifact-label']
-    const { id: releaseId } = draftRelease
+    const artifactFilename =
+      inputs['artifact-filename'] ?? deriveFilename(artifactPath, '.zip')
     try {
-      ;({ artifact } = await attachArtifact(
+      artifact = await attach(
         artifactPath,
         artifactFilename,
-        artifactLabel,
-        releaseId,
+        draftRelease.id,
         token
-      ))
+      )
     } catch (err) {
       logInfo(err.message)
       core.setFailed(err.message)

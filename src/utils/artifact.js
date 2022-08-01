@@ -2,9 +2,10 @@
 
 const { stat, readFile } = require('fs/promises')
 const github = require('@actions/github')
+const path = require('path')
 const { archiveItem } = require('./archiver')
 
-const attachArtifact = async (path, filename, label, releaseId, token) => {
+const attach = async (path, filename, releaseId, token) => {
   try {
     await archiveItem(path, filename)
   } catch (err) {
@@ -25,33 +26,34 @@ const attachArtifact = async (path, filename, label, releaseId, token) => {
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
-    const postAssetResponse = await octokit.rest.repos.uploadReleaseAsset({
+    const response = await octokit.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id: releaseId,
       data,
       name: filename,
-      label,
+      label: filename,
       headers,
     })
 
-    if (!postAssetResponse.data) {
-      throw new Error('POST asset response data not available')
+    if (response.data.state !== 'uploaded') {
+      throw new Error('The asset has not been uploaded properly.')
     }
 
-    const { browser_download_url: url, label: assetLabel } =
-      postAssetResponse.data
+    const { browser_download_url: url, label: assetLabel } = response.data
 
     return {
-      artifact: {
-        isPresent: true,
-        url,
-        label: assetLabel,
-      },
+      url,
+      label: assetLabel,
     }
   } catch (err) {
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
   }
 }
 
-exports.attachArtifact = attachArtifact
+const deriveFilename = (filePath, extension) => {
+  return `${path.basename(filePath)}.${extension}`
+}
+
+exports.attach = attach
+exports.deriveFilename = deriveFilename

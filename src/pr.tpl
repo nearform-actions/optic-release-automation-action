@@ -21,11 +21,9 @@ Release author: @${author}
 - No major or minor tags will be updated as configured
 <% } %>
 
+<% if (artifact) { %>
 #### Artifacts
-<% if (artifact.isPresent) { %>
 - An artifact will be attached to the release -> [${artifact.label}](${artifact.url})
-<% } else { %>
-- No artifacts will be attached to the release
 <% } %>
 
 #### If you close the PR
