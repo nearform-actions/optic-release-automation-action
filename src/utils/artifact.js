@@ -6,13 +6,11 @@ const path = require('path')
 const { archiveItem } = require('./archiver')
 const { ZIP_EXTENSION } = require('../const')
 
-const attach = async (path, filename, releaseId, token) => {
+const attach = async (path, releaseId, token) => {
+  const filename = deriveFilename(path, ZIP_EXTENSION)
+
   if (!path.endsWith(ZIP_EXTENSION)) {
-    try {
-      await archiveItem(path, filename)
-    } catch (err) {
-      throw new Error(err.message)
-    }
+    await archiveItem(path, filename)
   }
 
   // determine content-length for header to upload asset
@@ -43,11 +41,11 @@ const attach = async (path, filename, releaseId, token) => {
       throw new Error('The asset has not been uploaded properly.')
     }
 
-    const { browser_download_url: url, label: assetLabel } = response.data
+    const { browser_download_url: url, label } = response.data
 
     return {
       url,
-      label: assetLabel,
+      label,
     }
   } catch (err) {
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
@@ -55,8 +53,7 @@ const attach = async (path, filename, releaseId, token) => {
 }
 
 const deriveFilename = (filePath, extension) => {
-  return `${path.basename(filePath)}.${extension}`
+  return path.basename(filePath) + extension
 }
 
 exports.attach = attach
-exports.deriveFilename = deriveFilename

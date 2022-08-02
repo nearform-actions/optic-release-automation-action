@@ -190,8 +190,6 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '- No major or minor tags will be updated as configured\n' +
           '\n' +
           '\n' +
-          '\n' +
-          '\n' +
           '#### If you close the PR\n' +
           '\n' +
           '- The new draft release will be deleted and nothing will change\n' +
@@ -245,8 +243,6 @@ tap.test(
             '\n' +
             '\n' +
             '- No major or minor tags will be updated as configured\n' +
-            '\n' +
-            '\n' +
             '\n' +
             '\n' +
             '#### If you close the PR\n' +
@@ -303,8 +299,6 @@ tap.test(
             '\n' +
             '\n' +
             '- No major or minor tags will be updated as configured\n' +
-            '\n' +
-            '\n' +
             '\n' +
             '\n' +
             '#### If you close the PR\n' +

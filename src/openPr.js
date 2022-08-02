@@ -6,12 +6,12 @@ const _template = require('lodash.template')
 const semver = require('semver')
 const core = require('@actions/core')
 
-const { PR_TITLE_PREFIX, ZIP_EXTENSION } = require('./const')
+const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
-const { attach, deriveFilename } = require('./utils/artifact')
+const { attach } = require('./utils/artifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -46,24 +46,11 @@ const getPRBody = (
 
 const addArtifact = async (inputs, releaseId) => {
   const artifactPath = inputs['artifact-path']
+  const token = inputs['github-token']
 
-  if (artifactPath) {
-    logInfo('** Attaching artifact **')
+  const artifact = await attach(artifactPath, releaseId, token)
 
-    const token = inputs['github-token']
-    const artifactFilename =
-      inputs['artifact-filename'] ?? deriveFilename(artifactPath, ZIP_EXTENSION)
-
-    const artifact = await attach(
-      artifactPath,
-      artifactFilename,
-      releaseId,
-      token
-    )
-
-    logInfo('** Artifact attached! **')
-    return artifact
-  }
+  return artifact
 }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
@@ -100,12 +87,10 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
-  let artifact
-  try {
-    artifact = await addArtifact(inputs, draftRelease.id)
-  } catch (err) {
-    logInfo(err.message)
-    core.setFailed(err.message)
+  const artifact =
+    inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))
+  if (artifact) {
+    logInfo('Artifact attached!')
   }
 
   const prBody = getPRBody(_template(tpl), {

@@ -4,7 +4,6 @@ const tap = require('tap')
 
 const DEFAULT_INPUT_DATA = {
   artifactPath: 'dist',
-  artifactFilename: 'filename.zip',
   releaseId: '1',
   token: 'token',
 }
@@ -41,17 +40,9 @@ tap.test(
       },
     })
 
-    const { artifactPath, artifactFilename, releaseId, token } =
-      DEFAULT_INPUT_DATA
+    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.resolves(
-      attachArtifactModule.attach(
-        artifactPath,
-        artifactFilename,
-        releaseId,
-        token
-      )
-    )
+    tap.resolves(attachArtifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
@@ -66,12 +57,9 @@ tap.test(
       },
     })
 
-    const { artifactPath, artifactFilename, releaseId, token } =
-      DEFAULT_INPUT_DATA
+    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.rejects(
-      artifactModule.attach(artifactPath, artifactFilename, releaseId, token)
-    )
+    tap.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
@@ -106,12 +94,9 @@ tap.test(
       },
     })
 
-    const { artifactPath, artifactFilename, releaseId, token } =
-      DEFAULT_INPUT_DATA
+    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.rejects(
-      artifactModule.attach(artifactPath, artifactFilename, releaseId, token)
-    )
+    tap.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
@@ -147,11 +132,8 @@ tap.test(
       },
     })
 
-    const { artifactPath, artifactFilename, releaseId, token } =
-      DEFAULT_INPUT_DATA
+    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.rejects(
-      artifactModule.attach(artifactPath, artifactFilename, releaseId, token)
-    )
+    tap.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )
