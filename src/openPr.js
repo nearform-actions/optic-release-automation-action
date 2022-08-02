@@ -11,10 +11,14 @@ const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
+const { attach } = require('./utils/artifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
-const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
+const getPRBody = (
+  template,
+  { newVersion, draftRelease, inputs, author, artifact }
+) => {
   const tagsToBeUpdated = []
   const { major, minor } = semver.parse(newVersion)
 
@@ -34,9 +38,19 @@ const getPRBody = (template, { newVersion, draftRelease, inputs, author }) => {
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
+    artifact,
     syncTags: /true/i.test(inputs['sync-semver-tags']),
     author,
   })
+}
+
+const addArtifact = async (inputs, releaseId) => {
+  const artifactPath = inputs['artifact-path']
+  const token = inputs['github-token']
+
+  const artifact = await attach(artifactPath, releaseId, token)
+
+  return artifact
 }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
@@ -73,11 +87,18 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
+  const artifact =
+    inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))
+  if (artifact) {
+    logInfo('Artifact attached!')
+  }
+
   const prBody = getPRBody(_template(tpl), {
     newVersion,
     draftRelease,
     inputs,
     author: context.actor,
+    artifact,
   })
   try {
     await callApi(
@@ -93,7 +114,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
-    logInfo('** Finished! **')
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
@@ -103,4 +123,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     }
     core.setFailed(message)
   }
+
+  logInfo('** Finished! **')
 }

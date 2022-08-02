@@ -57,6 +57,9 @@ inputs:
     required: false
     type: boolean
     default: 'true'
+  artifact-path:
+    description: 'Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.'
+    required: false
 
 runs:
   using: 'composite'
