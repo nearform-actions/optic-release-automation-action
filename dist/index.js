@@ -25543,12 +25543,12 @@ const _template = __nccwpck_require__(417)
 const semver = __nccwpck_require__(1383)
 const core = __nccwpck_require__(2186)
 
-const { PR_TITLE_PREFIX, ZIP_EXTENSION } = __nccwpck_require__(6818)
+const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
 const { logInfo } = __nccwpck_require__(653)
-const { attach, deriveFilename } = __nccwpck_require__(930)
+const { attach } = __nccwpck_require__(930)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -25583,24 +25583,11 @@ const getPRBody = (
 
 const addArtifact = async (inputs, releaseId) => {
   const artifactPath = inputs['artifact-path']
+  const token = inputs['github-token']
 
-  if (artifactPath) {
-    logInfo('** Attaching artifact **')
+  const artifact = await attach(artifactPath, releaseId, token)
 
-    const token = inputs['github-token']
-    const artifactFilename =
-      inputs['artifact-filename'] ?? deriveFilename(artifactPath, ZIP_EXTENSION)
-
-    const artifact = await attach(
-      artifactPath,
-      artifactFilename,
-      releaseId,
-      token
-    )
-
-    logInfo('** Artifact attached! **')
-    return artifact
-  }
+  return artifact
 }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
@@ -25637,12 +25624,10 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
-  let artifact
-  try {
-    artifact = await addArtifact(inputs, draftRelease.id)
-  } catch (err) {
-    logInfo(err.message)
-    core.setFailed(err.message)
+  const artifact =
+    inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))
+  if (artifact) {
+    logInfo('Artifact attached!')
   }
 
   const prBody = getPRBody(_template(tpl), {
@@ -25895,13 +25880,11 @@ const path = __nccwpck_require__(1017)
 const { archiveItem } = __nccwpck_require__(9255)
 const { ZIP_EXTENSION } = __nccwpck_require__(6818)
 
-const attach = async (path, filename, releaseId, token) => {
+const attach = async (path, releaseId, token) => {
+  const filename = deriveFilename(path, ZIP_EXTENSION)
+
   if (!path.endsWith(ZIP_EXTENSION)) {
-    try {
-      await archiveItem(path, filename)
-    } catch (err) {
-      throw new Error(err.message)
-    }
+    await archiveItem(path, filename)
   }
 
   // determine content-length for header to upload asset
@@ -25932,11 +25915,11 @@ const attach = async (path, filename, releaseId, token) => {
       throw new Error('The asset has not been uploaded properly.')
     }
 
-    const { browser_download_url: url, label: assetLabel } = response.data
+    const { browser_download_url: url, label } = response.data
 
     return {
       url,
-      label: assetLabel,
+      label,
     }
   } catch (err) {
     throw new Error(`Unable to upload the asset to the release: ${err.message}`)
@@ -25944,11 +25927,10 @@ const attach = async (path, filename, releaseId, token) => {
 }
 
 const deriveFilename = (filePath, extension) => {
-  return `${path.basename(filePath)}.${extension}`
+  return path.basename(filePath) + extension
 }
 
 exports.attach = attach
-exports.deriveFilename = deriveFilename
 
 
 /***/ }),

@@ -20,12 +20,12 @@ Release author: @${author}
 <% } else { %>
 - No major or minor tags will be updated as configured
 <% } %>
-
 <% if (artifact) { %>
+
 #### Artifacts
 - An artifact will be attached to the release -> [${artifact.label}](${artifact.url})
-<% } %>
 
+<% } %>
 #### If you close the PR
 
 - The new draft release will be deleted and nothing will change
