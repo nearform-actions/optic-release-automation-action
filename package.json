@@ -5,8 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "npm run lint && tap",
+    "test": "tap",
     "build": "ncc build src/index.js",
     "prepare": "husky install"
   },

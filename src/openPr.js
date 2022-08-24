@@ -60,7 +60,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
   }
-  const newVersion = `v${packageVersion}`
+  const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
 
