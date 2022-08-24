@@ -11,7 +11,7 @@ const callApiAction = require('../src/utils/callApi')
 const artifactAction = require('../src/utils/artifact')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
-const TEST_VERSION = 'v3.1.1'
+const TEST_VERSION = '3.1.1'
 const runSpawnStub = sinon.stub().returns(TEST_VERSION)
 
 function setup() {
@@ -51,10 +51,11 @@ tap.afterEach(() => {
 })
 
 const DEFAULT_ACTION_DATA = {
-  packageVersion: TEST_VERSION.slice(1),
+  packageVersion: TEST_VERSION,
   inputs: {
     semver: 'patch',
     'commit-message': 'Release {version}',
+    'version-prefix': 'v',
   },
   context: {
     actor: 'John',
@@ -74,7 +75,7 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-tap.test('it trigger an error when the packageVersion is missing', async t => {
+tap.test('it triggers an error when the packageVersion is missing', async t => {
   const { openPr } = setup()
 
   try {
@@ -93,7 +94,7 @@ tap.test('should create a new git branch', async () => {
   const { openPr, stubs } = setup()
   await openPr(DEFAULT_ACTION_DATA)
 
-  const branchName = `release/${TEST_VERSION}`
+  const branchName = `release/v${TEST_VERSION}`
 
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'checkout',
@@ -104,7 +105,7 @@ tap.test('should create a new git branch', async () => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
     '-m',
-    `"Release ${TEST_VERSION}"`,
+    `"Release v${TEST_VERSION}"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
@@ -120,7 +121,7 @@ tap.test('should handle custom commit messages', async () => {
     '[{version}] The brand new {version} has been released'
   await openPr(data)
 
-  const branchName = `release/${TEST_VERSION}`
+  const branchName = `release/v${TEST_VERSION}`
 
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'checkout',
@@ -130,13 +131,68 @@ tap.test('should handle custom commit messages', async () => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'commit',
     '-m',
-    `"[${TEST_VERSION}] The brand new ${TEST_VERSION} has been released"`,
+    `"[v${TEST_VERSION}] The brand new v${TEST_VERSION} has been released"`,
   ])
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
     'origin',
     branchName,
   ])
+})
+
+tap.test('should work with a custom version-prefix', async () => {
+  const { openPr, stubs } = setup()
+
+  const prData = {
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      ...DEFAULT_ACTION_DATA.inputs,
+      'version-prefix': '',
+    },
+  }
+
+  await openPr(prData)
+
+  const branchName = `release/${TEST_VERSION}`
+
+  // git
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'checkout',
+    '-b',
+    branchName,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', ['add', '-A'])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'commit',
+    '-m',
+    `"Release v${TEST_VERSION}"`,
+  ])
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+    'push',
+    'origin',
+    branchName,
+  ])
+
+  // github release
+  sinon.assert.calledWithExactly(
+    stubs.callApiStub,
+    {
+      method: 'POST',
+      endpoint: 'release',
+      body: {
+        version: TEST_VERSION,
+      },
+    },
+    prData.inputs
+  )
+
+  sinon.assert.calledWithMatch(stubs.callApiStub, {
+    method: 'POST',
+    endpoint: 'pr',
+    body: {
+      head: `refs/heads/${branchName}`,
+    },
+  })
 })
 
 tap.test('should call the release endpoint with a new version', async () => {
@@ -149,7 +205,7 @@ tap.test('should call the release endpoint with a new version', async () => {
       method: 'POST',
       endpoint: 'release',
       body: {
-        version: TEST_VERSION,
+        version: `v${TEST_VERSION}`,
       },
     },
     DEFAULT_ACTION_DATA.inputs
@@ -160,7 +216,8 @@ tap.test('should call the PR endpoint with a new version', async () => {
   const { openPr, stubs } = setup()
   await openPr(DEFAULT_ACTION_DATA)
 
-  const branchName = `release/${TEST_VERSION}`
+  const branchName = `release/v${TEST_VERSION}`
+
   sinon.assert.calledWithExactly(
     stubs.callApiStub,
     {
@@ -175,7 +232,7 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '\n' +
           'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
           '\n' +
-          `A new **draft** GitHub release [${TEST_VERSION}]() has been created.\n` +
+          `A new **draft** GitHub release [v${TEST_VERSION}]() has been created.\n` +
           '\n' +
           `Release author: @John\n` +
           '\n' +
@@ -197,7 +254,7 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '\n' +
           '\n' +
           '<!--\n' +
-          `<release-meta>{"version":"${TEST_VERSION}"}</release-meta>\n` +
+          `<release-meta>{"version":"v${TEST_VERSION}"}</release-meta>\n` +
           '-->\n',
       },
     },
@@ -208,14 +265,14 @@ tap.test('should call the PR endpoint with a new version', async () => {
 tap.test(
   'should create the correct release for a version with no minor',
   async () => {
-    const localVersion = 'v2.0.0'
+    const localVersion = '2.0.0'
     const { openPr, stubs } = setup()
     runSpawnStub.returns(localVersion)
     await openPr({
       ...DEFAULT_ACTION_DATA,
-      packageVersion: localVersion.slice(1),
+      packageVersion: localVersion,
     })
-    const branchName = `release/${localVersion}`
+    const branchName = `release/v${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
       {
@@ -230,7 +287,7 @@ tap.test(
             '\n' +
             'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
             '\n' +
-            `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
+            `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
             '\n' +
             `Release author: @John\n` +
             '\n' +
@@ -252,7 +309,7 @@ tap.test(
             '\n' +
             '\n' +
             '<!--\n' +
-            `<release-meta>{"version":"${localVersion}"}</release-meta>\n` +
+            `<release-meta>{"version":"v${localVersion}"}</release-meta>\n` +
             '-->\n',
         },
       },
@@ -264,14 +321,14 @@ tap.test(
 tap.test(
   'should create the correct release for a version with no major',
   async () => {
-    const localVersion = 'v0.0.5'
+    const localVersion = '0.0.5'
     const { openPr, stubs } = setup()
     runSpawnStub.returns(localVersion)
     await openPr({
       ...DEFAULT_ACTION_DATA,
-      packageVersion: localVersion.slice(1),
+      packageVersion: localVersion,
     })
-    const branchName = `release/${localVersion}`
+    const branchName = `release/v${localVersion}`
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
       {
@@ -286,7 +343,7 @@ tap.test(
             '\n' +
             'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
             '\n' +
-            `A new **draft** GitHub release [${localVersion}]() has been created.\n` +
+            `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
             '\n' +
             `Release author: @John\n` +
             '\n' +
@@ -308,7 +365,7 @@ tap.test(
             '\n' +
             '\n' +
             '<!--\n' +
-            `<release-meta>{"version":"${localVersion}"}</release-meta>\n` +
+            `<release-meta>{"version":"v${localVersion}"}</release-meta>\n` +
             '-->\n',
         },
       },
@@ -318,13 +375,13 @@ tap.test(
 )
 
 tap.test('should delete branch in case of pr failure', async t => {
-  const localVersion = 'v0.0.5'
+  const localVersion = '0.0.5'
   const { openPr, stubs } = setup()
   const { context, inputs } = DEFAULT_ACTION_DATA
   stubs.callApiStub.onCall(1).rejects()
-  await openPr({ context, inputs, packageVersion: localVersion.slice(1) })
+  await openPr({ context, inputs, packageVersion: localVersion })
 
-  const branchName = `release/${localVersion}`
+  const branchName = `release/v${localVersion}`
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
     'push',
     'origin',
