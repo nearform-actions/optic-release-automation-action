@@ -178,7 +178,7 @@ jobs:
 | `github-token` | Yes      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
 | `commit-message`| No      | The commit message template. The keyword `{version}` will be replaced with the new version.  (_Default: `Release {version}`_)                                                              |
-| `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) acccess tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published. |
+| `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) access tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published. |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
 | `optic-token`  | No       | This is your Optic token. You can add your Npm secret to the Optic app, generate a token and pass it to this input. <br /> (_If skipped, no OTP is requested while publishing. Useful when you want to use Automation token instead of Publish token. [Read more](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website)_|
 | `actor-name`   | No       | The name you want to see in the new release commit. <br /> (_Default: User who triggered the release workflow_)                                                                            |
@@ -189,7 +189,7 @@ jobs:
 | `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
-
+| `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*
