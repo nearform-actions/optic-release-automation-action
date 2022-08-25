@@ -26,12 +26,19 @@ async function allowNpmPublish(version) {
   // NPM only looks into the remote registry when we pass an explicit
   // package name & version, so we don't have to fear that it reads the
   // info from the "local" package.json file.
-  const packageVersionInfo = await run('npm', [
-    'view',
-    `${packageName}@${version}`,
-  ])
+  let packageVersionInfo
 
-  return packageVersionInfo === ''
+  try {
+    // npm < v8.13.0 returns empty output, newer versions throw a E404
+    // We handle both and consider them as package version not existing
+    packageVersionInfo = await run('npm', ['view', `${packageName}@${version}`])
+  } catch (error) {
+    if (!error?.message?.match(/code E404/)) {
+      throw error
+    }
+  }
+
+  return !packageVersionInfo
 }
 
 async function publishToNpm({
