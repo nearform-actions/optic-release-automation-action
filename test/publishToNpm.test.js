@@ -16,6 +16,8 @@ const setup = () => {
   runSpawnStub
     .withArgs('npm', ['view', '--json'])
     .returns('{"name":"fakeTestPkg"}')
+
+  // npm behavior < v8.13.0
   runSpawnStub.withArgs('npm', ['view', 'fakeTestPkg@v5.1.3']).returns('')
 
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
@@ -205,6 +207,31 @@ tap.test(
       .throws(new Error('code E404'))
 
     runSpawnStub.withArgs('npm', ['view', 'fakeTestPkg@v5.1.3']).returns('')
+
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
+
+    sinon.assert.calledWithExactly(runSpawnStub, 'npm', ['pack', '--dry-run'])
+    sinon.assert.calledWithExactly(runSpawnStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  }
+)
+
+tap.test(
+  'Should continue action if package version info returns not found',
+  async () => {
+    const { publishToNpmProxy, runSpawnStub } = setup()
+
+    runSpawnStub
+      .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+      .throws(new Error('code E404'))
 
     await publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
