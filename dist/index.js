@@ -26347,7 +26347,7 @@ module.exports = async function ({ github, context, inputs }) {
   const repo = context.repo.repo
 
   if (
-    context.payload.action !== 'closed' ||
+    !['closed', 'reopened'].includes(context.payload.action) ||
     pr.user.login !== 'optic-release-automation[bot]' ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
   ) {
@@ -26434,7 +26434,18 @@ module.exports = async function ({ github, context, inputs }) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
   }
 
-  // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
+  //if PR was closed, reopened and then merged. The draft release would have been deleted!
+
+  if (context.payload.action === 'reopened') {
+    try {
+      logInfo(`deleting ${branchName}`)
+      await run('git', ['push', 'origin', '--delete', branchName])
+    } catch (err) {
+      // That's not a big problem, so we don't want to mark the action as failed.
+      logWarning('Unable to delete the release branch')
+    }
+  }
+
   try {
     const { data: release } = await callApi(
       {

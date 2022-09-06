@@ -550,3 +550,22 @@ tap.test(
     sinon.assert.notCalled(stubs.notifyIssuesStub)
   }
 )
+
+tap.test(
+  'Should delete the draft release if pull request is reopen',
+  async () => {
+    const { release, stubs } = setup()
+
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.action = 'reopened'
+
+    await release(data)
+
+    sinon.assert.alwaysCalledWithExactly(stubs.runSpawnStub, 'git', [
+      'push',
+      'origin',
+      '--delete',
+      'release/v5.1.3',
+    ])
+  }
+)
