@@ -55,7 +55,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation-action@v2
+      - uses: nearform/optic-release-automation-action@v3
         with:
           github-token: ${{ secrets.github_token }}
           npm-token: ${{ secrets.NPM_TOKEN }}
@@ -122,7 +122,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation-action@v2
+      - uses: nearform/optic-release-automation-action@v3
         with:
           github-token: ${{ secrets.github_token }}
           npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
@@ -156,13 +156,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Optionally configure your preferred runtime
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 14 # setting a specific version of node as an example
 
-      - uses: nearform/optic-release-automation-action@v2
+      - uses: nearform/optic-release-automation-action@v3
         with:
-          github-token: ${{ secrets.github_token }}
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
           semver: ${{ github.event.inputs.semver }}
@@ -175,7 +174,7 @@ jobs:
 
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
-| `github-token` | Yes      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
+| `github-token` | No      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
 | `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
 | `commit-message`| No      | The commit message template. The keyword `{version}` will be replaced with the new version.  (_Default: `Release {version}`_)                                                              |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) access tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published. |

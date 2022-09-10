@@ -26,9 +26,6 @@ jobs:
 
       - uses: nearform/optic-release-automation-action@main
         with:
-          github-token: ${{ secrets.github_token }}
           semver: ${{ github.event.inputs.semver }}
           sync-semver-tags: 'true'
-          build-command: |
-            echo 'installing husky hooks..'
-            npm ci
+          build-command: npm ci

@@ -11,5 +11,5 @@ jobs:
     steps:
       - uses: nearform/github-action-check-linked-issues@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           exclude-branches: 'release/**, dependabot/**'
