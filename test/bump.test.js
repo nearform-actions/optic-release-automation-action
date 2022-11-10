@@ -12,7 +12,11 @@ const artifactAction = require('../src/utils/artifact')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_VERSION = '3.1.1'
-const runSpawnStub = sinon.stub().returns(TEST_VERSION)
+const TEST_COMMIT_HASH = 'c86b0a35014a7036b245f81ff9de9bd738a5fe95'
+const runSpawnStub = sinon.stub()
+
+runSpawnStub.returns(TEST_VERSION)
+runSpawnStub.withArgs('git', ['rev-parse', 'HEAD']).returns(TEST_COMMIT_HASH)
 
 function setup() {
   const coreStub = sinon.stub(core)
@@ -181,6 +185,7 @@ tap.test('should work with a custom version-prefix', async () => {
       endpoint: 'release',
       body: {
         version: TEST_VERSION,
+        target: TEST_COMMIT_HASH,
       },
     },
     prData.inputs
@@ -206,6 +211,7 @@ tap.test('should call the release endpoint with a new version', async () => {
       endpoint: 'release',
       body: {
         version: `v${TEST_VERSION}`,
+        target: TEST_COMMIT_HASH,
       },
     },
     DEFAULT_ACTION_DATA.inputs

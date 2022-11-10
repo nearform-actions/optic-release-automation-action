@@ -129,7 +129,7 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
 ```
 
-> Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work. 
+> Not all symbols that can be used in GitHub usernames are valid in secret names. One such example is the hyphen symbol (`-`). In such cases, this approach will not work.
 
 ## How to add a build step to your workflow
 
@@ -142,7 +142,7 @@ It is important to be aware that you are responsible for:
 You can customize it by executing additional steps before the `nearform/optic-release-automation-action` step execution as shown in the next example.
 2. The command to build the project, starting from the installation to the cleanup if needed.<br /> You can set any automations like [git hooks](https://git-scm.com/book/it/v2/Customizing-Git-Git-Hooks) or [`pre/post` scripts](https://docs.npmjs.com/cli/v8/using-npm/scripts#pre--post-scripts) to execute within the `build-command` step.
 
-The build's output will be committed to the `release/${new semver version}` branch, unless the project's `.gitignore` blocks it.  
+The build's output will be committed to the `release/${new semver version}` branch, unless the project's `.gitignore` blocks it.
 In that case, the build's output will be packed into the Npm package during the release process.
 
 Here an example using `npm` to build the project:
@@ -183,6 +183,7 @@ jobs:
 | `npm-tag`      | No       | If you want to release to the Npm with a custom tag, say `next`. <br /> (_Default: `latest`_)                                                                                             |
 | `build-command`| No       | An optional build commit to run after the version bump and before releasing the package |
 | `api-url`      | No       | GitHub App URL. You wouldn't need to set this unless you're deploying a custom GitHub app instead of [optic-release-automation](https://github.com/apps/optic-release-automation). <br /> (_Default: `https://optic-release-automation-ocrlhra4va-ue.a.run.app/`_) |
+| `app-name`     | No       | GitHub App name. You also wouldn't need to set this unless you're deploying a custom GitHub app. <br /> (_Default: `optic-release-automation[bot]`_) |
 | `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |

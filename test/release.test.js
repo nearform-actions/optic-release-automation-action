@@ -13,7 +13,7 @@ const notifyIssuesAction = require('../src/utils/notifyIssues')
 const revertCommitAction = require('../src/utils/revertCommit')
 const callApiAction = require('../src/utils/callApi')
 
-const { PR_TITLE_PREFIX } = require('../src/const')
+const { PR_TITLE_PREFIX, APP_NAME } = require('../src/const')
 const actionLog = require('../src/log')
 
 let deleteReleaseStub = sinon.stub().resolves()
@@ -33,6 +33,7 @@ const DEFAULT_ACTION_DATA = {
   },
   inputs: {
     semver: 'patch',
+    'app-name': APP_NAME,
   },
   context: {
     eventName: 'pull_request',
@@ -187,6 +188,7 @@ tap.test('Should publish to npm without optic', async () => {
   await release({
     ...DEFAULT_ACTION_DATA,
     inputs: {
+      'app-name': APP_NAME,
       'npm-token': 'a-token',
     },
   })
@@ -205,6 +207,7 @@ tap.test('Should not publish to npm if there is no npm token', async () => {
   await release({
     ...DEFAULT_ACTION_DATA,
     inputs: {
+      'app-name': APP_NAME,
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
     },
@@ -218,6 +221,7 @@ tap.test('Should publish to npm with optic', async () => {
   await release({
     ...DEFAULT_ACTION_DATA,
     inputs: {
+      'app-name': APP_NAME,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
     },
@@ -235,6 +239,7 @@ tap.test('Should tag versions', async () => {
   await release({
     ...DEFAULT_ACTION_DATA,
     inputs: {
+      'app-name': APP_NAME,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
@@ -251,6 +256,7 @@ tap.test('Should call the release method', async () => {
   await release({
     ...DEFAULT_ACTION_DATA,
     inputs: {
+      'app-name': APP_NAME,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
@@ -268,6 +274,7 @@ tap.test('Should call the release method', async () => {
       },
     },
     {
+      'app-name': APP_NAME,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
@@ -282,6 +289,7 @@ tap.test(
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
     data.inputs = {
+      ...data.inputs,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
@@ -297,6 +305,7 @@ tap.test("Should NOT use npm if the pr wasn't merged", async () => {
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.merged = false
   data.inputs = {
+    ...data.inputs,
     'npm-token': 'a-token',
     'optic-token': 'optic-token',
     'sync-semver-tags': 'true',
@@ -310,6 +319,7 @@ tap.test("Should NOT tag version in git if the pr wasn't merged", async () => {
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.merged = false
   data.inputs = {
+    ...data.inputs,
     'npm-token': 'a-token',
     'optic-token': 'optic-token',
     'sync-semver-tags': 'true',
@@ -351,6 +361,7 @@ tap.test(
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
+        'app-name': APP_NAME,
         'npm-token': 'a-token',
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
@@ -368,6 +379,7 @@ tap.test('Should call core.setFailed if the release fails', async () => {
   await release({
     ...DEFAULT_ACTION_DATA,
     inputs: {
+      'app-name': APP_NAME,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
@@ -388,6 +400,7 @@ tap.test(
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
+        'app-name': APP_NAME,
         'npm-token': 'a-token',
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
@@ -408,6 +421,7 @@ tap.test(
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
+        'app-name': APP_NAME,
         'npm-token': 'a-token',
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
@@ -426,6 +440,7 @@ tap.test('Should tag the major, minor & patch correctly for 0', async () => {
 
   const data = clone(DEFAULT_ACTION_DATA)
   data.inputs = {
+    ...data.inputs,
     'npm-token': 'a-token',
     'optic-token': 'optic-token',
     'sync-semver-tags': 'true',
@@ -448,6 +463,7 @@ tap.test('Should tag the major, minor & patch correctly', async () => {
 
   const data = clone(DEFAULT_ACTION_DATA)
   data.inputs = {
+    ...data.inputs,
     'npm-token': 'a-token',
     'optic-token': 'optic-token',
     'sync-semver-tags': 'true',
@@ -472,6 +488,7 @@ tap.test(
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
+        'app-name': APP_NAME,
         'npm-token': 'a-token',
         'optic-token': 'optic-token',
         'sync-semver-tags': 'true',
@@ -495,6 +512,7 @@ tap.test(
 
     const data = clone(DEFAULT_ACTION_DATA)
     data.inputs = {
+      ...data.inputs,
       'npm-token': 'a-token',
       'optic-token': 'optic-token',
       'sync-semver-tags': 'true',
@@ -519,6 +537,7 @@ tap.test(
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
+        'app-name': APP_NAME,
         'npm-token': 'a-token',
         'notify-linked-issues': 'true',
       },
@@ -542,6 +561,7 @@ tap.test(
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
+        'app-name': APP_NAME,
         'npm-token': 'a-token',
         'notify-linked-issues': 'false',
       },
