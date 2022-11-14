@@ -21,7 +21,7 @@ module.exports = async function ({ github, context, inputs }) {
 
   if (
     context.payload.action !== 'closed' ||
-    pr.user.login !== 'optic-release-automation[bot]' ||
+    pr.user.login !== inputs['app-name'] ||
     !pr.title.startsWith(PR_TITLE_PREFIX)
   ) {
     logWarning('skipping release.')

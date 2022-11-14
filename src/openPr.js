@@ -72,7 +72,10 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
+
   await run('git', ['push', 'origin', branchName])
+
+  const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
 
   const { data: draftRelease } = await callApi(
     {
@@ -80,6 +83,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       endpoint: 'release',
       body: {
         version: newVersion,
+        target: releaseCommitHash,
       },
     },
     inputs

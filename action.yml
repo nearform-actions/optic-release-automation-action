@@ -40,6 +40,10 @@ inputs:
     description: 'Url of the API where the application is running'
     required: false
     default: 'https://optic-release-automation-ocrlhra4va-ue.a.run.app/'
+  app-name:
+    description: 'Name of the github app that authors optic PRs in the following format: `app-name[bot]`'
+    required: false
+    default: 'optic-release-automation[bot]'
   sync-semver-tags:
     description: 'If you want to keep the major and minor versions tag synced to the latest appropriate commit'
     required: false
