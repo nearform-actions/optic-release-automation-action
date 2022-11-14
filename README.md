@@ -55,7 +55,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation-action@v3
+      - uses: nearform/optic-release-automation-action@v4
         with:
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
@@ -121,7 +121,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation-action@v3
+      - uses: nearform/optic-release-automation-action@v4
         with:
           npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
           optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
@@ -158,7 +158,7 @@ jobs:
         with:
           node-version: 14 # setting a specific version of node as an example
 
-      - uses: nearform/optic-release-automation-action@v3
+      - uses: nearform/optic-release-automation-action@v4
         with:
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
