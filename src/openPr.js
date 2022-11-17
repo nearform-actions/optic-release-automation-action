@@ -87,6 +87,11 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
   }
+
+  core.setFailed('Set failed being called')
+
+  logInfo(`Loginfo called after setFailed`)
+
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
