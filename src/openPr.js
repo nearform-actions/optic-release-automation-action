@@ -53,8 +53,13 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const createDraftRelease = async (inputs, newVersion, releaseCommitHash) => {
+const createDraftRelease = async (inputs, newVersion) => {
+  const run = runSpawn()
   try {
+    const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
+
+    logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
+
     const { data: draftRelease } = await callApi(
       {
         method: 'POST',
@@ -66,6 +71,8 @@ const createDraftRelease = async (inputs, newVersion, releaseCommitHash) => {
       },
       inputs
     )
+
+    logInfo(`Draft release created successfully`)
 
     return draftRelease
   } catch (err) {
@@ -95,12 +102,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await run('git', ['push', 'origin', branchName])
 
-  const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
-  const draftRelease = await createDraftRelease(
-    inputs,
-    newVersion,
-    releaseCommitHash
-  )
+  const draftRelease = await createDraftRelease(inputs, newVersion)
 
   logInfo(`New version ${newVersion}`)
 
