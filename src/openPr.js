@@ -76,7 +76,6 @@ const createDraftRelease = async (inputs, newVersion) => {
 
   //   return draftRelease
   // } catch (err) {
-  core.setFailed(`Unable to create draft release`)
   throw new Error(`Unable to create draft release`)
 }
 // }
