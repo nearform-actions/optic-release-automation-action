@@ -26321,30 +26321,31 @@ const addArtifact = async (inputs, releaseId) => {
 
 const createDraftRelease = async (inputs, newVersion) => {
   const run = runSpawn()
-  try {
-    const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
+  // try {
+  //   const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
 
-    logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
+  //   logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
-    const { data: draftRelease } = await callApi(
-      {
-        method: 'POST',
-        endpoint: 'release',
-        body: {
-          version: newVersion,
-          target: releaseCommitHash,
-        },
-      },
-      inputs
-    )
+  //   const { data: draftRelease } = await callApi(
+  //     {
+  //       method: 'POST',
+  //       endpoint: 'release',
+  //       body: {
+  //         version: newVersion,
+  //         target: releaseCommitHash,
+  //       },
+  //     },
+  //     inputs
+  //   )
 
-    logInfo(`Draft release created successfully`)
+  //   logInfo(`Draft release created successfully`)
 
-    return draftRelease
-  } catch (err) {
-    core.setFailed(`Unable to create draft release: ${err.message}`)
-  }
+  //   return draftRelease
+  // } catch (err) {
+  core.setFailed(`Unable to create draft release`)
+  throw new Error(`Unable to create draft release`)
 }
+// }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
@@ -26353,10 +26354,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
   }
-
-  core.setFailed('Set failed being called')
-
-  logInfo(`Loginfo called after setFailed`)
 
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
