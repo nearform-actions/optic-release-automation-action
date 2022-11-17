@@ -54,31 +54,31 @@ const addArtifact = async (inputs, releaseId) => {
 }
 
 const createDraftRelease = async (inputs, newVersion) => {
-  const run = runSpawn()
-  // try {
-  //   const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
+  try {
+    const run = runSpawn()
+    const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
 
-  //   logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
+    logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
-  //   const { data: draftRelease } = await callApi(
-  //     {
-  //       method: 'POST',
-  //       endpoint: 'release',
-  //       body: {
-  //         version: newVersion,
-  //         target: releaseCommitHash,
-  //       },
-  //     },
-  //     inputs
-  //   )
+    const { data: draftRelease } = await callApi(
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: newVersion,
+          target: releaseCommitHash,
+        },
+      },
+      inputs
+    )
 
-  //   logInfo(`Draft release created successfully`)
+    logInfo(`Draft release created successfully`)
 
-  //   return draftRelease
-  // } catch (err) {
-  throw new Error(`Unable to create draft release`)
+    return draftRelease
+  } catch (err) {
+    throw new Error(`Unable to create draft release: ${err.message}`)
+  }
 }
-// }
 
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
@@ -104,6 +104,11 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   await run('git', ['push', 'origin', branchName])
 
   const draftRelease = await createDraftRelease(inputs, newVersion)
+
+  // Halt action here if release draft could not be created for some reason.
+  if (!draftRelease) {
+    throw new Error('Failed to create draft release. Aborting.')
+  }
 
   logInfo(`New version ${newVersion}`)
 
