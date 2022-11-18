@@ -26469,6 +26469,17 @@ module.exports = async function ({ github, context, inputs }) {
 
   const { opticUrl, npmTag, version, id } = releaseMeta
 
+  const draftRelease = await github.rest.repos.getRelease({
+    owner,
+    repo,
+    release_id: id,
+  })
+
+  if (!draftRelease || !draftRelease.draft) {
+    core.setFailed(`Couldn't find draft release to publish. Aborting.`)
+    return
+  }
+
   const run = runSpawn()
   const branchName = `release/${version}`
 
