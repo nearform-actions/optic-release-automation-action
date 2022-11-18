@@ -26470,13 +26470,11 @@ module.exports = async function ({ github, context, inputs }) {
   const { opticUrl, npmTag, version, id } = releaseMeta
 
   try {
-    const draftRelease = await github.rest.repos.getRelease({
+    const { data: draftRelease } = await github.rest.repos.getRelease({
       owner,
       repo,
       release_id: id,
     })
-
-    console.log(draftRelease)
 
     if (!draftRelease || !draftRelease.draft) {
       core.setFailed(`Couldn't find draft release to publish. Aborting.`)
@@ -26554,7 +26552,6 @@ module.exports = async function ({ github, context, inputs }) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
   }
 
-  // TODO: What if PR was closed, reopened and then merged. The draft release would have been deleted!
   try {
     const { data: release } = await callApi(
       {
