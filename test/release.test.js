@@ -20,7 +20,7 @@ let deleteReleaseStub = sinon.stub().resolves()
 
 let pullsGetStub = sinon.stub()
 let createCommentStub = sinon.stub()
-let getReleaseStub = sinon.stub().returns({ draft: true })
+let getReleaseStub = sinon.stub().returns({ data: { draft: true } })
 
 const DEFAULT_ACTION_DATA = {
   github: {
@@ -604,7 +604,7 @@ tap.test('Should fail when release is not a draft', async () => {
         ...DEFAULT_ACTION_DATA.github.rest,
         repos: {
           ...DEFAULT_ACTION_DATA.github.rest,
-          getRelease: sinon.stub().returns({ draft: false }),
+          getRelease: sinon.stub().returns({ data: { draft: false } }),
         },
       },
     },
