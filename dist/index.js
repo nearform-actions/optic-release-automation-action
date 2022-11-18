@@ -26476,12 +26476,16 @@ module.exports = async function ({ github, context, inputs }) {
       release_id: id,
     })
 
+    console.log(draftRelease)
+
     if (!draftRelease || !draftRelease.draft) {
       core.setFailed(`Couldn't find draft release to publish. Aborting.`)
       return
     }
   } catch (err) {
-    core.setFailed(`Couldn't find draft release to publish. Aborting.`)
+    core.setFailed(
+      `Couldn't find draft release to publish. Aborting. Error: ${err.message}`
+    )
     return
   }
 
