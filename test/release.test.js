@@ -593,7 +593,7 @@ tap.test('Should fail when release is not found', async () => {
   sinon.assert.called(stubs.coreStub.setFailed)
 })
 
-tap.test('Should fail when release is not a draft', async () => {
+tap.test('Should not fail when release is not a draft', async () => {
   const { release, stubs } = setup()
 
   await release({
@@ -610,5 +610,5 @@ tap.test('Should fail when release is not a draft', async () => {
     },
   })
 
-  sinon.assert.called(stubs.coreStub.setFailed)
+  sinon.assert.notCalled(stubs.coreStub.setFailed)
 })

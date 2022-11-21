@@ -49,7 +49,7 @@ module.exports = async function ({ github, context, inputs }) {
       release_id: id,
     })
 
-    if (!draftRelease || !draftRelease.draft) {
+    if (!draftRelease) {
       core.setFailed(`Couldn't find draft release to publish. Aborting.`)
       return
     }
