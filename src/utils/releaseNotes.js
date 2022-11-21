@@ -5,7 +5,7 @@ const uniqWith = require('lodash.uniqwith')
 const isEqual = require('lodash.isequal')
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
-  const parsedReleaseNotes = md.parse(releaseNotes)
+  const parsedReleaseNotes = md.parse(releaseNotes, {})
   const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
 
   const allPrNumbers = prTokens.map(token => {
