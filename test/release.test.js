@@ -20,12 +20,14 @@ let deleteReleaseStub = sinon.stub().resolves()
 
 let pullsGetStub = sinon.stub()
 let createCommentStub = sinon.stub()
+let getReleaseStub = sinon.stub().returns({ data: { draft: true } })
 
 const DEFAULT_ACTION_DATA = {
   github: {
     rest: {
       repos: {
         deleteRelease: deleteReleaseStub,
+        getRelease: getReleaseStub,
       },
       issues: { createComment: createCommentStub },
       pulls: { get: pullsGetStub },
@@ -570,3 +572,43 @@ tap.test(
     sinon.assert.notCalled(stubs.notifyIssuesStub)
   }
 )
+
+tap.test('Should fail when release is not found', async () => {
+  const { release, stubs } = setup()
+
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    github: {
+      ...DEFAULT_ACTION_DATA.github,
+      rest: {
+        ...DEFAULT_ACTION_DATA.github.rest,
+        repos: {
+          ...DEFAULT_ACTION_DATA.github.rest,
+          getRelease: sinon.stub().returns(undefined),
+        },
+      },
+    },
+  })
+
+  sinon.assert.called(stubs.coreStub.setFailed)
+})
+
+tap.test('Should not fail when release is not a draft', async () => {
+  const { release, stubs } = setup()
+
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    github: {
+      ...DEFAULT_ACTION_DATA.github,
+      rest: {
+        ...DEFAULT_ACTION_DATA.github.rest,
+        repos: {
+          ...DEFAULT_ACTION_DATA.github.rest,
+          getRelease: sinon.stub().returns({ data: { draft: false } }),
+        },
+      },
+    },
+  })
+
+  sinon.assert.notCalled(stubs.coreStub.setFailed)
+})

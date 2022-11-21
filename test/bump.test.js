@@ -418,3 +418,18 @@ tap.test(
     sinon.assert.calledOnce(stubs.attachArtifactStub)
   }
 )
+
+tap.test('should not open Pr if create release draft fails', async t => {
+  const { openPr, stubs } = setup()
+  stubs.callApiStub = stubs.callApiStub.throws({ message: 'error message' })
+
+  try {
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+    })
+    t.fail('should have thrown an error')
+  } catch (error) {
+    t.ok(error)
+    t.match(error.message, 'Unable to create draft release: error message')
+  }
+})
