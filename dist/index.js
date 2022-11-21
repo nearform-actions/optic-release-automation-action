@@ -26371,11 +26371,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   const draftRelease = await createDraftRelease(inputs, newVersion)
 
-  // Halt action here if release draft could not be created for some reason.
-  if (!draftRelease) {
-    throw new Error('Failed to create draft release. Aborting.')
-  }
-
   logInfo(`New version ${newVersion}`)
 
   const artifact =
