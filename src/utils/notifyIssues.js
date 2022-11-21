@@ -36,7 +36,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
     return []
   }
 
-  return linkedIssues.map(issue => issue.number)
+  return linkedIssues.map(issue => ({
+    issueNumber: issue.number,
+    repoName,
+    repoOwner,
+  }))
 }
 
 function createCommentBody(
@@ -69,13 +73,7 @@ function createCommentBody(
   Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 }
 
-async function notifyIssues(
-  githubClient,
-  shouldPostNpmLink,
-  owner,
-  repo,
-  release
-) {
+async function notifyIssues(githubClient, shouldPostNpmLink, release) {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
   const packageJson = JSON.parse(packageJsonFile)
 
@@ -85,8 +83,13 @@ async function notifyIssues(
   const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)
 
   const issueNumbersToNotify = (
-    await pMap(prNumbers, prNumber =>
-      getLinkedIssueNumbers(githubClient, parseInt(prNumber, 10), owner, repo)
+    await pMap(prNumbers, ({ prNumber, repoOwner, repoName }) =>
+      getLinkedIssueNumbers(
+        githubClient,
+        parseInt(prNumber, 10),
+        repoOwner,
+        repoName
+      )
     )
   ).flat()
 
@@ -97,18 +100,23 @@ async function notifyIssues(
     releaseUrl
   )
 
-  await pMap(
-    issueNumbersToNotify,
-    issueNumber => {
-      githubClient.rest.issues.createComment({
-        owner,
-        repo,
+  const mapper = async ({ issueNumber, repoOwner, repoName }) => {
+    try {
+      return await githubClient.rest.issues.createComment({
+        owner: repoOwner,
+        repo: repoName,
         issue_number: issueNumber,
         body,
       })
-    },
-    { concurrency: 10 }
-  )
+    } catch {
+      return pMap.pMapSkip
+    }
+  }
+
+  await pMap(issueNumbersToNotify, mapper, {
+    concurrency: 10,
+    stopOnError: false,
+  })
 }
 
 exports.notifyIssues = notifyIssues
