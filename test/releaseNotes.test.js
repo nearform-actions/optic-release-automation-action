@@ -14,7 +14,7 @@ tap.test('Should return the correct PR numbers', async () => {
     * fix 26 by @people in https://github.com/owner/repo/pull/42\n
     * feature 30 by @people in https://github.com/owner/repo/pull/50\n
     * fix 27 by @people in https://github.com/owner/repo/pull/52\n
-    * fix 32 by @people in https://github.com/owner/repo/pull/53\n
+    * fix 32 by @people in https://github.com/external-owner/external-repo/pull/53\n
     \n
     \n
     ## New Contributors\n
@@ -32,7 +32,53 @@ tap.test('Should return the correct PR numbers', async () => {
 `
 
   const result = getPrNumbersFromReleaseNotes(testReleaseNotes)
-  const expected = ['13', '15', '16', '18', '42', '50', '52', '53']
+  const expected = [
+    {
+      prNumber: '13',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '15',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '16',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '18',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '42',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '50',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '52',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+    {
+      prNumber: '53',
+      repoOwner: 'external-owner',
+      repoName: 'external-repo',
+    },
+    {
+      prNumber: '53',
+      repoOwner: 'owner',
+      repoName: 'repo',
+    },
+  ]
 
   tap.same(result, expected)
 })

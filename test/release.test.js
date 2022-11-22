@@ -547,8 +547,6 @@ tap.test(
       stubs.notifyIssuesStub,
       DEFAULT_ACTION_DATA.github,
       true,
-      'test',
-      'repo',
       { body: 'test_body', html_url: 'test_url' }
     )
   }
