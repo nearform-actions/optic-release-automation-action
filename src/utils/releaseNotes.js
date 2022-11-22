@@ -8,16 +8,18 @@ function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes, {})
   const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
 
-  const allPrNumbers = prTokens.map(token => {
+  const allPrNumbers = []
+
+  for (const token of prTokens) {
     const urlMatch = token.content.match(/\bhttps?:\/\/\S+/gi)
 
     if (!urlMatch?.length) {
-      return
+      continue
     }
 
     const urlParts = urlMatch[0].split('/')
 
-    const lastUrlPart = urlParts[lastUrlPart.length - 1]
+    const lastUrlPart = urlParts[urlParts.length - 1]
     const repoOwner = urlParts[3]
     const repoName = urlParts[4]
 
@@ -30,11 +32,11 @@ function getPrNumbersFromReleaseNotes(releaseNotes) {
       !repoOwner ||
       !repoName
     ) {
-      return
+      continue
     }
 
-    return { prNumber: prNumberMatch[0], repoOwner, repoName }
-  })
+    allPrNumbers.push({ prNumber: prNumberMatch[0], repoOwner, repoName })
+  }
 
   return uniqWith(allPrNumbers, isEqual)
 }

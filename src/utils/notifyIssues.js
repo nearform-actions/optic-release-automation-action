@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const pMap = require('p-map')
+const { logError } = require('../log')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
@@ -102,13 +103,17 @@ async function notifyIssues(githubClient, shouldPostNpmLink, release) {
 
   const mapper = async ({ issueNumber, repoOwner, repoName }) => {
     try {
-      return await githubClient.rest.issues.createComment({
+      const response = await githubClient.rest.issues.createComment({
         owner: repoOwner,
         repo: repoName,
         issue_number: issueNumber,
         body,
       })
-    } catch {
+      return response
+    } catch (error) {
+      logError(
+        `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`
+      )
       return pMap.pMapSkip
     }
   }
