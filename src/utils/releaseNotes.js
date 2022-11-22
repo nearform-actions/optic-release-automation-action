@@ -1,44 +1,33 @@
 'use strict'
 
 const md = require('markdown-it')()
-const uniqWith = require('lodash.uniqwith')
-const isEqual = require('lodash.isequal')
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes, {})
   const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
 
-  const allPrNumbers = []
+  const allPrNumbers = prTokens
+    .map(token => {
+      const urlMatch = token.content.match(/\bhttps?:\/\/\S+/gi)
 
-  for (const token of prTokens) {
-    const urlMatch = token.content.match(/\bhttps?:\/\/\S+/gi)
+      if (!urlMatch) {
+        return
+      }
 
-    if (!urlMatch?.length) {
-      continue
-    }
+      const lastUrlPart = urlMatch[0].split('/').pop()
 
-    const urlParts = urlMatch[0].split('/')
+      // Filter out the full change log numbers such as v1.0.1...v1.0.2
+      const prNumberMatch = lastUrlPart.match(/^\d+$/)
 
-    const lastUrlPart = urlParts[urlParts.length - 1]
-    const repoOwner = urlParts[3]
-    const repoName = urlParts[4]
+      if (!prNumberMatch) {
+        return
+      }
 
-    // Filter out the full change log numbers such as v1.0.1...v1.0.2
-    const prNumberMatch = lastUrlPart.match(/^\d+$/)
+      return prNumberMatch[0]
+    })
+    .filter(prNumber => Boolean(prNumber))
 
-    if (
-      !prNumberMatch?.length ||
-      !prNumberMatch[0] ||
-      !repoOwner ||
-      !repoName
-    ) {
-      continue
-    }
-
-    allPrNumbers.push({ prNumber: prNumberMatch[0], repoOwner, repoName })
-  }
-
-  return uniqWith(allPrNumbers, isEqual)
+  return [...new Set(allPrNumbers)]
 }
 
 exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes

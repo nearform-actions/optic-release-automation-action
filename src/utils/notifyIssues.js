@@ -17,6 +17,12 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
             nodes {
               id
               number
+              repository {
+                name
+                owner {
+                  login
+                }
+              }
             }
           }
         }
@@ -39,8 +45,8 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
 
   return linkedIssues.map(issue => ({
     issueNumber: issue.number,
-    repoName,
-    repoOwner,
+    repoName: issue?.repository?.name,
+    repoOwner: issue?.repository?.owner?.login,
   }))
 }
 
@@ -90,13 +96,8 @@ async function notifyIssues(
   const prNumbers = getPrNumbersFromReleaseNotes(releaseNotes)
 
   const issueNumbersToNotify = (
-    await pMap(prNumbers, ({ prNumber, repoOwner, repoName }) =>
-      getLinkedIssueNumbers(
-        githubClient,
-        parseInt(prNumber, 10),
-        repoOwner,
-        repoName
-      )
+    await pMap(prNumbers, prNumber =>
+      getLinkedIssueNumbers(githubClient, parseInt(prNumber, 10), owner, repo)
     )
   ).flat()
 
