@@ -131,7 +131,7 @@ module.exports = async function ({ github, context, inputs }) {
         // any of the PRs in this release
         const shouldPostNpmLink = Boolean(inputs['npm-token'])
 
-        await notifyIssues(github, shouldPostNpmLink, release)
+        await notifyIssues(github, shouldPostNpmLink, owner, repo, release)
       } catch (err) {
         logWarning('Failed to notify any/all issues')
         logError(err)

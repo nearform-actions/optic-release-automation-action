@@ -2,7 +2,7 @@
 
 const fs = require('fs')
 const pMap = require('p-map')
-const { logError } = require('../log')
+const { logError, logInfo } = require('../log')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
@@ -74,7 +74,13 @@ function createCommentBody(
   Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
 }
 
-async function notifyIssues(githubClient, shouldPostNpmLink, release) {
+async function notifyIssues(
+  githubClient,
+  shouldPostNpmLink,
+  owner,
+  repo,
+  release
+) {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
   const packageJson = JSON.parse(packageJsonFile)
 
@@ -103,6 +109,12 @@ async function notifyIssues(githubClient, shouldPostNpmLink, release) {
 
   const mapper = async ({ issueNumber, repoOwner, repoName }) => {
     try {
+      if (repoOwner !== owner || repoName !== repo) {
+        logInfo(
+          `Skipping external issue-${issueNumber}, repoOwner-${repoOwner} , repo-${repoName}`
+        )
+        return pMap.pMapSkip
+      }
       const response = await githubClient.rest.issues.createComment({
         owner: repoOwner,
         repo: repoName,
