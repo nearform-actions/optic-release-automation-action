@@ -29474,7 +29474,7 @@ module.exports = transformCommitMessage
 
 const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
-const { logError, logInfo, logWarning } = __nccwpck_require__(653)
+const { logWarning } = __nccwpck_require__(653)
 
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 
@@ -29582,18 +29582,18 @@ async function notifyIssues(
   const mapper = async ({ issueNumber, repoOwner, repoName }) => {
     try {
       if (repoOwner !== owner || repoName !== repo) {
-        logInfo(
+        logWarning(
           `Skipping external issue-${issueNumber}, repoOwner-${repoOwner} , repo-${repoName}`
         )
         return pMap.pMapSkip
       }
-      const response = await githubClient.rest.issues.createComment({
+
+      return await githubClient.rest.issues.createComment({
         owner: repoOwner,
         repo: repoName,
         issue_number: issueNumber,
         body,
       })
-      return response
     } catch (error) {
       logWarning(
         `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`

@@ -2,7 +2,7 @@
 
 const fs = require('fs')
 const pMap = require('p-map')
-const { logError, logInfo, logWarning } = require('../log')
+const { logWarning } = require('../log')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
@@ -110,18 +110,18 @@ async function notifyIssues(
   const mapper = async ({ issueNumber, repoOwner, repoName }) => {
     try {
       if (repoOwner !== owner || repoName !== repo) {
-        logInfo(
+        logWarning(
           `Skipping external issue-${issueNumber}, repoOwner-${repoOwner} , repo-${repoName}`
         )
         return pMap.pMapSkip
       }
-      const response = await githubClient.rest.issues.createComment({
+
+      return await githubClient.rest.issues.createComment({
         owner: repoOwner,
         repo: repoName,
         issue_number: issueNumber,
         body,
       })
-      return response
     } catch (error) {
       logWarning(
         `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`
