@@ -29474,7 +29474,7 @@ module.exports = transformCommitMessage
 
 const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
-const { logError, logInfo } = __nccwpck_require__(653)
+const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 
@@ -29595,7 +29595,7 @@ async function notifyIssues(
       })
       return response
     } catch (error) {
-      logError(
+      logWarning(
         `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`
       )
       return pMap.pMapSkip

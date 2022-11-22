@@ -2,7 +2,7 @@
 
 const fs = require('fs')
 const pMap = require('p-map')
-const { logError, logInfo } = require('../log')
+const { logError, logInfo, logWarning } = require('../log')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
@@ -123,7 +123,7 @@ async function notifyIssues(
       })
       return response
     } catch (error) {
-      logError(
+      logWarning(
         `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`
       )
       return pMap.pMapSkip
