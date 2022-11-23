@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const pMap = require('p-map')
+const { logWarning } = require('../log')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
 
@@ -16,6 +17,12 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
             nodes {
               id
               number
+              repository {
+                name
+                owner {
+                  login
+                }
+              }
             }
           }
         }
@@ -36,7 +43,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
     return []
   }
 
-  return linkedIssues.map(issue => issue.number)
+  return linkedIssues.map(issue => ({
+    issueNumber: issue.number,
+    repoName: issue?.repository?.name,
+    repoOwner: issue?.repository?.owner?.login,
+  }))
 }
 
 function createCommentBody(
@@ -97,18 +108,33 @@ async function notifyIssues(
     releaseUrl
   )
 
-  await pMap(
-    issueNumbersToNotify,
-    issueNumber => {
-      githubClient.rest.issues.createComment({
-        owner,
-        repo,
+  const mapper = async ({ issueNumber, repoOwner, repoName }) => {
+    try {
+      if (repoOwner !== owner || repoName !== repo) {
+        logWarning(
+          `Skipping external issue-${issueNumber}, repoOwner-${repoOwner} , repo-${repoName}`
+        )
+        return pMap.pMapSkip
+      }
+
+      return await githubClient.rest.issues.createComment({
+        owner: repoOwner,
+        repo: repoName,
         issue_number: issueNumber,
         body,
       })
-    },
-    { concurrency: 10 }
-  )
+    } catch (error) {
+      logWarning(
+        `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`
+      )
+      return pMap.pMapSkip
+    }
+  }
+
+  await pMap(issueNumbersToNotify, mapper, {
+    concurrency: 10,
+    stopOnError: false,
+  })
 }
 
 exports.notifyIssues = notifyIssues

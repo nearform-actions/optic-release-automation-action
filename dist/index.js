@@ -26746,6 +26746,7 @@ module.exports = transformCommitMessage
 
 const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
+const { logWarning } = __nccwpck_require__(653)
 
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
 
@@ -26760,6 +26761,12 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
             nodes {
               id
               number
+              repository {
+                name
+                owner {
+                  login
+                }
+              }
             }
           }
         }
@@ -26780,7 +26787,11 @@ async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
     return []
   }
 
-  return linkedIssues.map(issue => issue.number)
+  return linkedIssues.map(issue => ({
+    issueNumber: issue.number,
+    repoName: issue?.repository?.name,
+    repoOwner: issue?.repository?.owner?.login,
+  }))
 }
 
 function createCommentBody(
@@ -26841,18 +26852,33 @@ async function notifyIssues(
     releaseUrl
   )
 
-  await pMap(
-    issueNumbersToNotify,
-    issueNumber => {
-      githubClient.rest.issues.createComment({
-        owner,
-        repo,
+  const mapper = async ({ issueNumber, repoOwner, repoName }) => {
+    try {
+      if (repoOwner !== owner || repoName !== repo) {
+        logWarning(
+          `Skipping external issue-${issueNumber}, repoOwner-${repoOwner} , repo-${repoName}`
+        )
+        return pMap.pMapSkip
+      }
+
+      return await githubClient.rest.issues.createComment({
+        owner: repoOwner,
+        repo: repoName,
         issue_number: issueNumber,
         body,
       })
-    },
-    { concurrency: 10 }
-  )
+    } catch (error) {
+      logWarning(
+        `Failed to create comment for issue-${issueNumber}, repo-${repoName}. Error-${error.message}`
+      )
+      return pMap.pMapSkip
+    }
+  }
+
+  await pMap(issueNumbersToNotify, mapper, {
+    concurrency: 10,
+    stopOnError: false,
+  })
 }
 
 exports.notifyIssues = notifyIssues
@@ -26947,7 +26973,7 @@ exports.publishToNpm = publishToNpm
 const md = __nccwpck_require__(8561)()
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
-  const parsedReleaseNotes = md.parse(releaseNotes)
+  const parsedReleaseNotes = md.parse(releaseNotes, {})
   const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
 
   const allPrNumbers = prTokens

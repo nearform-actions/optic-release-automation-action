@@ -3,7 +3,7 @@
 const md = require('markdown-it')()
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
-  const parsedReleaseNotes = md.parse(releaseNotes)
+  const parsedReleaseNotes = md.parse(releaseNotes, {})
   const prTokens = parsedReleaseNotes.filter(token => token.type === 'inline')
 
   const allPrNumbers = prTokens
