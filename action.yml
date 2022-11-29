@@ -69,6 +69,13 @@ inputs:
     description: 'A prefix to apply to the version number, which reflects in the tag and GitHub release names'
     required: true
     default: 'v'
+  monorepo-package:
+    description: 'A specific monorepo package to be released. This field should contain only the folder name for the package E.g. "react-app" which will then be concatenated with the monorepo-root'
+    required: false
+  monorepo-root:
+    description: 'The monorepo root folder for packages. Only used when monorepo-package is defined. The default is "packages".'
+    required: false
+    default: 'packages'
 
 runs:
   using: 'composite'
@@ -91,21 +98,23 @@ runs:
       shell: 'bash'
 
     - name: Build the package
+      uses: actions/github-script@v6
       if: ${{ inputs.build-command }}
-      run: |
-        node -v
-        npm -v
-        ${{ inputs.build-command }}
-      shell: 'bash'
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const { build } = require('${{ github.action_path }}/dist/index.js')
+          await build({ github, context, inputs: ${{ toJSON(inputs) }} })
 
     - name: Commit and open PR
       uses: actions/github-script@v6
       if: ${{ github.event_name == 'workflow_dispatch' }}
       with:
         github-token: ${{ inputs.github-token }}
+        result-encoding: string
         script: |
-          const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
+          const { openPr } = require('${{ github.action_path }}/dist/index.js')
+          await openPr({ context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
 
     - name: Release the package
       uses: actions/github-script@v6
@@ -113,5 +122,5 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
+          const { release } = require('${{ github.action_path }}/dist/index.js')
+          await release({ github, context, inputs: ${{ toJSON(inputs) }} })

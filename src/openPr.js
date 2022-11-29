@@ -30,6 +30,8 @@ const getPRBody = (
     id: draftRelease.id,
     version: newVersion,
     npmTag: inputs['npm-tag'],
+    monorepoPackage: inputs['monorepo-package'],
+    monorepoRoot: inputs['monorepo-root'],
     opticUrl: inputs['optic-url'],
   }
 
@@ -44,11 +46,10 @@ const getPRBody = (
   })
 }
 
-const addArtifact = async (inputs, releaseId) => {
-  const artifactPath = inputs['artifact-path']
+const addArtifact = async ({ inputs, artifactPath, releaseId, filename }) => {
   const token = inputs['github-token']
 
-  const artifact = await attach(artifactPath, releaseId, token)
+  const artifact = await attach(artifactPath, releaseId, token, filename)
 
   return artifact
 }
@@ -60,6 +61,8 @@ const createDraftRelease = async (inputs, newVersion) => {
 
     logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
+    const monorepoPackage = inputs['monorepo-package']
+
     const { data: draftRelease } = await callApi(
       {
         method: 'POST',
@@ -67,6 +70,9 @@ const createDraftRelease = async (inputs, newVersion) => {
         body: {
           version: newVersion,
           target: releaseCommitHash,
+          ...(monorepoPackage && {
+            name: `${monorepoPackage} - ${newVersion}`,
+          }),
         },
       },
       inputs
@@ -90,7 +96,11 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
-  const branchName = `release/${newVersion}`
+  const monorepoPackage = inputs['monorepo-package']
+
+  const branchName = monorepoPackage
+    ? `release/${monorepoPackage}-${newVersion}`
+    : `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
@@ -98,7 +108,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   await run('git', [
     'commit',
     '-m',
-    `"${transformCommitMessage(messageTemplate, newVersion)}"`,
+    `"${transformCommitMessage(messageTemplate, newVersion, monorepoPackage)}"`,
   ])
 
   await run('git', ['push', 'origin', branchName])
@@ -107,10 +117,21 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   logInfo(`New version ${newVersion}`)
 
+  const artifactPath = inputs['artifact-path']
   const artifact =
-    inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))
+    artifactPath &&
+    (await addArtifact({ inputs, artifactPath, releaseId: draftRelease.id }))
   if (artifact) {
     logInfo('Artifact attached!')
+  }
+
+  if (monorepoPackage) {
+    await addArtifact({
+      inputs,
+      artifactPath: `${inputs['monorepo-root']}/${monorepoPackage}`,
+      filename: `${monorepoPackage}-${newVersion}.zip`,
+      releaseId: draftRelease.id,
+    })
   }
 
   const prBody = getPRBody(_template(tpl), {
@@ -145,4 +166,5 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   }
 
   logInfo('** Finished! **')
+  return draftRelease
 }

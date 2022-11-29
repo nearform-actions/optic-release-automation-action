@@ -69,7 +69,7 @@ The above workflow (when manually triggered) will:
 - Checkout the repository source code
 - Run `npm version <semver>` command to bump the version as configured (patch, minor, etc)
 - Execute the `build-command` if configured
-- Commit the changes and push to the `release/${new semver version}` branch
+- Commit the changes and push to the `release/${new semver version}` branch (or `release/${package-name}-${new semver version}` when releasing a package from a monorepo)
 - Open a PR that looks like following
 
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
@@ -168,6 +168,38 @@ jobs:
             npm run build
 ```
 
+## Releasing monorepo packages
+
+For use in a monorepo this action expects two new inputs `monorepo-package` and `monorepo-root`, they will be used to run command and publish from the package folder instead of the project root.
+When releasing a single package a new github release will be created with the zipped package folder as artifact. Commands defined in `build-command` and `npm-publish` will run inside the package folder.
+
+```yml
+on:
+  workflow_dispatch:
+#...
+    monorepo-package:
+      description: "The package to be released"
+      required: true
+      type: choice
+      # This should be a list with all the packages that can be selected when creating a new release
+      options:
+        # The package name should be the name of the package folder relative to `monorepo-root`
+        - express-server
+        - react-app
+        - shared-data
+        #...
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nearform/optic-release-automation-action@v4
+        with:
+        #...
+          monorepo-root: packages # The default for monorepo-root
+          monorepo-package: ${{ inputs.monorepo-package  }} # monorepo-package would be `react-app` for a package located in `packages/react-app`
+```
+
 ## Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
@@ -187,7 +219,10 @@ jobs:
 | `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
-| `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
+| `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)|
+| `monorepo-package`     | No       | The monorepo package folder to be released without path |
+| `monorepo-root`        | No       | The root folder for monorepo packages (_Default: 'packages'_) |
+
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*

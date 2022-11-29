@@ -218,6 +218,32 @@ tap.test('should call the release endpoint with a new version', async () => {
   )
 })
 
+tap.test(
+  'should call the release endpoint with a package name in release name',
+  async () => {
+    const { openPr, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    const version = `v${TEST_VERSION}`
+    const monorepoPackage = 'react-app'
+    data.inputs['monorepo-package'] = monorepoPackage
+    await openPr(data)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version,
+          target: TEST_COMMIT_HASH,
+          name: `${monorepoPackage} - ${version}`,
+        },
+      },
+      data.inputs
+    )
+  }
+)
+
 tap.test('should call the PR endpoint with a new version', async () => {
   const { openPr, stubs } = setup()
   await openPr(DEFAULT_ACTION_DATA)
@@ -323,6 +349,60 @@ tap.test(
     )
   }
 )
+
+tap.test('should add package name to Pr body', async () => {
+  const { openPr, stubs } = setup()
+
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.inputs['monorepo-package'] = 'react-app'
+  await openPr(data)
+  const branchName = `release/react-app-v${TEST_VERSION}`
+
+  sinon.assert.calledWithExactly(
+    stubs.callApiStub,
+    {
+      method: 'POST',
+      endpoint: 'pr',
+      body: {
+        head: `refs/heads/${branchName}`,
+        base: DEFAULT_ACTION_DATA.context.payload.ref,
+        title: `${PR_TITLE_PREFIX} ${branchName}`,
+        body:
+          '## Optic Release Automation\n' +
+          '\n' +
+          'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
+          '\n' +
+          `A new **draft** GitHub release [v${TEST_VERSION}]() has been created.\n` +
+          '\n' +
+          `Release package: react-app\n` +
+          '\n' +
+          `Release author: @John\n` +
+          '\n' +
+          '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
+          '\n' +
+          '- The GitHub release will be published\n' +
+          '\n' +
+          '- No npm package will be published as configured\n' +
+          '\n' +
+          '\n' +
+          '\n' +
+          '- No major or minor tags will be updated as configured\n' +
+          '\n' +
+          '\n' +
+          '#### If you close the PR\n' +
+          '\n' +
+          '- The new draft release will be deleted and nothing will change\n' +
+          '\n' +
+          '\n' +
+          '\n' +
+          '<!--\n' +
+          `<release-meta>{"version":"v${TEST_VERSION}","monorepoPackage":"react-app"}</release-meta>\n` +
+          '-->\n',
+      },
+    },
+    data.inputs
+  )
+})
 
 tap.test(
   'should create the correct release for a version with no major',
@@ -433,3 +513,22 @@ tap.test('should not open Pr if create release draft fails', async t => {
     t.match(error.message, 'Unable to create draft release: error message')
   }
 })
+
+tap.test(
+  'branch name should include monorepo package name when it exists',
+  async () => {
+    const { openPr, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    const monorepoPackage = 'react-app'
+    data.inputs['monorepo-package'] = monorepoPackage
+    await openPr(data)
+
+    const branchName = `release/${monorepoPackage}-v${TEST_VERSION}`
+
+    sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+      'checkout',
+      '-b',
+      branchName,
+    ])
+  }
+)

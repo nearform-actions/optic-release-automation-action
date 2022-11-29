@@ -47,8 +47,9 @@ async function publishToNpm({
   opticUrl,
   npmTag,
   version,
+  cwd,
 }) {
-  const run = runSpawn()
+  const run = runSpawn({ cwd })
 
   await run('npm', [
     'config',

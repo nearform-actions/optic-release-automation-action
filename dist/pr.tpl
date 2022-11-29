@@ -3,7 +3,9 @@
 This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).
 
 A new **draft** GitHub release [${releaseMeta.version}](${draftRelease.html_url}) has been created.
-
+<% if (releaseMeta.monorepoPackage) { %>
+Release package: ${releaseMeta.monorepoPackage}
+<% } %>
 Release author: @${author}
 
 #### If you want to go ahead with the release, please merge this PR. When you merge:

@@ -11,6 +11,7 @@ const { revertCommit } = require('./utils/revertCommit')
 const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
+const parseReleaseMetadata = require('./utils/parseReleaseMetadata')
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -28,19 +29,8 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
-  let releaseMeta
-  try {
-    releaseMeta = JSON.parse(
-      pr.body.substring(
-        pr.body.indexOf('<release-meta>') + 14,
-        pr.body.lastIndexOf('</release-meta>')
-      )
-    )
-  } catch (err) {
-    return logError(err)
-  }
-
-  const { opticUrl, npmTag, version, id } = releaseMeta
+  const { opticUrl, npmTag, version, id, monorepoPackage, monorepoRoot } =
+    parseReleaseMetadata(pr)
 
   try {
     const { data: draftRelease } = await github.rest.repos.getRelease({
@@ -61,7 +51,9 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   const run = runSpawn()
-  const branchName = `release/${version}`
+  const branchName = monorepoPackage
+    ? `release/${monorepoPackage}-${version}`
+    : `release/${version}`
 
   try {
     // We "always" delete the release branch, if anything fails, the whole
@@ -97,8 +89,19 @@ module.exports = async function ({ github, context, inputs }) {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
 
+    const cwd = monorepoPackage
+      ? `${monorepoRoot}/${monorepoPackage}`
+      : undefined
+
     if (npmToken) {
-      await publishToNpm({ npmToken, opticToken, opticUrl, npmTag, version })
+      await publishToNpm({
+        npmToken,
+        opticToken,
+        opticUrl,
+        npmTag,
+        version,
+        cwd,
+      })
     } else {
       logWarning('missing npm-token')
     }

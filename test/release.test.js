@@ -343,13 +343,17 @@ tap.test(
   }
 )
 
-tap.test('Should fail if the release metadata is incorrect', async () => {
+tap.test('Should fail if the release metadata is incorrect', async t => {
   const { release, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
   data.context.payload.pull_request.body = 'this data is not correct'
-  await release(data)
 
-  sinon.assert.calledOnce(stubs.logStub.logError)
+  try {
+    await release(data)
+  } catch (err) {
+    t.ok('Release expected to throw with invalid metadata')
+  }
+
   sinon.assert.notCalled(stubs.callApiStub)
   sinon.assert.notCalled(stubs.runSpawnStub)
 })
@@ -612,3 +616,27 @@ tap.test('Should not fail when release is not a draft', async () => {
 
   sinon.assert.notCalled(stubs.coreStub.setFailed)
 })
+
+tap.test(
+  'should pass the correct cwd to publishToNpm based on monorepo root and monorepo package name',
+  async () => {
+    const { release, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+
+    data.context.payload.pull_request.body = `<!--
+    <release-meta>{"id":54503465,"version":"v0.0.1","npmTag":"latest","opticUrl":"https://optic-zf3votdk5a-ew.a.run.app/api/generate/", "monorepoRoot": "packages", "monorepoPackage": "react-app"}</release-meta>
+    -->`
+
+    await release({
+      ...data,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+      },
+    })
+
+    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+      cwd: 'packages/react-app',
+    })
+  }
+)
