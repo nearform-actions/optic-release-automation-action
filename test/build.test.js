@@ -143,3 +143,55 @@ tap.test('Should fail if running build command throws an error', async () => {
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
 })
+
+tap.test(
+  'Should deal with multiple spaces in commands by removing them',
+  async () => {
+    const { build, stubs } = setup()
+
+    const data = clone(DEFAULT_ACTION_DATA)
+
+    data.inputs['build-command'] = 'npm  install\n npm build'
+
+    await build(data)
+
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'npm', ['-v'], {
+      cwd: '.',
+    })
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'node', ['-v'], {
+      cwd: '.',
+    })
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'npm', ['install'], {
+      cwd: '.',
+    })
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'npm', ['build'], {
+      cwd: '.',
+    })
+  }
+)
+
+tap.test(
+  'Should deal with multiple empty lines between commands, removing them',
+  async () => {
+    const { build, stubs } = setup()
+
+    const data = clone(DEFAULT_ACTION_DATA)
+
+    data.inputs['build-command'] = 'npm  install\n\n\n npm   build'
+
+    await build(data)
+
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'npm', ['-v'], {
+      cwd: '.',
+    })
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'node', ['-v'], {
+      cwd: '.',
+    })
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'npm', ['install'], {
+      cwd: '.',
+    })
+    sinon.assert.calledWithMatch(stubs.execStub.exec, 'npm', ['build'], {
+      cwd: '.',
+    })
+  }
+)

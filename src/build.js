@@ -21,7 +21,13 @@ module.exports = async function ({ context, inputs }) {
   const buildCommands = inputs['build-command']
     .trim()
     .split('\n')
-    .map(cmd => cmd.trim().split(' '))
+    .filter(cmd => !!cmd)
+    .map(cmd =>
+      cmd
+        .trim()
+        .split(' ')
+        .filter(c => !!c)
+    )
 
   const options = {
     cwd: monorepoPackage ? `${monorepoRoot}/${monorepoPackage}` : '.',
