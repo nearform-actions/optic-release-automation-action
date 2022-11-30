@@ -220,7 +220,7 @@ jobs:
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)|
-| `monorepo-package`     | No       | The monorepo package folder to be released without path |
+| `monorepo-package`     | No       | The name of the monorepo package folder to be released, relative to `monorepo-root` |
 | `monorepo-root`        | No       | The root folder for monorepo packages (_Default: 'packages'_) |
 
 ## Motivation
