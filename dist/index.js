@@ -27494,7 +27494,13 @@ module.exports = async function ({ context, inputs }) {
       await exec(command, args, options)
     }
   } catch (err) {
-    core.setFailed(`Error when building package: ${err.message}`)
+    if (monorepoPackage) {
+      core.setFailed(
+        `Error when building package: ${monorepoPackage}\n${err.message}`
+      )
+    } else {
+      core.setFailed(`Error when building release: ${err.message}`)
+    }
   }
 }
 
