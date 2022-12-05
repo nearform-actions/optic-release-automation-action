@@ -5,6 +5,7 @@ const path = require('path')
 const _template = require('lodash.template')
 const semver = require('semver')
 const core = require('@actions/core')
+const _truncate = require('lodash.truncate')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
@@ -14,6 +15,9 @@ const { logInfo } = require('./log')
 const { attach } = require('./utils/artifact')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
+
+const MAX_PR_BODY_SIZE_LIMITATION = 65536
+const PR_BODY_TRUNCATE_SIZE = 60000
 
 const getPRBody = (
   template,
@@ -33,7 +37,7 @@ const getPRBody = (
     opticUrl: inputs['optic-url'],
   }
 
-  return template({
+  const prBody = template({
     releaseMeta,
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
@@ -42,6 +46,17 @@ const getPRBody = (
     syncTags: /true/i.test(inputs['sync-semver-tags']),
     author,
   })
+
+  if (prBody.length > MAX_PR_BODY_SIZE_LIMITATION) {
+    const omissionText =
+      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
+    return _truncate(prBody, {
+      length: PR_BODY_TRUNCATE_SIZE,
+      omission: omissionText,
+    })
+  }
+
+  return prBody
 }
 
 const addArtifact = async (inputs, releaseId) => {
@@ -118,10 +133,12 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
-    logInfo(JSON.stringify(response))
+    if (response?.status !== 201) {
+      const errMessage = response?.message || 'PR creation failed'
+      throw new Error(errMessage)
+    }
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
-    logInfo(message)
     try {
       await run('git', ['push', 'origin', '--delete', branchName])
     } catch (error) {

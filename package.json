@@ -20,6 +20,7 @@
     "@actions/github": "^5.1.1",
     "adm-zip": "^0.5.9",
     "lodash.template": "^4.5.0",
+    "lodash.truncate": "^4.4.2",
     "markdown-it": "^13.0.1",
     "node-fetch": "^2.6.6",
     "p-map": "^4.0.0",
