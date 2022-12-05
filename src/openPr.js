@@ -105,7 +105,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     artifact,
   })
   try {
-    await callApi(
+    const response = await callApi(
       {
         method: 'POST',
         endpoint: 'pr',
@@ -118,8 +118,10 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+    logInfo(JSON.stringify(response))
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
+    logInfo(message)
     try {
       await run('git', ['push', 'origin', '--delete', branchName])
     } catch (error) {
