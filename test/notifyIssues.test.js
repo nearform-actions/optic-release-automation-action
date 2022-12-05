@@ -60,6 +60,51 @@ tap.test('Should not call createComment if no linked issues', async () => {
 })
 
 tap.test(
+  'Should not call createComment if linked issue belongs to external repo',
+  async () => {
+    const { notifyIssues } = setup()
+
+    const releaseNotes = `
+      ## What's Changed\n +
+      * chore 15 by @people in https://github.com/owner/repo/pull/13\n
+      \n
+      \n
+      **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
+    `
+
+    const release = { body: releaseNotes, html_url: 'some_url' }
+
+    const graphqlStub = sinon.stub().resolves({
+      repository: {
+        pullRequest: {
+          closingIssuesReferences: {
+            nodes: [
+              {
+                number: '13',
+                repository: {
+                  name: 'ext-repo',
+                  owner: { login: 'ext-owner' },
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    await notifyIssues(
+      { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+      false,
+      'owner',
+      'repo',
+      release
+    )
+
+    sinon.assert.notCalled(createCommentStub)
+  }
+)
+
+tap.test(
   'Should call createComment with correct arguments for linked issues with npm link',
   async () => {
     const { notifyIssues } = setup()
@@ -78,7 +123,22 @@ tap.test(
       repository: {
         pullRequest: {
           closingIssuesReferences: {
-            nodes: [{ number: '10' }, { number: '15' }],
+            nodes: [
+              {
+                number: '10',
+                repository: {
+                  name: 'repo',
+                  owner: { login: 'owner' },
+                },
+              },
+              {
+                number: '15',
+                repository: {
+                  name: 'repo',
+                  owner: { login: 'owner' },
+                },
+              },
+            ],
           },
         },
       },
@@ -137,7 +197,22 @@ tap.test(
       repository: {
         pullRequest: {
           closingIssuesReferences: {
-            nodes: [{ number: '10' }, { number: '15' }],
+            nodes: [
+              {
+                number: '10',
+                repository: {
+                  name: 'repo',
+                  owner: { login: 'owner' },
+                },
+              },
+              {
+                number: '15',
+                repository: {
+                  name: 'repo',
+                  owner: { login: 'owner' },
+                },
+              },
+            ],
           },
         },
       },
