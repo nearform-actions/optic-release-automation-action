@@ -26894,9 +26894,7 @@ exports.logWarning = log(warning)
 const fs = __nccwpck_require__(7147)
 const path = __nccwpck_require__(1017)
 const _template = __nccwpck_require__(417)
-const semver = __nccwpck_require__(1383)
 const core = __nccwpck_require__(2186)
-const _truncate = __nccwpck_require__(4436)
 
 const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { runSpawn } = __nccwpck_require__(2137)
@@ -26904,51 +26902,9 @@ const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
 const { logInfo } = __nccwpck_require__(653)
 const { attach } = __nccwpck_require__(930)
+const { getPRBody } = __nccwpck_require__(4098)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
-
-const MAX_PR_BODY_SIZE_LIMITATION = 65536
-const PR_BODY_TRUNCATE_SIZE = 60000
-
-const getPRBody = (
-  template,
-  { newVersion, draftRelease, inputs, author, artifact }
-) => {
-  const tagsToBeUpdated = []
-  const { major, minor } = semver.parse(newVersion)
-
-  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
-  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
-
-  // Should strictly contain only non-sensitive data
-  const releaseMeta = {
-    id: draftRelease.id,
-    version: newVersion,
-    npmTag: inputs['npm-tag'],
-    opticUrl: inputs['optic-url'],
-  }
-
-  const prBody = template({
-    releaseMeta,
-    draftRelease,
-    tagsToUpdate: tagsToBeUpdated.join(', '),
-    npmPublish: !!inputs['npm-token'],
-    artifact,
-    syncTags: /true/i.test(inputs['sync-semver-tags']),
-    author,
-  })
-
-  if (prBody.length > MAX_PR_BODY_SIZE_LIMITATION) {
-    const omissionText =
-      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
-    return _truncate(prBody, {
-      length: PR_BODY_TRUNCATE_SIZE,
-      omission: omissionText,
-    })
-  }
-
-  return prBody
-}
 
 const addArtifact = async (inputs, releaseId) => {
   const artifactPath = inputs['artifact-path']
@@ -27629,7 +27585,13 @@ exports.publishToNpm = publishToNpm
 "use strict";
 
 
+const semver = __nccwpck_require__(1383)
+const _truncate = __nccwpck_require__(4436)
+
 const md = __nccwpck_require__(8561)()
+
+const MAX_PR_BODY_SIZE_LIMITATION = 65536
+const PR_BODY_TRUNCATE_SIZE = 60000
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes, {})
@@ -27657,6 +27619,46 @@ function getPrNumbersFromReleaseNotes(releaseNotes) {
     .filter(prNumber => Boolean(prNumber))
 
   return [...new Set(allPrNumbers)]
+}
+
+exports.getPRBody = (
+  template,
+  { newVersion, draftRelease, inputs, author, artifact }
+) => {
+  const tagsToBeUpdated = []
+  const { major, minor } = semver.parse(newVersion)
+
+  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
+  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
+
+  // Should strictly contain only non-sensitive data
+  const releaseMeta = {
+    id: draftRelease.id,
+    version: newVersion,
+    npmTag: inputs['npm-tag'],
+    opticUrl: inputs['optic-url'],
+  }
+
+  const prBody = template({
+    releaseMeta,
+    draftRelease,
+    tagsToUpdate: tagsToBeUpdated.join(', '),
+    npmPublish: !!inputs['npm-token'],
+    artifact,
+    syncTags: /true/i.test(inputs['sync-semver-tags']),
+    author,
+  })
+
+  if (prBody.length > MAX_PR_BODY_SIZE_LIMITATION) {
+    const omissionText =
+      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
+    return _truncate(prBody, {
+      length: PR_BODY_TRUNCATE_SIZE,
+      omission: omissionText,
+    })
+  }
+
+  return prBody
 }
 
 exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes

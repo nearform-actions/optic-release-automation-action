@@ -3,9 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
-const semver = require('semver')
 const core = require('@actions/core')
-const _truncate = require('lodash.truncate')
 
 const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
@@ -13,51 +11,9 @@ const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
 const { attach } = require('./utils/artifact')
+const { getPRBody } = require('./utils/releaseNotes')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
-
-const MAX_PR_BODY_SIZE_LIMITATION = 65536
-const PR_BODY_TRUNCATE_SIZE = 60000
-
-const getPRBody = (
-  template,
-  { newVersion, draftRelease, inputs, author, artifact }
-) => {
-  const tagsToBeUpdated = []
-  const { major, minor } = semver.parse(newVersion)
-
-  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
-  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
-
-  // Should strictly contain only non-sensitive data
-  const releaseMeta = {
-    id: draftRelease.id,
-    version: newVersion,
-    npmTag: inputs['npm-tag'],
-    opticUrl: inputs['optic-url'],
-  }
-
-  const prBody = template({
-    releaseMeta,
-    draftRelease,
-    tagsToUpdate: tagsToBeUpdated.join(', '),
-    npmPublish: !!inputs['npm-token'],
-    artifact,
-    syncTags: /true/i.test(inputs['sync-semver-tags']),
-    author,
-  })
-
-  if (prBody.length > MAX_PR_BODY_SIZE_LIMITATION) {
-    const omissionText =
-      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
-    return _truncate(prBody, {
-      length: PR_BODY_TRUNCATE_SIZE,
-      omission: omissionText,
-    })
-  }
-
-  return prBody
-}
 
 const addArtifact = async (inputs, releaseId) => {
   const artifactPath = inputs['artifact-path']
