@@ -35,10 +35,10 @@ function getPrNumbersFromReleaseNotes(releaseNotes) {
   return [...new Set(allPrNumbers)]
 }
 
-exports.getPRBody = (
+function getPRBody(
   template,
   { newVersion, draftRelease, inputs, author, artifact }
-) => {
+) {
   const tagsToBeUpdated = []
   const { major, minor } = semver.parse(newVersion)
 
@@ -56,7 +56,7 @@ exports.getPRBody = (
   const draftReleaseBody = draftRelease?.body || ''
   if (draftReleaseBody.length > PR_BODY_TRUNCATE_SIZE) {
     const omissionText =
-      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
+      '> Some of these release notes have been truncated to respect Pull Request body size limits'
     draftRelease.body = _truncate(draftReleaseBody, {
       length: PR_BODY_TRUNCATE_SIZE,
       omission: omissionText,
@@ -77,3 +77,4 @@ exports.getPRBody = (
 }
 
 exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes
+exports.getPRBody = getPRBody
