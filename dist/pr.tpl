@@ -28,3 +28,7 @@ Release author: @${author}
 - The new draft release will be deleted and nothing will change
 
 ${draftRelease.body}
+
+<!--
+<release-meta>${JSON.stringify(releaseMeta)}</release-meta>
+-->

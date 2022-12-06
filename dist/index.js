@@ -27590,7 +27590,6 @@ const _truncate = __nccwpck_require__(4436)
 
 const md = __nccwpck_require__(8561)()
 
-const MAX_PR_BODY_SIZE_LIMITATION = 65536
 const PR_BODY_TRUNCATE_SIZE = 60000
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
@@ -27639,6 +27638,16 @@ exports.getPRBody = (
     opticUrl: inputs['optic-url'],
   }
 
+  const draftReleaseBody = draftRelease?.body || ''
+  if (draftReleaseBody.length > PR_BODY_TRUNCATE_SIZE) {
+    const omissionText =
+      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
+    draftRelease.body = _truncate(draftReleaseBody, {
+      length: PR_BODY_TRUNCATE_SIZE,
+      omission: omissionText,
+    })
+  }
+
   const prBody = template({
     releaseMeta,
     draftRelease,
@@ -27649,23 +27658,7 @@ exports.getPRBody = (
     author,
   })
 
-  let truncatedPrBody = prBody
-  if (prBody.length > MAX_PR_BODY_SIZE_LIMITATION) {
-    const omissionText =
-      '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
-    truncatedPrBody = _truncate(prBody, {
-      length: PR_BODY_TRUNCATE_SIZE,
-      omission: omissionText,
-    })
-  }
-
-  const releaseTpl = `
-<!--
-<release-meta>${JSON.stringify(releaseMeta)}</release-meta>
--->
-`
-
-  return truncatedPrBody + releaseTpl
+  return prBody
 }
 
 exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes

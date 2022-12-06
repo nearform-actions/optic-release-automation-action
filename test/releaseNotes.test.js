@@ -2,6 +2,8 @@
 
 const tap = require('tap')
 const _template = require('lodash.template')
+const fs = require('fs')
+const path = require('path')
 
 const {
   getPrNumbersFromReleaseNotes,
@@ -42,6 +44,8 @@ tap.test('Should return the correct PR numbers', async () => {
 })
 
 tap.test('Should return truncated PR body', async () => {
+  const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
+
   const testReleaseNotes = `
     ## Whats Changed\n +
     * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -73,16 +77,19 @@ tap.test('Should return truncated PR body', async () => {
     longPrBody = longPrBody + testReleaseNotes
   }
 
-  tap.ok(longPrBody.length > 65536)
-  const truncatedPrBody = getPRBody(_template(longPrBody), {
+  tap.ok(longPrBody.length > 60000)
+
+  const truncatedPrBody = getPRBody(_template(tpl), {
     newVersion: '1.0.0',
-    draftRelease: '',
+    draftRelease: { id: 1, body: longPrBody },
     inputs: [],
     author: 'test',
     artifact: null,
   })
   tap.ok(truncatedPrBody.length < 65536)
   tap.ok(
-    truncatedPrBody.includes(`<release-meta>{"version":"1.0.0"}</release-meta>`)
+    truncatedPrBody.includes(
+      `<release-meta>{"id":1,"version":"1.0.0"}</release-meta>`
+    )
   )
 })
