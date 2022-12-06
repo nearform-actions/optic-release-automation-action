@@ -2,7 +2,7 @@
 
 const tap = require('tap')
 
-tap.test('throws an error if path not found', async () => {
+tap.test('throws an error if path not found', async t => {
   const archiverModule = tap.mock('../src/utils/archiver.js', {
     'fs/promises': {
       lstat: async () => ({
@@ -13,10 +13,10 @@ tap.test('throws an error if path not found', async () => {
     },
   })
 
-  tap.rejects(archiverModule.archiveItem('path', 'out.zip'))
+  t.rejects(archiverModule.archiveItem('path', 'out.zip'))
 })
 
-tap.test('does not throw any errors', async () => {
+tap.test('does not throw any errors', async t => {
   const archiverModule = tap.mock('../src/utils/archiver.js', {
     'fs/promises': {
       lstat: async () => ({
@@ -36,5 +36,5 @@ tap.test('does not throw any errors', async () => {
     },
   })
 
-  tap.resolves(archiverModule.archiveItem('path', 'out.zip'))
+  t.resolves(archiverModule.archiveItem('path', 'out.zip'))
 })
