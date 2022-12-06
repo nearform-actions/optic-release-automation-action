@@ -27580,7 +27580,7 @@ exports.publishToNpm = publishToNpm
 /***/ }),
 
 /***/ 4098:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
@@ -27661,8 +27661,10 @@ function getPRBody(
   return prBody
 }
 
-exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes
-exports.getPRBody = getPRBody
+module.exports = {
+  getPrNumbersFromReleaseNotes,
+  getPRBody,
+}
 
 
 /***/ }),

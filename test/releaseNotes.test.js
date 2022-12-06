@@ -1,6 +1,6 @@
 'use strict'
 
-const tap = require('tap')
+const { test } = require('tap')
 const _template = require('lodash.template')
 const fs = require('fs')
 const path = require('path')
@@ -10,7 +10,7 @@ const {
   getPRBody,
 } = require('../src/utils/releaseNotes')
 
-tap.test('Should return the correct PR numbers', async () => {
+test('Should return the correct PR numbers', async t => {
   const testReleaseNotes = `
     ## Whats Changed\n +
     * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -40,10 +40,10 @@ tap.test('Should return the correct PR numbers', async () => {
   const result = getPrNumbersFromReleaseNotes(testReleaseNotes)
   const expected = ['13', '15', '16', '18', '42', '50', '52', '53']
 
-  tap.same(result, expected)
+  t.same(result, expected)
 })
 
-tap.test('Should return truncated PR body', async () => {
+test('Should return truncated PR body', async t => {
   const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
 
   const testReleaseNotes = `
@@ -77,7 +77,7 @@ tap.test('Should return truncated PR body', async () => {
     longPrBody = longPrBody + testReleaseNotes
   }
 
-  tap.ok(longPrBody.length > 60000)
+  t.ok(longPrBody.length > 60000)
 
   const truncatedPrBody = getPRBody(_template(tpl), {
     newVersion: '1.0.0',
@@ -86,8 +86,8 @@ tap.test('Should return truncated PR body', async () => {
     author: 'test',
     artifact: null,
   })
-  tap.ok(truncatedPrBody.length < 65536)
-  tap.ok(
+  t.ok(truncatedPrBody.length < 65536)
+  t.ok(
     truncatedPrBody.includes(
       `<release-meta>{"id":1,"version":"1.0.0"}</release-meta>`
     )

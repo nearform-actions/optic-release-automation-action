@@ -76,5 +76,7 @@ function getPRBody(
   return prBody
 }
 
-exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes
-exports.getPRBody = getPRBody
+module.exports = {
+  getPrNumbersFromReleaseNotes,
+  getPRBody,
+}
