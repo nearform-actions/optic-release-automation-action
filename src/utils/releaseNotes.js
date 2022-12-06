@@ -55,7 +55,6 @@ exports.getPRBody = (
   }
 
   const prBody = template({
-    releaseMeta,
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
@@ -64,16 +63,23 @@ exports.getPRBody = (
     author,
   })
 
+  let truncatedPrBody = prBody
   if (prBody.length > MAX_PR_BODY_SIZE_LIMITATION) {
     const omissionText =
       '. *Note: Part of the release notes have been omitted from this message, as the content exceeds the size limit*'
-    return _truncate(prBody, {
+    truncatedPrBody = _truncate(prBody, {
       length: PR_BODY_TRUNCATE_SIZE,
       omission: omissionText,
     })
   }
 
-  return prBody
+  const releaseTpl = `
+<!--
+<release-meta>${JSON.stringify(releaseMeta)}</release-meta>
+-->  
+`
+
+  return truncatedPrBody + releaseTpl
 }
 
 exports.getPrNumbersFromReleaseNotes = getPrNumbersFromReleaseNotes

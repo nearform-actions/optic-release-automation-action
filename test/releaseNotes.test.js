@@ -81,5 +81,8 @@ tap.test('Should return truncated PR body', async () => {
     author: 'test',
     artifact: null,
   })
-  tap.ok(truncatedPrBody.length === 60000)
+  tap.ok(truncatedPrBody.length < 65536)
+  tap.ok(
+    truncatedPrBody.includes(`<release-meta>{"version":"1.0.0"}</release-meta>`)
+  )
 })
