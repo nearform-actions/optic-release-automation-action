@@ -6,6 +6,10 @@ A new **draft** GitHub release [${releaseMeta.version}](${draftRelease.html_url}
 
 Release author: @${author}
 
+<!--
+<release-meta>${JSON.stringify(releaseMeta)}</release-meta>
+-->
+
 #### If you want to go ahead with the release, please merge this PR. When you merge:
 
 - The GitHub release will be published
@@ -28,7 +32,3 @@ Release author: @${author}
 - The new draft release will be deleted and nothing will change
 
 ${draftRelease.body}
-
-<!--
-<release-meta>${JSON.stringify(releaseMeta)}</release-meta>
--->
