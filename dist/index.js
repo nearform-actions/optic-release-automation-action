@@ -27640,6 +27640,7 @@ exports.getPRBody = (
   }
 
   const prBody = template({
+    releaseMeta,
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
     npmPublish: !!inputs['npm-token'],
@@ -27661,7 +27662,7 @@ exports.getPRBody = (
   const releaseTpl = `
 <!--
 <release-meta>${JSON.stringify(releaseMeta)}</release-meta>
--->  
+-->
 `
 
   return truncatedPrBody + releaseTpl
