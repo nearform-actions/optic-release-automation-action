@@ -10,7 +10,7 @@ const DEFAULT_INPUT_DATA = {
 
 tap.test(
   'attach artifact does not throw errors with proper inputs',
-  async () => {
+  async t => {
     const attachArtifactModule = tap.mock('../src/utils/artifact.js', {
       '../src/utils/archiver.js': {
         archiveItem: async () => null,
@@ -42,13 +42,13 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.resolves(attachArtifactModule.attach(artifactPath, releaseId, token))
+    t.resolves(attachArtifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
 tap.test(
   'attach artifact throws an error if build folder not found',
-  async () => {
+  async t => {
     const artifactModule = tap.mock('../src/utils/artifact.js', {
       '../src/utils/archiver.js': {
         archiveItem: async () => {
@@ -59,13 +59,13 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.rejects(artifactModule.attach(artifactPath, releaseId, token))
+    t.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
 tap.test(
   'attach artifact throws an error if an error occurres during the asset upload',
-  async () => {
+  async t => {
     const artifactModule = tap.mock('../src/utils/artifact.js', {
       '../src/utils/archiver.js': {
         archiveItem: async () => null,
@@ -96,13 +96,13 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.rejects(artifactModule.attach(artifactPath, releaseId, token))
+    t.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
 tap.test(
   'attach artifact throws an error if the upload asset state is not uploaded',
-  async () => {
+  async t => {
     const artifactModule = tap.mock('../src/utils/artifact.js', {
       '../src/utils/archiver.js': {
         archiveItem: async () => null,
@@ -134,6 +134,6 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    tap.rejects(artifactModule.attach(artifactPath, releaseId, token))
+    t.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )

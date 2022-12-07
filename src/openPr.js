@@ -3,7 +3,6 @@
 const fs = require('fs')
 const path = require('path')
 const _template = require('lodash.template')
-const semver = require('semver')
 const core = require('@actions/core')
 
 const { PR_TITLE_PREFIX } = require('./const')
@@ -12,39 +11,9 @@ const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
 const { attach } = require('./utils/artifact')
+const { getPRBody } = require('./utils/releaseNotes')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
-
-const getPRBody = (
-  template,
-  { newVersion, draftRelease, inputs, author, artifact }
-) => {
-  const tagsToBeUpdated = []
-  const { major, minor } = semver.parse(newVersion)
-
-  if (major !== 0) tagsToBeUpdated.push(`v${major}`)
-  if (minor !== 0) tagsToBeUpdated.push(`v${major}.${minor}`)
-
-  // Should strictly contain only non-sensitive data
-  const releaseMeta = {
-    id: draftRelease.id,
-    version: newVersion,
-    npmTag: inputs['npm-tag'],
-    monorepoPackage: inputs['monorepo-package'],
-    monorepoRoot: inputs['monorepo-root'],
-    opticUrl: inputs['optic-url'],
-  }
-
-  return template({
-    releaseMeta,
-    draftRelease,
-    tagsToUpdate: tagsToBeUpdated.join(', '),
-    npmPublish: !!inputs['npm-token'],
-    artifact,
-    syncTags: /true/i.test(inputs['sync-semver-tags']),
-    author,
-  })
-}
 
 const addArtifact = async ({ inputs, artifactPath, releaseId, filename }) => {
   const token = inputs['github-token']
@@ -142,7 +111,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     artifact,
   })
   try {
-    await callApi(
+    const response = await callApi(
       {
         method: 'POST',
         endpoint: 'pr',
@@ -155,6 +124,10 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+    if (response?.status !== 201) {
+      const errMessage = response?.message || 'PR creation failed'
+      throw new Error(errMessage)
+    }
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
