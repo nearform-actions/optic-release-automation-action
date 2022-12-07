@@ -4,8 +4,8 @@ const core = require('@actions/core')
 const { exec } = require('@actions/exec')
 const parseReleaseMetadata = require('./utils/parseReleaseMetadata')
 
-function getMonorepoData({ context, inputs }) {
-  if (context?.payload?.pull_request) {
+function getMonorepoData({ context, inputs, github }) {
+  if (github.event_name === 'pull_request' && context?.payload?.pull_request) {
     return parseReleaseMetadata(context.payload.pull_request)
   }
 
@@ -15,8 +15,12 @@ function getMonorepoData({ context, inputs }) {
   }
 }
 
-module.exports = async function ({ context, inputs }) {
-  const { monorepoPackage, monorepoRoot } = getMonorepoData({ context, inputs })
+module.exports = async function ({ github, context, inputs }) {
+  const { monorepoPackage, monorepoRoot } = getMonorepoData({
+    context,
+    inputs,
+    github,
+  })
 
   const buildCommands = inputs['build-command']
     .trim()
