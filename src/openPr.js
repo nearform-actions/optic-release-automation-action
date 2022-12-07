@@ -12,6 +12,7 @@ const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
+const { fetchLatestRelease, generateReleaseNotes } = require('./utils/releases')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -24,7 +25,18 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const createDraftRelease = async (inputs, newVersion) => {
+const getReleaseNotes = async (inputs, newVersion) => {
+  const latestRelease = await fetchLatestRelease(inputs)
+  const latestVersion = latestRelease ? latestRelease.tag_name : null
+  const releaseNotes = await generateReleaseNotes(
+    inputs,
+    newVersion,
+    latestVersion
+  )
+  return releaseNotes?.body || ''
+}
+
+const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   try {
     const run = runSpawn()
     const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
@@ -38,6 +50,8 @@ const createDraftRelease = async (inputs, newVersion) => {
         body: {
           version: newVersion,
           target: releaseCommitHash,
+          generateReleaseNotes: false,
+          releaseNotes,
         },
       },
       inputs
@@ -74,7 +88,13 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await run('git', ['push', 'origin', branchName])
 
-  const draftRelease = await createDraftRelease(inputs, newVersion)
+  const releaseNotes = await getReleaseNotes(inputs, newVersion)
+
+  const draftRelease = await createDraftRelease(
+    inputs,
+    newVersion,
+    releaseNotes
+  )
 
   logInfo(`New version ${newVersion}`)
 
