@@ -1,8 +1,7 @@
 'use strict'
-const github = require('@actions/github')
 const { logDebug, logInfo } = require('../log')
 
-async function getBumpedVersion({ versionPrefix, token }) {
+async function getBumpedVersion({ github, versionPrefix, token }) {
   const { owner, repo } = github.context.repo
   const data = await github.graphql(
     `

@@ -52,14 +52,14 @@ const createDraftRelease = async (inputs, newVersion) => {
   }
 }
 
-module.exports = async function ({ context, inputs, packageVersion }) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
   const isAutoBump = inputs['semver'] === 'auto'
 
   logInfo(`packageVersion is ${packageVersion}`)
-  logInfo(`inputs is ${inputs}`)
+  logInfo(`inputs is ${JSON.stringify(inputs)}`)
   logInfo(`isAutoBump is ${isAutoBump}`)
 
   if (!packageVersion && !isAutoBump) {
@@ -74,6 +74,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     bumpedPackageVersion = await getBumpedVersion({
       versionPrefix,
       token,
+      github,
     })
     logInfo(`=-LOG-= ---> bumpedPackageVersion`, bumpedPackageVersion)
 

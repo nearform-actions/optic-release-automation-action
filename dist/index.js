@@ -26943,14 +26943,14 @@ const createDraftRelease = async (inputs, newVersion) => {
   }
 }
 
-module.exports = async function ({ context, inputs, packageVersion }) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
   const isAutoBump = inputs['semver'] === 'auto'
 
   logInfo(`packageVersion is ${packageVersion}`)
-  logInfo(`inputs is ${inputs}`)
+  logInfo(`inputs is ${JSON.stringify(inputs)}`)
   logInfo(`isAutoBump is ${isAutoBump}`)
 
   if (!packageVersion && !isAutoBump) {
@@ -26965,6 +26965,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     bumpedPackageVersion = await getBumpedVersion({
       versionPrefix,
       token,
+      github,
     })
     logInfo(`=-LOG-= ---> bumpedPackageVersion`, bumpedPackageVersion)
 
@@ -27331,10 +27332,9 @@ exports.attach = attach
 
 "use strict";
 
-const github = __nccwpck_require__(5438)
 const { logDebug, logInfo } = __nccwpck_require__(653)
 
-async function getBumpedVersion({ versionPrefix, token }) {
+async function getBumpedVersion({ github, versionPrefix, token }) {
   const { owner, repo } = github.context.repo
   const data = await github.graphql(
     `
