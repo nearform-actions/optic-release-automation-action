@@ -75,6 +75,7 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
       versionPrefix,
       token,
       github,
+      context,
     })
     logInfo(`=-LOG-= ---> bumpedPackageVersion`, bumpedPackageVersion)
 

@@ -26966,6 +26966,7 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
       versionPrefix,
       token,
       github,
+      context,
     })
     logInfo(`=-LOG-= ---> bumpedPackageVersion`, bumpedPackageVersion)
 
@@ -27334,8 +27335,8 @@ exports.attach = attach
 
 const { logDebug, logInfo } = __nccwpck_require__(653)
 
-async function getBumpedVersion({ github, versionPrefix, token }) {
-  const { owner, repo } = github.context.repo
+async function getBumpedVersion({ github, context, versionPrefix, token }) {
+  const { owner, repo } = context.repo
   const data = await github.graphql(
     `
     query {
