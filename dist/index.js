@@ -27340,7 +27340,7 @@ async function getBumpedVersion({ github, context, versionPrefix, token }) {
   const data = await github.graphql(
     `
     query {
-      repository(owner: $repoOwner, name: $repoName) {
+      repository(owner: $owner, name: $repo) {
         latestRelease{
           tagName
           tagCommit {
