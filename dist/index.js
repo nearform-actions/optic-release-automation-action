@@ -27334,6 +27334,7 @@ exports.attach = attach
 "use strict";
 
 const { logDebug, logInfo } = __nccwpck_require__(653)
+const { getOctokit } = __nccwpck_require__(5438)
 
 async function getBumpedVersion({ github, context, versionPrefix, token }) {
   const { owner, repo } = context.repo
@@ -27366,7 +27367,7 @@ async function getBumpedVersion({ github, context, versionPrefix, token }) {
     throw new Error(`Couldn't find latest release`)
   }
 
-  const octokit = github.getOctokit(token)
+  const octokit = getOctokit(token)
 
   const allCommits = await octokit.rest.repos.listCommits({
     owner,
