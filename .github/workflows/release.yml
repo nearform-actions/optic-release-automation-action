@@ -25,7 +25,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      - uses: nearform/optic-release-automation-action@main
+      - uses: sameer-coder/optic-release-automation-action@auto-version-bump
         with:
           semver: ${{ github.event.inputs.semver }}
           sync-semver-tags: 'true'
