@@ -35,6 +35,16 @@ async function getBumpedVersion({ github, context, versionPrefix, token }) {
 
   const octokit = getOctokit(token)
 
+  logInfo(
+    `obj ${JSON.stringify({
+      owner,
+      repo,
+      sha: latestReleaseCommitSha,
+      per_page: 100,
+      page: 1,
+    })}`
+  )
+
   const allCommits = await octokit.rest.repos.listCommits({
     owner,
     repo,
