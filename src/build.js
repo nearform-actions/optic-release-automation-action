@@ -5,8 +5,11 @@ const { exec } = require('@actions/exec')
 const parseReleaseMetadata = require('./utils/parseReleaseMetadata')
 
 function getMonorepoData({ context, inputs, github }) {
-  if (github.event_name === 'pull_request' && context?.payload?.pull_request) {
-    return parseReleaseMetadata(context.payload.pull_request)
+  const pr = context?.payload?.pull_request
+  const isOpticPr = pr?.user.login === inputs['app-name']
+
+  if (github.event_name === 'pull_request' && isOpticPr) {
+    return parseReleaseMetadata(pr)
   }
 
   return {

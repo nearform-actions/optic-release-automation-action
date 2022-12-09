@@ -28104,8 +28104,11 @@ const { exec } = __nccwpck_require__(1514)
 const parseReleaseMetadata = __nccwpck_require__(9800)
 
 function getMonorepoData({ context, inputs, github }) {
-  if (github.event_name === 'pull_request' && context?.payload?.pull_request) {
-    return parseReleaseMetadata(context.payload.pull_request)
+  const pr = context?.payload?.pull_request
+  const isOpticPr = pr?.user.login === inputs['app-name']
+
+  if (github.event_name === 'pull_request' && isOpticPr) {
+    return parseReleaseMetadata(pr)
   }
 
   return {
