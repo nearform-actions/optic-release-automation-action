@@ -12,6 +12,7 @@ const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
+const { getBumpedVersion } = require('./utils/bump')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -55,11 +56,35 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
-  if (!packageVersion) {
+  const isAutoBump = inputs['semver'] === 'auto'
+
+  logInfo(`packageVersion is ${packageVersion}`)
+  logInfo(`inputs is ${inputs}`)
+  logInfo(`isAutoBump is ${isAutoBump}`)
+
+  if (!packageVersion && !isAutoBump) {
     throw new Error('packageVersion is missing!')
   }
 
-  const newVersion = `${inputs['version-prefix']}${packageVersion}`
+  const token = inputs['github-token']
+  const versionPrefix = inputs['version-prefix']
+
+  let bumpedPackageVersion = null
+  if (isAutoBump) {
+    bumpedPackageVersion = await getBumpedVersion({
+      versionPrefix,
+      token,
+    })
+    logInfo(`=-LOG-= ---> bumpedPackageVersion`, bumpedPackageVersion)
+
+    if (!bumpedPackageVersion) {
+      throw new Error('Error in automatically bumping version number')
+    }
+  }
+  const newPackageVersion = isAutoBump ? bumpedPackageVersion : packageVersion
+  logInfo(`=-LOG-= ---> newPackageVersion`, newPackageVersion)
+
+  const newVersion = `${versionPrefix}${newPackageVersion}`
 
   const branchName = `release/${newVersion}`
 

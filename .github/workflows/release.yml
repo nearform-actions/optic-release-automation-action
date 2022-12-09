@@ -9,6 +9,7 @@ on:
         default: 'patch'
         type: choice
         options:
+          - auto
           - patch
           - minor
           - major

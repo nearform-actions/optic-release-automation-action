@@ -84,7 +84,7 @@ runs:
 
     - name: Version bump
       id: version-bump
-      if: ${{ github.event_name == 'workflow_dispatch' }}
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.semver !== 'auto' }}
       run: |
         npm version --no-git-tag-version ${{ inputs.semver }}
         echo "PACKAGE_VERSION=$(echo $(node -p "require('./package.json').version"))" >> $GITHUB_OUTPUT
