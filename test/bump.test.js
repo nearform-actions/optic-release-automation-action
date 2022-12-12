@@ -100,7 +100,7 @@ tap.test('it triggers an error when the packageVersion is missing', async t => {
   }
 })
 
-tap.test('it should call getBumpedVersion if option is auto', async t => {
+tap.test('it should call getBumpedVersion if option is auto', async () => {
   const { openPr, stubs } = setup()
 
   const prData = {
