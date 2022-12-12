@@ -9,6 +9,7 @@ const clone = require('lodash.clonedeep')
 const runSpawnAction = require('../src/utils/runSpawn')
 const callApiAction = require('../src/utils/callApi')
 const artifactAction = require('../src/utils/artifact')
+const bumpUtil = require('../src/utils/bump')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_VERSION = '3.1.1'
@@ -21,6 +22,9 @@ runSpawnStub.withArgs('git', ['rev-parse', 'HEAD']).returns(TEST_COMMIT_HASH)
 function setup() {
   const coreStub = sinon.stub(core)
   const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
+  const getBumpedVersionStub = sinon
+    .stub(bumpUtil, 'getBumpedVersion')
+    .resolves('3.1.1')
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
     .resolves({ data: {} })
@@ -35,6 +39,7 @@ function setup() {
   const openPr = proxyquire('../src/openPr', {
     './utils/runSpawn': utilStub,
     './utils/artifact': attachArtifactStub,
+    './utils/bump': getBumpedVersionStub,
     '@actions/core': coreStub,
   })
 
@@ -46,6 +51,7 @@ function setup() {
       callApiStub,
       coreStub,
       attachArtifactStub,
+      getBumpedVersionStub,
     },
   }
 }
@@ -92,6 +98,27 @@ tap.test('it triggers an error when the packageVersion is missing', async t => {
     t.ok(error)
     t.match(error.message, 'packageVersion is missing')
   }
+})
+
+tap.test('it should call getBumpedVersion if option is auto', async t => {
+  const { openPr, stubs } = setup()
+
+  const prData = {
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      ...DEFAULT_ACTION_DATA.inputs,
+      semver: 'auto',
+    },
+  }
+
+  await openPr(prData)
+
+  // git
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+    'version',
+    '--no-git-tag-version',
+    'v3.1.1',
+  ])
 })
 
 tap.test('should create a new git branch', async () => {

@@ -71,10 +71,6 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
       context,
     })
 
-    if (!bumpedPackageVersion) {
-      throw new Error('Error in automatically bumping version number')
-    }
-
     await run('npm', [
       'version',
       '--no-git-tag-version',

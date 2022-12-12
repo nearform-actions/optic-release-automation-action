@@ -1,7 +1,9 @@
 'use strict'
 
-const { test } = require('tap')
+const { test, afterEach } = require('tap')
 const sinon = require('sinon')
+const semver = require('semver')
+const proxyquire = require('proxyquire')
 
 const { getBumpedVersion } = require('../src/utils/bump')
 
@@ -16,10 +18,10 @@ const DEFAULT_CONTEXT = {
   repo: 'test-repo',
 }
 
-const getLatestReleaseStub = () => ({
+const getLatestReleaseStub = release => ({
   repository: {
     latestRelease: {
-      tagName: 'v2.4.6',
+      tagName: release || 'v2.4.6',
       tagCommit: {
         oid: 'c40e533872630d3dc632539f140586bf5b9f0ea8',
         committedDate: '2022-12-12T10:21:25Z',
@@ -38,6 +40,18 @@ const getCommitsSinceLastReleaseStub = commits => ({
       },
     },
   },
+})
+
+const getStubbedFunction = semverStub => {
+  const { getBumpedVersion } = proxyquire('../src/utils/bump', {
+    semver: semverStub,
+  })
+
+  return getBumpedVersion
+}
+
+afterEach(() => {
+  sinon.restore()
 })
 
 test('should bump patch version by default if no conventional commits found', async t => {
@@ -167,5 +181,61 @@ test('should throw if no release details found', async t => {
     })
   } catch (error) {
     t.same(error.message, `Couldn't find latest release`)
+  }
+})
+
+test('should fail if invalid current version', async t => {
+  const githubApiResponse = sinon.stub()
+  const semverStub = sinon
+    .stub(semver, 'parse')
+    .returns({ major: 1, minor: 'test', patch: 1 })
+
+  const getBumpedVersionProxy = getStubbedFunction(semverStub)
+
+  const commits = [
+    {
+      oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
+      message: 'fix: this is a minor feature',
+      committedDate: '2022-12-09T15:11:56Z',
+    },
+  ]
+
+  githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
+  githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
+
+  try {
+    await getBumpedVersionProxy({
+      github: getGithubGraphqlClient(githubApiResponse),
+      context: DEFAULT_CONTEXT,
+    })
+  } catch (error) {
+    t.same(error.message, 'Invalid major/minor/patch version found')
+  }
+})
+
+test('should fail if new version is not semver compatible', async t => {
+  const githubApiResponse = sinon.stub()
+  const semverStub = sinon.stub(semver, 'valid').returns(null)
+
+  const getBumpedVersionProxy = getStubbedFunction(semverStub)
+
+  const commits = [
+    {
+      oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
+      message: 'fix: this is a minor feature',
+      committedDate: '2022-12-09T15:11:56Z',
+    },
+  ]
+
+  githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
+  githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
+
+  try {
+    await getBumpedVersionProxy({
+      github: getGithubGraphqlClient(githubApiResponse),
+      context: DEFAULT_CONTEXT,
+    })
+  } catch (error) {
+    t.same(error.message, 'Invalid bumped version 2.4.7')
   }
 })
