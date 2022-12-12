@@ -1,13 +1,13 @@
 'use strict'
-const github = require('@actions/github')
-const { logDebug, logInfo } = require('../log')
+const { logDebug } = require('../log')
+const { getOctokit } = require('@actions/github')
 
-async function getBumpedVersion({ versionPrefix, token }) {
-  const { owner, repo } = github.context.repo
+async function getBumpedVersion({ github, context, versionPrefix, token }) {
+  const { owner, repo } = context.repo
   const data = await github.graphql(
     `
-    query {
-      repository(owner: $repoOwner, name: $repoName) {
+    query getLatestTagCommit($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
         latestRelease{
           tagName
           tagCommit {
@@ -23,8 +23,6 @@ async function getBumpedVersion({ versionPrefix, token }) {
     }
   )
 
-  logInfo(`response from get latest release query ${JSON.stringify(data)}`)
-
   const latestReleaseCommitSha = data?.repository?.latestRelease?.tagCommit?.oid
   const latestReleaseTagName = data?.repository?.latestRelease?.tagName
 
@@ -33,16 +31,17 @@ async function getBumpedVersion({ versionPrefix, token }) {
     throw new Error(`Couldn't find latest release`)
   }
 
-  const octokit = github.getOctokit(token)
+  const octokit = getOctokit(token)
 
-  const allCommits = await octokit.rest.repos.listCommits({
+  const response = await octokit.rest.repos.listCommits({
     owner,
     repo,
     sha: latestReleaseCommitSha,
     per_page: 100,
     page: 1,
   })
-  logInfo(`=-LOG-= ---> allCommits`, allCommits)
+
+  const allCommits = response.data.map(c => c.commit.message)
 
   const isTagVersionPrefixed = latestReleaseTagName.includes(versionPrefix)
 
@@ -50,14 +49,12 @@ async function getBumpedVersion({ versionPrefix, token }) {
     ? latestReleaseTagName.replace(versionPrefix, '')
     : latestReleaseTagName.replace(versionPrefix, 'v.') // default prefix
 
-  logInfo(`=-LOG-= ---> currentVersion`, currentVersion)
-
   if (!currentVersion) {
     logDebug(`response from get latest release query ${JSON.stringify(data)}`)
     throw new Error(`Couldn't find latest version`)
   }
 
-  return getVerionFromCommits(currentVersion, allCommits)
+  return getVerionFromCommits(currentVersion, allCommits.data)
 }
 
 function getVerionFromCommits(currentVersion, commits = []) {

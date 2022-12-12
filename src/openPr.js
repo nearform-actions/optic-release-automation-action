@@ -52,15 +52,11 @@ const createDraftRelease = async (inputs, newVersion) => {
   }
 }
 
-module.exports = async function ({ context, inputs, packageVersion }) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
   const isAutoBump = inputs['semver'] === 'auto'
-
-  logInfo(`packageVersion is ${packageVersion}`)
-  logInfo(`inputs is ${inputs}`)
-  logInfo(`isAutoBump is ${isAutoBump}`)
 
   if (!packageVersion && !isAutoBump) {
     throw new Error('packageVersion is missing!')
@@ -74,15 +70,15 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     bumpedPackageVersion = await getBumpedVersion({
       versionPrefix,
       token,
+      github,
+      context,
     })
-    logInfo(`=-LOG-= ---> bumpedPackageVersion`, bumpedPackageVersion)
 
     if (!bumpedPackageVersion) {
       throw new Error('Error in automatically bumping version number')
     }
   }
   const newPackageVersion = isAutoBump ? bumpedPackageVersion : packageVersion
-  logInfo(`=-LOG-= ---> newPackageVersion`, newPackageVersion)
 
   const newVersion = `${versionPrefix}${newPackageVersion}`
 
@@ -100,8 +96,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   await run('git', ['push', 'origin', branchName])
 
   const draftRelease = await createDraftRelease(inputs, newVersion)
-
-  logInfo(`New version ${newVersion}`)
 
   const artifact =
     inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))

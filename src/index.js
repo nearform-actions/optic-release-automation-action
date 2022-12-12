@@ -6,7 +6,7 @@ const { logError } = require('./log')
 
 module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
-    return openPr({ context, inputs, packageVersion })
+    return openPr({ github, context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
