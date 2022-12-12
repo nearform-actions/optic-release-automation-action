@@ -132,3 +132,40 @@ test('should bump patch version if fix commit found', async t => {
 
   t.same(newversion, '2.4.7')
 })
+
+test('should throw if no commits found', async t => {
+  const githubApiResponse = sinon.stub()
+
+  const commits = []
+
+  githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
+  githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
+
+  try {
+    await getBumpedVersion({
+      github: getGithubGraphqlClient(githubApiResponse),
+      context: DEFAULT_CONTEXT,
+    })
+  } catch (error) {
+    t.same(error.message, 'No commits found since last release')
+  }
+})
+
+test('should throw if no release details found', async t => {
+  const githubApiResponse = sinon.stub()
+
+  githubApiResponse.onCall(0).resolves({
+    latestReleaseCommitSha: null,
+    latestReleaseTagName: null,
+    latestReleaseCommitDate: null,
+  })
+
+  try {
+    await getBumpedVersion({
+      github: getGithubGraphqlClient(githubApiResponse),
+      context: DEFAULT_CONTEXT,
+    })
+  } catch (error) {
+    t.same(error.message, `Couldn't find latest release`)
+  }
+})
