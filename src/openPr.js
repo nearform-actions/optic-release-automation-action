@@ -62,14 +62,11 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
     throw new Error('packageVersion is missing!')
   }
 
-  const token = inputs['github-token']
   const versionPrefix = inputs['version-prefix']
 
   let bumpedPackageVersion = null
   if (isAutoBump) {
     bumpedPackageVersion = await getBumpedVersion({
-      versionPrefix,
-      token,
       github,
       context,
     })
@@ -77,10 +74,18 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
     if (!bumpedPackageVersion) {
       throw new Error('Error in automatically bumping version number')
     }
+
+    await run('npm', [
+      'version',
+      '--no-git-tag-version',
+      `${versionPrefix}${bumpedPackageVersion}`,
+    ])
   }
+
   const newPackageVersion = isAutoBump ? bumpedPackageVersion : packageVersion
 
   const newVersion = `${versionPrefix}${newPackageVersion}`
+  logInfo(`New version is ${newVersion}`)
 
   const branchName = `release/${newVersion}`
 

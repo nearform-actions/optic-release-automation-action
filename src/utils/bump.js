@@ -1,9 +1,94 @@
 'use strict'
-const { logDebug } = require('../log')
-const { getOctokit } = require('@actions/github')
 
-async function getBumpedVersion({ github, context, versionPrefix, token }) {
+const semver = require('semver')
+
+async function getBumpedVersion({ github, context }) {
   const { owner, repo } = context.repo
+
+  const {
+    latestReleaseCommitSha,
+    latestReleaseTagName,
+    latestReleaseCommitDate,
+  } = await getLatestRelease({ github, owner, repo })
+
+  if (
+    !latestReleaseCommitSha ||
+    !latestReleaseTagName ||
+    !latestReleaseCommitDate
+  ) {
+    throw new Error(`Couldn't find latest release`)
+  }
+
+  const allCommits = await getCommitsSinceLatestRelease({
+    github,
+    owner,
+    repo,
+    commitDate: latestReleaseCommitDate,
+  })
+
+  if (!allCommits.length) {
+    throw new Error(`No commits found since last release`)
+  }
+
+  const bumpedVersion = getVerionFromCommits(latestReleaseTagName, allCommits)
+
+  if (!semver.valid(bumpedVersion)) {
+    throw new Error(`Invalid bumped version ${bumpedVersion}`)
+  }
+  return bumpedVersion
+}
+
+function getVerionFromCommits(currentVersion, commits = []) {
+  // Define a regular expression to match Conventional Commits messages
+  const commitRegex = /^(feat|fix|BREAKING CHANGE)(\(.+\))?:(.+)$/
+
+  // Define a mapping of commit types to version bump types
+  var versionBumpMap = {
+    'BREAKING CHANGE': 'major',
+    feat: 'minor',
+    fix: 'patch',
+  }
+
+  let { major, minor, patch } = semver.parse(currentVersion)
+
+  if (
+    !Number.isInteger(major) ||
+    !Number.isInteger(minor) ||
+    !Number.isInteger(patch)
+  ) {
+    throw new Error('Invalid major/minor/patch version found')
+  }
+
+  let isBreaking = false
+  let isMinor = false
+
+  for (const commit of commits) {
+    const match = commitRegex.exec(commit)
+    if (!match) continue
+
+    const type = match[1]
+
+    const bumpType = versionBumpMap[type]
+    if (!bumpType) continue
+
+    if (bumpType === 'major') {
+      isBreaking = true
+      break
+    } else if (bumpType === 'minor') {
+      isMinor = true
+    }
+  }
+
+  if (isBreaking) {
+    return `${++major}.0.0`
+  } else if (isMinor) {
+    return `${major}.${++minor}.0`
+  } else {
+    return `${major}.${minor}.${++patch}`
+  }
+}
+
+async function getLatestRelease({ github, owner, repo }) {
   const data = await github.graphql(
     `
     query getLatestTagCommit($owner: String!, $repo: String!) {
@@ -12,6 +97,7 @@ async function getBumpedVersion({ github, context, versionPrefix, token }) {
           tagName
           tagCommit {
             oid
+            committedDate
           }
         }
       }
@@ -25,78 +111,53 @@ async function getBumpedVersion({ github, context, versionPrefix, token }) {
 
   const latestReleaseCommitSha = data?.repository?.latestRelease?.tagCommit?.oid
   const latestReleaseTagName = data?.repository?.latestRelease?.tagName
+  const latestReleaseCommitDate =
+    data?.repository?.latestRelease?.tagCommit?.committedDate
 
-  if (!latestReleaseCommitSha || !latestReleaseTagName) {
-    logDebug(`response from get latest release query ${JSON.stringify(data)}`)
-    throw new Error(`Couldn't find latest release`)
+  return {
+    latestReleaseCommitSha,
+    latestReleaseTagName,
+    latestReleaseCommitDate,
   }
-
-  const octokit = getOctokit(token)
-
-  const response = await octokit.rest.repos.listCommits({
-    owner,
-    repo,
-    sha: latestReleaseCommitSha,
-    per_page: 100,
-    page: 1,
-  })
-
-  const allCommits = response.data.map(c => c.commit.message)
-
-  const isTagVersionPrefixed = latestReleaseTagName.includes(versionPrefix)
-
-  const currentVersion = isTagVersionPrefixed
-    ? latestReleaseTagName.replace(versionPrefix, '')
-    : latestReleaseTagName.replace(versionPrefix, 'v.') // default prefix
-
-  if (!currentVersion) {
-    logDebug(`response from get latest release query ${JSON.stringify(data)}`)
-    throw new Error(`Couldn't find latest version`)
-  }
-
-  return getVerionFromCommits(currentVersion, allCommits.data)
 }
 
-function getVerionFromCommits(currentVersion, commits = []) {
-  // Define a regular expression to match Conventional Commits messages
-  const commitRegex = /^(feat|fix|BREAKING CHANGE)(\(.+\))?:\s(.+)$/
+async function getCommitsSinceLatestRelease({
+  github,
+  owner,
+  repo,
+  commitDate,
+}) {
+  const parsedCommitDate = new Date(commitDate)
+  parsedCommitDate.setSeconds(parsedCommitDate.getSeconds() + 1)
 
-  // Define a mapping of commit types to version bump types
-  var versionBumpMap = {
-    'BREAKING CHANGE': 'major',
-    feat: 'minor',
-    fix: 'patch',
-  }
-
-  let [major, minor, patch] = currentVersion.split('.')
-  let isBreaking = false
-  let isMinor = false
-
-  for (const commit of commits) {
-    const match = commitRegex.exec(commit)
-    if (!match) continue
-
-    const type = match[1]
-
-    // Determine the version bump type based on the commit type
-    const bumpType = versionBumpMap[type]
-    if (!bumpType) continue
-
-    if (bumpType === 'major') {
-      isBreaking = true
-      break
-    } else if (bumpType === 'minor') {
-      isMinor = true
+  const data = await github.graphql(
+    `
+      query getCommitsSinceLastRelease($owner: String!, $repo: String!, $since: GitTimestamp!) {
+        repository(owner: $owner, name: $repo) {
+          defaultBranchRef {
+            target {
+              ... on Commit {
+                history(first: 100, since: $since) {
+                  nodes {
+                    message
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    {
+      owner,
+      repo,
+      since: parsedCommitDate,
     }
-  }
+  )
 
-  if (isBreaking) {
-    return `${major++}.0.0`
-  } else if (isMinor) {
-    return `${major}.${minor++}.0`
-  } else {
-    return `${major}.${minor}.${patch++}`
-  }
+  const commitsList =
+    data?.repository?.defaultBranchRef?.target?.history?.nodes || []
+  return commitsList.map(c => c.message)
 }
 
 exports.getBumpedVersion = getBumpedVersion
