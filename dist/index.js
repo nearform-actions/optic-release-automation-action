@@ -26847,10 +26847,11 @@ exports.APP_NAME = 'optic-release-automation[bot]'
 
 const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
-const { getBumpedVersion } = __nccwpck_require__(7292)
+const { getAutoBumpedVersion } = __nccwpck_require__(7292)
+const { runSpawn } = __nccwpck_require__(2137)
 const { logError } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs, packageVersion }) {
+async function runAction({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
     return openPr({ context, inputs, packageVersion })
   }
@@ -26862,7 +26863,20 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
   logError('Unsupported event')
 }
 
-module.exports.getBumpedVersion = getBumpedVersion
+async function getBumpedVersionNumber({ github, context, inputs }) {
+  const newVersion =
+    inputs.semver === 'auto'
+      ? await getAutoBumpedVersion({ github, context })
+      : inputs.semver
+
+  const run = runSpawn()
+  await run('npm', ['version', '--no-git-tag-version', newVersion])
+  return await run('npm', ['pkg', 'get', 'version'])
+}
+
+module.exports.runAction = runAction
+module.exports.getBumpedVersionNumber = getBumpedVersionNumber
+module.exports.getAutoBumpedVersion = getAutoBumpedVersion
 
 
 /***/ }),
@@ -27312,7 +27326,7 @@ exports.attach = attach
 
 const semver = __nccwpck_require__(1383)
 
-async function getBumpedVersion({ github, context }) {
+async function getAutoBumpedVersion({ github, context }) {
   const { owner, repo } = context.repo
 
   const {
@@ -27470,7 +27484,7 @@ async function getCommitMessagesSinceLatestRelease({
   return commitsList.map(c => c.message)
 }
 
-exports.getBumpedVersion = getBumpedVersion
+exports.getAutoBumpedVersion = getAutoBumpedVersion
 
 
 /***/ }),
@@ -28147,7 +28161,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	// This entry module used 'module' so it can't be inlined
 /******/ 	var __webpack_exports__ = __nccwpck_require__(4351);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	

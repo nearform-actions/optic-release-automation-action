@@ -2,7 +2,7 @@
 
 const semver = require('semver')
 
-async function getBumpedVersion({ github, context }) {
+async function getAutoBumpedVersion({ github, context }) {
   const { owner, repo } = context.repo
 
   const {
@@ -160,4 +160,4 @@ async function getCommitMessagesSinceLatestRelease({
   return commitsList.map(c => c.message)
 }
 
-exports.getBumpedVersion = getBumpedVersion
+exports.getAutoBumpedVersion = getAutoBumpedVersion

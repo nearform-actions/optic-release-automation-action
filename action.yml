@@ -89,13 +89,8 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          let newVersion = '${{ inputs.semver }}'
-          if ('${{ inputs.semver }}' == 'auto') {
-            const script = require('${{ github.action_path }}/dist/index.js')
-            newVersion = await script.getBumpedVersion({ github, context })
-          }
-          await exec.exec(`npm version --no-git-tag-version ${newVersion}`)
-          return require('./package.json').version
+          const { getBumpedVersionNumber } = require('${{ github.action_path }}/dist/index.js')
+          return await getBumpedVersionNumber({ github, context, inputs: ${{ toJSON(inputs) }} })
 
     - name: Build the package
       if: ${{ inputs.build-command }}
@@ -111,8 +106,8 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: ${{ steps.version-bump.outputs.result }} })
+          const { runAction } = require('${{ github.action_path }}/dist/index.js')
+          await runAction({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: ${{ steps.version-bump.outputs.result }} })
 
     - name: Release the package
       uses: actions/github-script@v6
@@ -120,5 +115,5 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
+          const { runAction } = require('${{ github.action_path }}/dist/index.js')
+          await runAction({ github, context, inputs: ${{ toJSON(inputs) }} })
