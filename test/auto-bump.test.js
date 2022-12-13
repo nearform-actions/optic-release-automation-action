@@ -103,13 +103,18 @@ test('should bump major version if breaking change commit found', async t => {
   t.same(newversion, '3.0.0')
 })
 
-test('should bump minor major version if feat commit found', async t => {
+test('should bump minor version if feat commit found', async t => {
   const githubApiResponse = sinon.stub()
 
   const commits = [
     {
       oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
       message: 'feat: this is a minor feature',
+      committedDate: '2022-12-09T15:11:56Z',
+    },
+    {
+      oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
+      message: 'fix: this is a minor feature',
       committedDate: '2022-12-09T15:11:56Z',
     },
   ]

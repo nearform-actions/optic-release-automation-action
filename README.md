@@ -75,10 +75,6 @@ The above workflow (when manually triggered) will:
 
 ![image](https://user-images.githubusercontent.com/2510597/140506212-4938e44d-0662-4dc5-9fb1-c3f59fe075a6.png)
 
-
-*Note*: If you choose the "auto" option for semver version updates, the action will attempt to determine the new version number based on the commit messages. For this option to work, the repository must use the conventional commits standard.
-
-
 When you merge this PR:
 
 - It will request an Npm OTP from Optic.
@@ -88,6 +84,9 @@ When you merge this PR:
 - Leave a comment on each issues that are linked to the pull reqeuests of this release. This feature can be turned off by the `notify-on-the-issue` flag.
 
 When you close the PR without merging it: nothing will happen.
+
+## Using 'auto' bump version option
+If you choose the "auto" option for semver version updates, the action will attempt to determine the new version number based on the commit messages. For this option to work, the repository must use the conventional commits standard.
 
 ## Using branches filter
 

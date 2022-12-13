@@ -12,7 +12,6 @@ const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
-const { getBumpedVersion } = require('./utils/bump')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -52,36 +51,15 @@ const createDraftRelease = async (inputs, newVersion) => {
   }
 }
 
-module.exports = async function ({ github, context, inputs, packageVersion }) {
+module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
-  const isAutoBump = inputs['semver'] === 'auto'
-
-  if (!packageVersion && !isAutoBump) {
+  if (!packageVersion) {
     throw new Error('packageVersion is missing!')
   }
 
-  const versionPrefix = inputs['version-prefix']
-
-  let bumpedPackageVersion = null
-  if (isAutoBump) {
-    bumpedPackageVersion = await getBumpedVersion({
-      github,
-      context,
-    })
-
-    await run('npm', [
-      'version',
-      '--no-git-tag-version',
-      `${versionPrefix}${bumpedPackageVersion}`,
-    ])
-  }
-
-  const newPackageVersion = isAutoBump ? bumpedPackageVersion : packageVersion
-
-  const newVersion = `${versionPrefix}${newPackageVersion}`
-  logInfo(`New version is ${newVersion}`)
+  const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
 
@@ -97,6 +75,8 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
   await run('git', ['push', 'origin', branchName])
 
   const draftRelease = await createDraftRelease(inputs, newVersion)
+
+  logInfo(`New version ${newVersion}`)
 
   const artifact =
     inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))

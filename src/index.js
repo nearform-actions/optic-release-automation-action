@@ -2,11 +2,12 @@
 
 const openPr = require('./openPr')
 const release = require('./release')
+const { getBumpedVersion } = require('./utils/bump')
 const { logError } = require('./log')
 
 module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
-    return openPr({ github, context, inputs, packageVersion })
+    return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
@@ -15,3 +16,5 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
 
   logError('Unsupported event')
 }
+
+module.exports.getBumpedVersion = getBumpedVersion

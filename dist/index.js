@@ -26847,11 +26847,12 @@ exports.APP_NAME = 'optic-release-automation[bot]'
 
 const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
+const { getBumpedVersion } = __nccwpck_require__(7292)
 const { logError } = __nccwpck_require__(653)
 
 module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
-    return openPr({ github, context, inputs, packageVersion })
+    return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
@@ -26860,6 +26861,8 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
 
   logError('Unsupported event')
 }
+
+module.exports.getBumpedVersion = getBumpedVersion
 
 
 /***/ }),
@@ -26903,7 +26906,6 @@ const transformCommitMessage = __nccwpck_require__(6701)
 const { logInfo } = __nccwpck_require__(653)
 const { attach } = __nccwpck_require__(930)
 const { getPRBody } = __nccwpck_require__(4098)
-const { getBumpedVersion } = __nccwpck_require__(7292)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -26943,36 +26945,15 @@ const createDraftRelease = async (inputs, newVersion) => {
   }
 }
 
-module.exports = async function ({ github, context, inputs, packageVersion }) {
+module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
   const run = runSpawn()
 
-  const isAutoBump = inputs['semver'] === 'auto'
-
-  if (!packageVersion && !isAutoBump) {
+  if (!packageVersion) {
     throw new Error('packageVersion is missing!')
   }
 
-  const versionPrefix = inputs['version-prefix']
-
-  let bumpedPackageVersion = null
-  if (isAutoBump) {
-    bumpedPackageVersion = await getBumpedVersion({
-      github,
-      context,
-    })
-
-    await run('npm', [
-      'version',
-      '--no-git-tag-version',
-      `${versionPrefix}${bumpedPackageVersion}`,
-    ])
-  }
-
-  const newPackageVersion = isAutoBump ? bumpedPackageVersion : packageVersion
-
-  const newVersion = `${versionPrefix}${newPackageVersion}`
-  logInfo(`New version is ${newVersion}`)
+  const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
 
@@ -26988,6 +26969,8 @@ module.exports = async function ({ github, context, inputs, packageVersion }) {
   await run('git', ['push', 'origin', branchName])
 
   const draftRelease = await createDraftRelease(inputs, newVersion)
+
+  logInfo(`New version ${newVersion}`)
 
   const artifact =
     inputs['artifact-path'] && (await addArtifact(inputs, draftRelease.id))
@@ -27346,7 +27329,7 @@ async function getBumpedVersion({ github, context }) {
     throw new Error(`Couldn't find latest release`)
   }
 
-  const allCommits = await getCommitsSinceLatestRelease({
+  const allCommits = await getCommitMessagesSinceLatestRelease({
     github,
     owner,
     repo,
@@ -27357,7 +27340,7 @@ async function getBumpedVersion({ github, context }) {
     throw new Error(`No commits found since last release`)
   }
 
-  const bumpedVersion = getVerionFromCommits(latestReleaseTagName, allCommits)
+  const bumpedVersion = getVersionFromCommits(latestReleaseTagName, allCommits)
 
   if (!semver.valid(bumpedVersion)) {
     throw new Error(`Invalid bumped version ${bumpedVersion}`)
@@ -27365,7 +27348,7 @@ async function getBumpedVersion({ github, context }) {
   return bumpedVersion
 }
 
-function getVerionFromCommits(currentVersion, commits = []) {
+function getVersionFromCommits(currentVersion, commits = []) {
   // Define a regular expression to match Conventional Commits messages
   const commitRegex = /^(feat|fix|BREAKING CHANGE)(\(.+\))?:(.+)$/
 
@@ -27448,7 +27431,7 @@ async function getLatestRelease({ github, owner, repo }) {
   }
 }
 
-async function getCommitsSinceLatestRelease({
+async function getCommitMessagesSinceLatestRelease({
   github,
   owner,
   repo,

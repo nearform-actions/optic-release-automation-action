@@ -19,7 +19,7 @@ async function getBumpedVersion({ github, context }) {
     throw new Error(`Couldn't find latest release`)
   }
 
-  const allCommits = await getCommitsSinceLatestRelease({
+  const allCommits = await getCommitMessagesSinceLatestRelease({
     github,
     owner,
     repo,
@@ -30,7 +30,7 @@ async function getBumpedVersion({ github, context }) {
     throw new Error(`No commits found since last release`)
   }
 
-  const bumpedVersion = getVerionFromCommits(latestReleaseTagName, allCommits)
+  const bumpedVersion = getVersionFromCommits(latestReleaseTagName, allCommits)
 
   if (!semver.valid(bumpedVersion)) {
     throw new Error(`Invalid bumped version ${bumpedVersion}`)
@@ -38,7 +38,7 @@ async function getBumpedVersion({ github, context }) {
   return bumpedVersion
 }
 
-function getVerionFromCommits(currentVersion, commits = []) {
+function getVersionFromCommits(currentVersion, commits = []) {
   // Define a regular expression to match Conventional Commits messages
   const commitRegex = /^(feat|fix|BREAKING CHANGE)(\(.+\))?:(.+)$/
 
@@ -121,7 +121,7 @@ async function getLatestRelease({ github, owner, repo }) {
   }
 }
 
-async function getCommitsSinceLatestRelease({
+async function getCommitMessagesSinceLatestRelease({
   github,
   owner,
   repo,
