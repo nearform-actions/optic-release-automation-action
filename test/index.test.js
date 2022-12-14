@@ -137,6 +137,8 @@ tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
   const { getBumpedVersionNumber, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves('3.0.0')
+  stubs.runSpawnStub.onFirstCall().resolves()
+  stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
   const inputs = { semver: 'auto' }
   const newVersion = await getBumpedVersionNumber({
@@ -147,5 +149,31 @@ tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
 
   sinon.assert.calledOnce(stubs.bumpStub)
   sinon.assert.calledTwice(stubs.runSpawnStub)
+  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+    'version',
+    '--no-git-tag-version',
+    '3.0.0',
+  ])
   t.same(newVersion, '3.0.0')
 })
+
+tap.test(
+  'should not call getAutoBumpedVersion if semver is not auto',
+  async t => {
+    const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+
+    stubs.runSpawnStub.onFirstCall().resolves()
+    stubs.runSpawnStub.onSecondCall().resolves('3.1.1')
+
+    const inputs = { semver: 'patch' }
+    const newVersion = await getBumpedVersionNumber({
+      github: {},
+      context: {},
+      inputs,
+    })
+
+    sinon.assert.notCalled(stubs.bumpStub)
+    sinon.assert.calledTwice(stubs.runSpawnStub)
+    t.same(newVersion, '3.1.1')
+  }
+)
