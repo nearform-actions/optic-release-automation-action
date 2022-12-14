@@ -45,7 +45,7 @@ const createDraftRelease = async (inputs, newVersion) => {
 
     logInfo(`Draft release created successfully`)
 
-    logInfo(`Draft release id: ${draftRelease.id}`)
+    logInfo(`Draft release id: ${draftRelease}`)
 
     return draftRelease
   } catch (err) {
