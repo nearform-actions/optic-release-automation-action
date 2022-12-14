@@ -28963,7 +28963,7 @@ exports.revertCommit = revertCommit
 
 const { getExecOutput } = __nccwpck_require__(1514)
 
-async function runSpawn({ cwd } = {}) {
+function runSpawn({ cwd } = {}) {
   return async (cmd, args) => {
     const { exitCode, stdout, stderr } = await getExecOutput(cmd, args, { cwd })
 

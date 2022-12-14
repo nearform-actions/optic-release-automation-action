@@ -2,7 +2,7 @@
 
 const { getExecOutput } = require('@actions/exec')
 
-async function runSpawn({ cwd } = {}) {
+function runSpawn({ cwd } = {}) {
   return async (cmd, args) => {
     const { exitCode, stdout, stderr } = await getExecOutput(cmd, args, { cwd })
 
