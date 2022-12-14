@@ -5,7 +5,7 @@ const sinon = require('sinon')
 const semver = require('semver')
 const proxyquire = require('proxyquire')
 
-const { getBumpedVersion } = require('../src/utils/bump')
+const { getAutoBumpedVersion } = require('../src/utils/bump')
 
 function getGithubGraphqlClient(stub) {
   return {
@@ -43,11 +43,11 @@ const getCommitsSinceLastReleaseStub = commits => ({
 })
 
 const getStubbedFunction = semverStub => {
-  const { getBumpedVersion } = proxyquire('../src/utils/bump', {
+  const { getAutoBumpedVersion } = proxyquire('../src/utils/bump', {
     semver: semverStub,
   })
 
-  return getBumpedVersion
+  return getAutoBumpedVersion
 }
 
 afterEach(() => {
@@ -68,7 +68,7 @@ test('should bump patch version by default if no conventional commits found', as
   githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
-  const newversion = await getBumpedVersion({
+  const newversion = await getAutoBumpedVersion({
     github: getGithubGraphqlClient(githubApiResponse),
     context: DEFAULT_CONTEXT,
   })
@@ -95,7 +95,7 @@ test('should bump major version if breaking change commit found', async t => {
   githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
-  const newversion = await getBumpedVersion({
+  const newversion = await getAutoBumpedVersion({
     github: getGithubGraphqlClient(githubApiResponse),
     context: DEFAULT_CONTEXT,
   })
@@ -122,7 +122,7 @@ test('should bump minor version if feat commit found', async t => {
   githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
-  const newversion = await getBumpedVersion({
+  const newversion = await getAutoBumpedVersion({
     github: getGithubGraphqlClient(githubApiResponse),
     context: DEFAULT_CONTEXT,
   })
@@ -144,7 +144,7 @@ test('should bump patch version if fix commit found', async t => {
   githubApiResponse.onCall(0).resolves(getLatestReleaseStub())
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
-  const newversion = await getBumpedVersion({
+  const newversion = await getAutoBumpedVersion({
     github: getGithubGraphqlClient(githubApiResponse),
     context: DEFAULT_CONTEXT,
   })
@@ -161,7 +161,7 @@ test('should throw if no commits found', async t => {
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
   try {
-    await getBumpedVersion({
+    await getAutoBumpedVersion({
       github: getGithubGraphqlClient(githubApiResponse),
       context: DEFAULT_CONTEXT,
     })
@@ -180,7 +180,7 @@ test('should throw if no release details found', async t => {
   })
 
   try {
-    await getBumpedVersion({
+    await getAutoBumpedVersion({
       github: getGithubGraphqlClient(githubApiResponse),
       context: DEFAULT_CONTEXT,
     })
@@ -195,7 +195,7 @@ test('should fail if invalid current version', async t => {
     .stub(semver, 'parse')
     .returns({ major: 1, minor: 'test', patch: 1 })
 
-  const getBumpedVersionProxy = getStubbedFunction(semverStub)
+  const getAutoBumpedVersionProxy = getStubbedFunction(semverStub)
 
   const commits = [
     {
@@ -209,7 +209,7 @@ test('should fail if invalid current version', async t => {
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
   try {
-    await getBumpedVersionProxy({
+    await getAutoBumpedVersionProxy({
       github: getGithubGraphqlClient(githubApiResponse),
       context: DEFAULT_CONTEXT,
     })
@@ -222,7 +222,7 @@ test('should fail if new version is not semver compatible', async t => {
   const githubApiResponse = sinon.stub()
   const semverStub = sinon.stub(semver, 'valid').returns(null)
 
-  const getBumpedVersionProxy = getStubbedFunction(semverStub)
+  const getAutoBumpedVersionProxy = getStubbedFunction(semverStub)
 
   const commits = [
     {
@@ -236,7 +236,7 @@ test('should fail if new version is not semver compatible', async t => {
   githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
 
   try {
-    await getBumpedVersionProxy({
+    await getAutoBumpedVersionProxy({
       github: getGithubGraphqlClient(githubApiResponse),
       context: DEFAULT_CONTEXT,
     })

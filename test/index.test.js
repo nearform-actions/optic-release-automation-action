@@ -5,25 +5,37 @@ const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 
 const actionLog = require('../src/log')
+
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 function buildStubbedAction() {
   const logStub = sinon.stub(actionLog)
   const releaseStub = sinon.stub()
   const openPrStub = sinon.stub()
+  const bumpStub = sinon.stub()
+  const runSpawnStub = sinon.stub()
 
-  const action = proxyquire('../src/index', {
+  const { runAction, getBumpedVersionNumber } = proxyquire('../src/index', {
     './log': logStub,
     './release': releaseStub.resolves(),
     './openPr': openPrStub.resolves(),
+    './utils/runSpawn': {
+      runSpawn: () => runSpawnStub.resolves(),
+    },
+    './utils/bump': {
+      getAutoBumpedVersion: bumpStub,
+    },
   })
 
   return {
-    action,
+    action: runAction,
+    getBumpedVersionNumber,
     stubs: {
       logStub,
       releaseStub,
       openPrStub,
+      bumpStub,
+      runSpawnStub,
     },
   }
 }
@@ -120,3 +132,20 @@ tap.test(
     sinon.assert.calledOnce(stubs.openPrStub)
   }
 )
+
+tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
+  const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+
+  stubs.bumpStub.resolves('3.0.0')
+
+  const inputs = { semver: 'auto' }
+  const newVersion = await getBumpedVersionNumber({
+    github: {},
+    context: {},
+    inputs,
+  })
+
+  sinon.assert.calledOnce(stubs.bumpStub)
+  sinon.assert.calledTwice(stubs.runSpawnStub)
+  t.same(newVersion, '3.0.0')
+})
