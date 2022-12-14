@@ -45,6 +45,8 @@ const createDraftRelease = async (inputs, newVersion) => {
 
     logInfo(`Draft release created successfully`)
 
+    logInfo(`Draft release id: ${draftRelease.id}`)
+
     return draftRelease
   } catch (err) {
     throw new Error(`Unable to create draft release: ${err.message}`)
