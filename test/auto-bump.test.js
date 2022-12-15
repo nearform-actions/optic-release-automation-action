@@ -82,7 +82,7 @@ test('should bump major version if breaking change commit found', async t => {
   const commits = [
     {
       oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
-      message: 'BREAKING CHANGE: this will break everything',
+      message: 'feat!: this will break everything',
       committedDate: '2022-12-09T15:11:56Z',
     },
     {
@@ -101,6 +101,33 @@ test('should bump major version if breaking change commit found', async t => {
   })
 
   t.same(newversion, '3.0.0')
+})
+
+test('should not bump major version if breaking change commit found but current verion is 0.x', async t => {
+  const githubApiResponse = sinon.stub()
+
+  const commits = [
+    {
+      oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
+      message: 'feat!: this will break everything',
+      committedDate: '2022-12-09T15:11:56Z',
+    },
+    {
+      oid: '2d12849ca17781fed9a959004a2eebc0b1c24062',
+      message: 'feat: this is a minor feature',
+      committedDate: '2022-12-09T15:11:56Z',
+    },
+  ]
+
+  githubApiResponse.onCall(0).resolves(getLatestReleaseStub('v0.0.5'))
+  githubApiResponse.onCall(1).resolves(getCommitsSinceLastReleaseStub(commits))
+
+  const newversion = await getAutoBumpedVersion({
+    github: getGithubGraphqlClient(githubApiResponse),
+    context: DEFAULT_CONTEXT,
+  })
+
+  t.same(newversion, '0.1.0')
 })
 
 test('should bump minor version if feat commit found', async t => {

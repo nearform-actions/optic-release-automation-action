@@ -29,6 +29,7 @@ async function getBumpedVersionNumber({ github, context, inputs }) {
   return await run('npm', ['pkg', 'get', 'version'])
 }
 
-module.exports.runAction = runAction
-module.exports.getBumpedVersionNumber = getBumpedVersionNumber
-module.exports.getAutoBumpedVersion = getAutoBumpedVersion
+module.exports = {
+  runAction,
+  getBumpedVersionNumber,
+}

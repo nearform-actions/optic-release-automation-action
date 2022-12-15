@@ -1978,6 +1978,753 @@ exports.checkBypass = checkBypass;
 
 /***/ }),
 
+/***/ 4523:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const parser = __nccwpck_require__(5225)
+const { toConventionalChangelogFormat } = __nccwpck_require__(9269)
+
+module.exports = {
+  parser,
+  toConventionalChangelogFormat
+}
+
+
+/***/ }),
+
+/***/ 7745:
+/***/ ((module) => {
+
+module.exports = {
+  CR: '\u000d',
+  LF: '\u000a',
+  ZWNBSP: '\ufeff',
+  TAB: '\u0009',
+  VT: '\u000b',
+  FF: '\u000c',
+  SP: '\u0020',
+  NBSP: '\u00a0'
+}
+
+
+/***/ }),
+
+/***/ 5225:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const Scanner = __nccwpck_require__(7044)
+const { isWhitespace, isNewline, isParens } = __nccwpck_require__(8915)
+
+/*
+ * <message>       ::= <summary>, <newline>+, <body>, (<newline>+, <footer>)*
+ *                  |  <summary>, (<newline>+, <footer>)*
+ *                  |  <summary>, <newline>*
+ *
+ */
+function message (commitText) {
+  const scanner = new Scanner(commitText.trim())
+  const node = scanner.enter('message', [])
+
+  // <summary> ...
+  const s = summary(scanner)
+  if (s instanceof Error) {
+    throw s
+  } else {
+    node.children.push(s)
+  }
+  if (scanner.eof()) {
+    return scanner.exit(node)
+  }
+
+  let nl
+  let b
+  // ... <newline>* <body> ...
+  nl = newline(scanner)
+  if (nl instanceof Error) {
+    throw nl
+  } else {
+    node.children.push(nl)
+    b = body(scanner)
+    if (b instanceof Error) {
+      b = null
+    } else {
+      node.children.push(b)
+    }
+  }
+  if (scanner.eof()) {
+    return scanner.exit(node)
+  }
+
+  //  ... <newline>* <footer>+
+  if (b) {
+    nl = newline(scanner)
+    if (nl instanceof Error) {
+      throw nl
+    } else {
+      node.children.push(nl)
+    }
+  }
+  while (!scanner.eof()) {
+    const f = footer(scanner)
+    if (f instanceof Error) {
+      break
+    } else {
+      node.children.push(f)
+    }
+    nl = newline(scanner)
+    if (nl instanceof Error) {
+      break
+    } else {
+      node.children.push(nl)
+    }
+  }
+
+  return scanner.exit(node)
+}
+
+/*
+ * <summary>      ::= <type> "(" <scope> ")" ["!"] ":" <whitespace>* <text>
+ *                 |  <type> ["!"] ":" <whitespace>* <text>
+ *
+ */
+function summary (scanner) {
+  const node = scanner.enter('summary', [])
+
+  // <type> ...
+  const t = type(scanner)
+  if (t instanceof Error) {
+    return t
+  } else {
+    node.children.push(t)
+  }
+
+  // ... "(" <scope> ")" ...
+  let s = scope(scanner)
+  if (s instanceof Error) {
+    s = null
+  } else {
+    node.children.push(s)
+  }
+
+  // ... ["!"] ...
+  let b = breakingChange(scanner)
+  if (b instanceof Error) {
+    b = null
+  } else {
+    node.children.push(b)
+  }
+
+  // ... ":" ...
+  const sep = separator(scanner)
+  if (sep instanceof Error) {
+    return scanner.abort(node, [!s && '(', !b && '!', ':'])
+  } else {
+    node.children.push(sep)
+  }
+
+  // ... <whitespace>* ...
+  const ws = whitespace(scanner)
+  if (!(ws instanceof Error)) {
+    node.children.push(ws)
+  }
+
+  // ... <text>
+  node.children.push(text(scanner))
+  return scanner.exit(node)
+}
+
+/*
+ * <type>         ::= 1*<any UTF8-octets except newline or parens or ["!"] ":" or whitespace>
+ */
+function type (scanner) {
+  const node = scanner.enter('type', '')
+  while (!scanner.eof()) {
+    const token = scanner.peek()
+    if (isParens(token) || isWhitespace(token) || isNewline(token) || token === '!' || token === ':') {
+      break
+    }
+    node.value += scanner.next()
+  }
+  if (node.value === '') {
+    return scanner.abort(node)
+  } else {
+    return scanner.exit(node)
+  }
+}
+
+/*
+ * <text>         ::= 1*<any UTF8-octets except newline>
+ */
+function text (scanner) {
+  const node = scanner.enter('text', '')
+  while (!scanner.eof()) {
+    const token = scanner.peek()
+    if (isNewline(token)) {
+      break
+    }
+    node.value += scanner.next()
+  }
+  return scanner.exit(node)
+}
+
+/*
+ * "(" <scope> ")"        ::= 1*<any UTF8-octets except newline or parens>
+ */
+function scope (scanner) {
+  if (scanner.peek() !== '(') {
+    return scanner.abort(scanner.enter('scope', ''))
+  } else {
+    scanner.next()
+  }
+
+  const node = scanner.enter('scope', '')
+
+  while (!scanner.eof()) {
+    const token = scanner.peek()
+    if (isParens(token) || isNewline(token)) {
+      break
+    }
+    node.value += scanner.next()
+  }
+
+  if (scanner.peek() !== ')') {
+    throw scanner.abort(node, [')'])
+  } else {
+    scanner.exit(node)
+    scanner.next()
+  }
+
+  if (node.value === '') {
+    return scanner.abort(node)
+  } else {
+    return node
+  }
+}
+
+/*
+ * <body>          ::= [<any body-text except pre-footer>], <newline>, <body>*
+ *                  | [<any body-text except pre-footer>]
+ */
+function body (scanner) {
+  const node = scanner.enter('body', [])
+
+  // check except <pre-footer> condition:
+  const pf = preFooter(scanner)
+  if (!(pf instanceof Error)) return scanner.abort(node)
+
+  // ["BREAKING CHANGE", ":", <whitespace>*]
+  const b = breakingChange(scanner, false)
+  if (!(b instanceof Error) && scanner.peek() === ':') {
+    node.children.push(b)
+    node.children.push(separator(scanner))
+    const w = whitespace(scanner)
+    if (!(w instanceof Error)) node.children.push(w)
+  }
+
+  // [<text>]
+  const t = text(scanner)
+  node.children.push(t)
+  // <newline>, <body>*
+  const nl = newline(scanner)
+  if (!(nl instanceof Error)) {
+    const b = body(scanner)
+    if (b instanceof Error) {
+      scanner.abort(nl)
+    } else {
+      node.children.push(nl)
+      Array.prototype.push.apply(node.children, b.children)
+    }
+  }
+  return scanner.exit(node)
+}
+
+/*
+ * <newline>*, <footer>+
+ */
+function preFooter (scanner) {
+  const node = scanner.enter('pre-footer', [])
+  let f
+  while (!scanner.eof()) {
+    newline(scanner)
+    f = footer(scanner)
+    if (f instanceof Error) return scanner.abort(node)
+  }
+  return scanner.exit(node)
+}
+
+/*
+ * <footer>       ::= <token> <separator> <whitespace>* <value>
+ */
+function footer (scanner) {
+  const node = scanner.enter('footer', [])
+  // <token>
+  const t = token(scanner)
+  if (t instanceof Error) {
+    return t
+  } else {
+    node.children.push(t)
+  }
+
+  // <separator>
+  const s = separator(scanner)
+  if (s instanceof Error) {
+    scanner.abort(node)
+    return s
+  } else {
+    node.children.push(s)
+  }
+
+  // <whitespace>*
+  const ws = whitespace(scanner)
+  if (!(ws instanceof Error)) {
+    node.children.push(ws)
+  }
+
+  // <value>
+  const v = value(scanner)
+  if (v instanceof Error) {
+    scanner.abort(node)
+    return v
+  } else {
+    node.children.push(v)
+  }
+
+  return scanner.exit(node)
+}
+
+/*
+ * <token>        ::= <breaking-change>
+ *                 |  <type>, "(" <scope> ")", ["!"]
+ *                 |  <type>
+ */
+function token (scanner) {
+  const node = scanner.enter('token', [])
+  // "BREAKING CHANGE"
+  const b = breakingChange(scanner)
+  if (b instanceof Error) {
+    scanner.abort(node)
+  } else {
+    node.children.push(b)
+    return scanner.exit(node)
+  }
+
+  // <type>
+  const t = type(scanner)
+  if (t instanceof Error) {
+    return t
+  } else {
+    node.children.push(t)
+    // "(" <scope> ")"
+    const s = scope(scanner)
+    if (!(s instanceof Error)) {
+      node.children.push(s)
+    }
+    // ["!"]
+    const b = breakingChange(scanner)
+    if (!(b instanceof Error)) {
+      node.children.push(b)
+    }
+  }
+  return scanner.exit(node)
+}
+
+/*
+ * <breaking-change> ::= "!" | "BREAKING CHANGE" | "BREAKING-CHANGE"
+ *
+ * Note: "!" is only allowed in <footer> and <summary>, not <body>.
+ */
+function breakingChange (scanner, allowBang = true) {
+  const node = scanner.enter('breaking-change', '')
+  if (scanner.peek() === '!' && allowBang) {
+    node.value = scanner.next()
+  } else if (scanner.peekLiteral('BREAKING CHANGE') || scanner.peekLiteral('BREAKING-CHANGE')) {
+    node.value = scanner.next('BREAKING CHANGE'.length)
+  }
+  if (node.value === '') {
+    return scanner.abort(node, ['BREAKING CHANGE'])
+  } else {
+    return scanner.exit(node)
+  }
+}
+
+/*
+ * <value>        ::= <text> <continuation>*
+ *                 |  <text>
+ */
+function value (scanner) {
+  const node = scanner.enter('value', [])
+  node.children.push(text(scanner))
+  let c
+  // <continuation>*
+  while (!((c = continuation(scanner)) instanceof Error)) {
+    node.children.push(c)
+  }
+  return scanner.exit(node)
+}
+
+/*
+ * <newline> <whitespace> <text>
+ */
+function continuation (scanner) {
+  const node = scanner.enter('continuation', [])
+  // <newline>
+  const nl = newline(scanner)
+  if (nl instanceof Error) {
+    return nl
+  } else {
+    node.children.push(nl)
+  }
+
+  // <whitespace> <text>
+  const ws = whitespace(scanner)
+  if (ws instanceof Error) {
+    scanner.abort(node)
+    return ws
+  } else {
+    node.children.push(ws)
+    node.children.push(text(scanner))
+  }
+
+  return scanner.exit(node)
+}
+
+/*
+ * <separator>    ::= ":" | " #"
+ */
+function separator (scanner) {
+  const node = scanner.enter('separator', '')
+  // ':'
+  if (scanner.peek() === ':') {
+    node.value = scanner.next()
+    return scanner.exit(node)
+  }
+
+  // ' #'
+  if (scanner.peek() === ' ') {
+    scanner.next()
+    if (scanner.peek() === '#') {
+      scanner.next()
+      node.value = ' #'
+      return scanner.exit(node)
+    } else {
+      return scanner.abort(node)
+    }
+  }
+
+  return scanner.abort(node)
+}
+
+/*
+ * <whitespace>+   ::= <ZWNBSP> | <TAB> | <VT> | <FF> | <SP> | <NBSP> | <USP>
+ */
+function whitespace (scanner) {
+  const node = scanner.enter('whitespace', '')
+  while (isWhitespace(scanner.peek())) {
+    node.value += scanner.next()
+  }
+  if (node.value === '') {
+    return scanner.abort(node, [' '])
+  }
+  return scanner.exit(node)
+}
+
+/*
+ * <newline>+       ::= [<CR>], <LF>
+ */
+function newline (scanner) {
+  const node = scanner.enter('newline', '')
+  while (isNewline(scanner.peek())) {
+    node.value += scanner.next()
+  }
+  if (node.value === '') {
+    return scanner.abort(node, ['<CR><LF>', '<LF>'])
+  }
+  return scanner.exit(node)
+}
+
+module.exports = message
+
+
+/***/ }),
+
+/***/ 7044:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { isNewline } = __nccwpck_require__(8915)
+const { CR, LF } = __nccwpck_require__(7745)
+
+class Scanner {
+  constructor (text, pos) {
+    this.text = text
+    this.pos = pos ? { ...pos } : { line: 1, column: 1, offset: 0 }
+  }
+
+  eof () {
+    return this.pos.offset >= this.text.length
+  }
+
+  next (n) {
+    const token = n
+      ? this.text.substring(this.pos.offset, this.pos.offset + n)
+      : this.peek()
+
+    this.pos.offset += token.length
+    this.pos.column += token.length
+
+    if (isNewline(token)) {
+      this.pos.line++
+      this.pos.column = 1
+    }
+
+    return token
+  }
+
+  peek () {
+    let token = this.text.charAt(this.pos.offset)
+    // Consume <CR>? <LF>
+    if (token === CR && this.text.charAt(this.pos.offset + 1) === LF) {
+      token += LF
+    }
+    return token
+  }
+
+  peekLiteral (literal) {
+    const str = this.text.substring(this.pos.offset, this.pos.offset + literal.length)
+    return literal === str
+  }
+
+  position () {
+    return { ...this.pos }
+  }
+
+  rewind (pos) {
+    this.pos = pos
+  }
+
+  enter (type, content) {
+    const position = { start: this.position() }
+    return Array.isArray(content)
+      ? { type, children: content, position }
+      : { type, value: content, position }
+  }
+
+  exit (node) {
+    node.position.end = this.position()
+    return node
+  }
+
+  abort (node, expectedTokens) {
+    const position = `${this.pos.line}:${this.pos.column}`
+    const validTokens = expectedTokens
+      ? expectedTokens.filter(Boolean).join(', ')
+      : `<${node.type}>`
+
+    const error = this.eof()
+      ? Error(`unexpected token EOF at ${position}, valid tokens [${validTokens}]`)
+      : Error(`unexpected token '${this.peek()}' at ${position}, valid tokens [${validTokens}]`)
+
+    this.rewind(node.position.start)
+    return error
+  }
+}
+
+module.exports = Scanner
+
+
+/***/ }),
+
+/***/ 8915:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { CR, LF, ZWNBSP, TAB, VT, FF, SP, NBSP } = __nccwpck_require__(7745)
+
+module.exports = {
+  /*
+  * <whitespace>   ::= <ZWNBSP> | <TAB> | <VT> | <FF> | <SP> | <NBSP> | <USP>
+  */
+  isWhitespace (token) {
+    return token === ZWNBSP || token === TAB || token === VT || token === FF || token === SP || token === NBSP
+  },
+
+  /*
+  * <newline>      ::= <CR>? <LF>
+  */
+  isNewline (token) {
+    const chr = token.charAt(0)
+    if (chr === CR || chr === LF) return true
+  },
+
+  /*
+  * <parens>       ::= "(" | ")"
+  */
+  isParens (token) {
+    return token === '(' || token === ')'
+  }
+}
+
+
+/***/ }),
+
+/***/ 9269:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const visit = __nccwpck_require__(199)
+const visitWithAncestors = __nccwpck_require__(3246)
+const NUMBER_REGEX = /^[0-9]+$/
+
+// Converts conventional commit AST into conventional-changelog's
+// output format, see: https://www.npmjs.com/package/conventional-commits-parser
+function toConventionalChangelogFormat (ast) {
+  const cc = {
+    body: '',
+    subject: '',
+    type: '',
+    scope: null,
+    notes: [],
+    references: [],
+    mentions: [],
+    merge: null,
+    revert: null,
+    header: '',
+    footer: null
+  }
+  // Separate the body and summary nodes, this simplifies the subsequent
+  // tree walking logic:
+  let body
+  let summary
+  visit(ast, ['body', 'summary'], (node) => {
+    switch (node.type) {
+      case 'body':
+        body = node
+        break
+      case 'summary':
+        summary = node
+        break
+    }
+  })
+
+  // <type>, "(", <scope>, ")", ["!"], ":", <whitespace>*, <text>
+  visit(summary, (node) => {
+    switch (node.type) {
+      case 'type':
+        cc.type = node.value
+        cc.header += node.value
+        break
+      case 'scope':
+        cc.scope = node.value
+        cc.header += `(${node.value})`
+        break
+      case 'breaking-change':
+        cc.header += '!'
+        break
+      case 'text':
+        cc.subject = node.value
+        cc.header += `: ${node.value}`
+        break
+      default:
+        break
+    }
+  })
+
+  // [<any body-text except pre-footer>]
+  if (body) {
+    visit(body, 'text', (node, _i, parent) => {
+      // TODO(@bcoe): once we have \n tokens in tree we can drop this:
+      if (cc.body !== '') cc.body += '\n'
+      cc.body += node.value
+    })
+  }
+
+  // Extract BREAKING CHANGE notes, regardless of whether they fall in
+  // summary, body, or footer:
+  const breaking = {
+    title: 'BREAKING CHANGE',
+    text: '' // "text" will be populated if a BREAKING CHANGE token is parsed.
+  }
+  visitWithAncestors(ast, ['breaking-change'], (node, ancestors) => {
+    let parent = ancestors.pop()
+    let startCollecting = false
+    switch (parent.type) {
+      case 'summary':
+        breaking.text = cc.subject
+        break
+      case 'body':
+        breaking.text = ''
+        // We treat text from the BREAKING CHANGE marker forward as
+        // the breaking change notes:
+        visit(parent, ['text', 'breaking-change'], (node) => {
+          // TODO(@bcoe): once we have \n tokens in tree we can drop this:
+          if (startCollecting && node.type === 'text') {
+            if (breaking.text !== '') breaking.text += '\n'
+            breaking.text += node.value
+          } else if (node.type === 'breaking-change') {
+            startCollecting = true
+          }
+        })
+        break
+      case 'token':
+        parent = ancestors.pop()
+        visit(parent, 'text', (node) => {
+          breaking.text = node.value
+        })
+        break
+    }
+  })
+  if (breaking.text !== '') cc.notes.push(breaking)
+
+  // Populates references array from footers:
+  // references: [{
+  //    action: 'Closes',
+  //    owner: null,
+  //    repository: null,
+  //    issue: '1', raw: '#1',
+  //    prefix: '#'
+  // }]
+  visit(ast, ['footer'], (node) => {
+    const reference = {
+      prefix: '#'
+    }
+    let hasRefSepartor = false
+    visit(node, ['type', 'separator', 'text'], (node) => {
+      switch (node.type) {
+        case 'type':
+          // refs, closes, etc:
+          // TODO(@bcoe): conventional-changelog does not currently use
+          // "reference.action" in its templates:
+          reference.action = node.value
+          break
+        case 'separator':
+          // Footer of the form "Refs #99":
+          if (node.value.includes('#')) hasRefSepartor = true
+          break
+        case 'text':
+          // Footer of the form "Refs: #99"
+          if (node.value.charAt(0) === '#') {
+            hasRefSepartor = true
+            reference.issue = node.value.substring(1)
+          // TODO(@bcoe): what about references like "Refs: #99, #102"?
+          } else {
+            reference.issue = node.value
+          }
+          break
+      }
+    })
+    // TODO(@bcoe): how should references like "Refs: v8:8940" work.
+    if (hasRefSepartor && reference.issue.match(NUMBER_REGEX)) {
+      cc.references.push(reference)
+    }
+  })
+
+  return cc
+}
+
+module.exports = {
+  toConventionalChangelogFormat
+}
+
+
+/***/ }),
+
 /***/ 334:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -23703,6 +24450,240 @@ module.exports=/[\0-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-
 
 /***/ }),
 
+/***/ 4070:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = convert
+
+function convert(test) {
+  if (test == null) {
+    return ok
+  }
+
+  if (typeof test === 'string') {
+    return typeFactory(test)
+  }
+
+  if (typeof test === 'object') {
+    return 'length' in test ? anyFactory(test) : allFactory(test)
+  }
+
+  if (typeof test === 'function') {
+    return test
+  }
+
+  throw new Error('Expected function, string, or object as test')
+}
+
+// Utility assert each property in `test` is represented in `node`, and each
+// values are strictly equal.
+function allFactory(test) {
+  return all
+
+  function all(node) {
+    var key
+
+    for (key in test) {
+      if (node[key] !== test[key]) return false
+    }
+
+    return true
+  }
+}
+
+function anyFactory(tests) {
+  var checks = []
+  var index = -1
+
+  while (++index < tests.length) {
+    checks[index] = convert(tests[index])
+  }
+
+  return any
+
+  function any() {
+    var index = -1
+
+    while (++index < checks.length) {
+      if (checks[index].apply(this, arguments)) {
+        return true
+      }
+    }
+
+    return false
+  }
+}
+
+// Utility to convert a string into a function which checks a given node’s type
+// for said string.
+function typeFactory(test) {
+  return type
+
+  function type(node) {
+    return Boolean(node && node.type === test)
+  }
+}
+
+// Utility to return true.
+function ok() {
+  return true
+}
+
+
+/***/ }),
+
+/***/ 9906:
+/***/ ((module) => {
+
+module.exports = color
+function color(d) {
+  return '\u001B[33m' + d + '\u001B[39m'
+}
+
+
+/***/ }),
+
+/***/ 3246:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+module.exports = visitParents
+
+var convert = __nccwpck_require__(4070)
+var color = __nccwpck_require__(9906)
+
+var CONTINUE = true
+var SKIP = 'skip'
+var EXIT = false
+
+visitParents.CONTINUE = CONTINUE
+visitParents.SKIP = SKIP
+visitParents.EXIT = EXIT
+
+function visitParents(tree, test, visitor, reverse) {
+  var step
+  var is
+
+  if (typeof test === 'function' && typeof visitor !== 'function') {
+    reverse = visitor
+    visitor = test
+    test = null
+  }
+
+  is = convert(test)
+  step = reverse ? -1 : 1
+
+  factory(tree, null, [])()
+
+  function factory(node, index, parents) {
+    var value = typeof node === 'object' && node !== null ? node : {}
+    var name
+
+    if (typeof value.type === 'string') {
+      name =
+        typeof value.tagName === 'string'
+          ? value.tagName
+          : typeof value.name === 'string'
+          ? value.name
+          : undefined
+
+      visit.displayName =
+        'node (' + color(value.type + (name ? '<' + name + '>' : '')) + ')'
+    }
+
+    return visit
+
+    function visit() {
+      var grandparents = parents.concat(node)
+      var result = []
+      var subresult
+      var offset
+
+      if (!test || is(node, index, parents[parents.length - 1] || null)) {
+        result = toResult(visitor(node, parents))
+
+        if (result[0] === EXIT) {
+          return result
+        }
+      }
+
+      if (node.children && result[0] !== SKIP) {
+        offset = (reverse ? node.children.length : -1) + step
+
+        while (offset > -1 && offset < node.children.length) {
+          subresult = factory(node.children[offset], offset, grandparents)()
+
+          if (subresult[0] === EXIT) {
+            return subresult
+          }
+
+          offset =
+            typeof subresult[1] === 'number' ? subresult[1] : offset + step
+        }
+      }
+
+      return result
+    }
+  }
+}
+
+function toResult(value) {
+  if (value !== null && typeof value === 'object' && 'length' in value) {
+    return value
+  }
+
+  if (typeof value === 'number') {
+    return [CONTINUE, value]
+  }
+
+  return [value]
+}
+
+
+/***/ }),
+
+/***/ 199:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+module.exports = visit
+
+var visitParents = __nccwpck_require__(3246)
+
+var CONTINUE = visitParents.CONTINUE
+var SKIP = visitParents.SKIP
+var EXIT = visitParents.EXIT
+
+visit.CONTINUE = CONTINUE
+visit.SKIP = SKIP
+visit.EXIT = EXIT
+
+function visit(tree, test, visitor, reverse) {
+  if (typeof test === 'function' && typeof visitor !== 'function') {
+    reverse = visitor
+    visitor = test
+    test = null
+  }
+
+  visitParents(tree, test, overload, reverse)
+
+  function overload(node, parents) {
+    var parent = parents[parents.length - 1]
+    var index = parent ? parent.children.indexOf(node) : null
+    return visitor(node, index, parent)
+  }
+}
+
+
+/***/ }),
+
 /***/ 5030:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -26874,9 +27855,10 @@ async function getBumpedVersionNumber({ github, context, inputs }) {
   return await run('npm', ['pkg', 'get', 'version'])
 }
 
-module.exports.runAction = runAction
-module.exports.getBumpedVersionNumber = getBumpedVersionNumber
-module.exports.getAutoBumpedVersion = getAutoBumpedVersion
+module.exports = {
+  runAction,
+  getBumpedVersionNumber,
+}
 
 
 /***/ }),
@@ -27319,12 +28301,17 @@ exports.attach = attach
 /***/ }),
 
 /***/ 7292:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
 const semver = __nccwpck_require__(1383)
+const { logError } = __nccwpck_require__(653)
+const {
+  parser,
+  toConventionalChangelogFormat,
+} = __nccwpck_require__(4523)
 
 async function getAutoBumpedVersion({ github, context }) {
   const { owner, repo } = context.repo
@@ -27363,18 +28350,15 @@ async function getAutoBumpedVersion({ github, context }) {
 }
 
 function getVersionFromCommits(currentVersion, commits = []) {
-  // Define a regular expression to match Conventional Commits messages
-  const commitRegex = /^(feat|fix|BREAKING CHANGE)(\(.+\))?:(.+)$/
-
-  // Define a mapping of commit types to version bump types
-  var versionBumpMap = {
-    'BREAKING CHANGE': 'major',
-    feat: 'minor',
-    fix: 'patch',
+  const versionMap = {
+    MAJOR: 'major',
+    MINOR: 'minor',
+    PATCH: 'patch',
   }
+  let bumpType = versionMap.PATCH
 
+  // Parse current version
   let { major, minor, patch } = semver.parse(currentVersion)
-
   if (
     !Number.isInteger(major) ||
     !Number.isInteger(minor) ||
@@ -27383,22 +28367,42 @@ function getVersionFromCommits(currentVersion, commits = []) {
     throw new Error('Invalid major/minor/patch version found')
   }
 
+  // Determine bump version number based on commits
   let isBreaking = false
   let isMinor = false
 
   for (const commit of commits) {
-    const match = commitRegex.exec(commit)
-    if (!match) continue
+    let parsedCommit = {}
+    try {
+      parsedCommit = toConventionalChangelogFormat(parser(commit))
+    } catch (error) {
+      logError(`Error parsing commit - ${commit}. Error - ${error.message}`)
+      continue
+    }
 
-    const type = match[1]
+    const { type = null, notes = [] } = parsedCommit
 
-    const bumpType = versionBumpMap[type]
-    if (!bumpType) continue
+    bumpType = type === 'feat' ? versionMap.MINOR : versionMap.PATCH
 
-    if (bumpType === 'major') {
+    // check for breaking change
+    for (const note of notes) {
+      if (note.title === 'BREAKING CHANGE') {
+        bumpType = versionMap.MAJOR
+      }
+    }
+
+    if (bumpType === versionMap.MAJOR && major === 0) {
+      // According to semver, major version zero (0.y.z) is for initial
+      // development. Anything MAY change at any time.
+      // Breaking changes MUST NOT automatically bump the major version
+      // from 0.x to 1.x.
+      console.log(`bumping major for 0.x`)
+      isMinor = true
+      break
+    } else if (bumpType === versionMap.MAJOR) {
       isBreaking = true
       break
-    } else if (bumpType === 'minor') {
+    } else if (bumpType === versionMap.MINOR) {
       isMinor = true
     }
   }
@@ -27461,7 +28465,7 @@ async function getCommitMessagesSinceLatestRelease({
           defaultBranchRef {
             target {
               ... on Commit {
-                history(first: 100, since: $since) {
+                history(since: $since) {
                   nodes {
                     message
                   }
@@ -27484,7 +28488,9 @@ async function getCommitMessagesSinceLatestRelease({
   return commitsList.map(c => c.message)
 }
 
-exports.getAutoBumpedVersion = getAutoBumpedVersion
+module.exports = {
+  getAutoBumpedVersion,
+}
 
 
 /***/ }),
@@ -28161,7 +29167,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	// This entry module used 'module' so it can't be inlined
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
 /******/ 	var __webpack_exports__ = __nccwpck_require__(4351);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	

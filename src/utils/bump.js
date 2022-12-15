@@ -1,6 +1,11 @@
 'use strict'
 
 const semver = require('semver')
+const { logError } = require('../log')
+const {
+  parser,
+  toConventionalChangelogFormat,
+} = require('@conventional-commits/parser')
 
 async function getAutoBumpedVersion({ github, context }) {
   const { owner, repo } = context.repo
@@ -39,18 +44,15 @@ async function getAutoBumpedVersion({ github, context }) {
 }
 
 function getVersionFromCommits(currentVersion, commits = []) {
-  // Define a regular expression to match Conventional Commits messages
-  const commitRegex = /^(feat|fix|BREAKING CHANGE)(\(.+\))?:(.+)$/
-
-  // Define a mapping of commit types to version bump types
-  var versionBumpMap = {
-    'BREAKING CHANGE': 'major',
-    feat: 'minor',
-    fix: 'patch',
+  const versionMap = {
+    MAJOR: 'major',
+    MINOR: 'minor',
+    PATCH: 'patch',
   }
+  let bumpType = versionMap.PATCH
 
+  // Parse current version
   let { major, minor, patch } = semver.parse(currentVersion)
-
   if (
     !Number.isInteger(major) ||
     !Number.isInteger(minor) ||
@@ -59,22 +61,42 @@ function getVersionFromCommits(currentVersion, commits = []) {
     throw new Error('Invalid major/minor/patch version found')
   }
 
+  // Determine bump version number based on commits
   let isBreaking = false
   let isMinor = false
 
   for (const commit of commits) {
-    const match = commitRegex.exec(commit)
-    if (!match) continue
+    let parsedCommit = {}
+    try {
+      parsedCommit = toConventionalChangelogFormat(parser(commit))
+    } catch (error) {
+      logError(`Error parsing commit - ${commit}. Error - ${error.message}`)
+      continue
+    }
 
-    const type = match[1]
+    const { type = null, notes = [] } = parsedCommit
 
-    const bumpType = versionBumpMap[type]
-    if (!bumpType) continue
+    bumpType = type === 'feat' ? versionMap.MINOR : versionMap.PATCH
 
-    if (bumpType === 'major') {
+    // check for breaking change
+    for (const note of notes) {
+      if (note.title === 'BREAKING CHANGE') {
+        bumpType = versionMap.MAJOR
+      }
+    }
+
+    if (bumpType === versionMap.MAJOR && major === 0) {
+      // According to semver, major version zero (0.y.z) is for initial
+      // development. Anything MAY change at any time.
+      // Breaking changes MUST NOT automatically bump the major version
+      // from 0.x to 1.x.
+      console.log(`bumping major for 0.x`)
+      isMinor = true
+      break
+    } else if (bumpType === versionMap.MAJOR) {
       isBreaking = true
       break
-    } else if (bumpType === 'minor') {
+    } else if (bumpType === versionMap.MINOR) {
       isMinor = true
     }
   }
@@ -137,7 +159,7 @@ async function getCommitMessagesSinceLatestRelease({
           defaultBranchRef {
             target {
               ... on Commit {
-                history(first: 100, since: $since) {
+                history(since: $since) {
                   nodes {
                     message
                   }
@@ -160,4 +182,6 @@ async function getCommitMessagesSinceLatestRelease({
   return commitsList.map(c => c.message)
 }
 
-exports.getAutoBumpedVersion = getAutoBumpedVersion
+module.exports = {
+  getAutoBumpedVersion,
+}
