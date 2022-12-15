@@ -46,7 +46,6 @@ tap.test('rejects if exit code is not 0', async t => {
   const errorOutput = 'error output'
 
   execStub.callsFake((_, __, options) => {
-    console.log('inside a fake')
     options.listeners.stderr(Buffer.from(errorOutput, 'utf8'))
 
     return Promise.resolve(1)
