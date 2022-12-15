@@ -1,7 +1,7 @@
 'use strict'
 
 const semver = require('semver')
-const { logError } = require('../log')
+const { logError, logInfo } = require('../log')
 const {
   parser,
   toConventionalChangelogFormat,
@@ -90,7 +90,6 @@ function getVersionFromCommits(currentVersion, commits) {
       // development. Anything MAY change at any time.
       // Breaking changes MUST NOT automatically bump the major version
       // from 0.x to 1.x.
-      console.log(`bumping major for 0.x`)
       isMinor = true
       break
     } else if (bumpType === versionMap.MAJOR) {

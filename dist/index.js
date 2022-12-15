@@ -28307,7 +28307,7 @@ exports.attach = attach
 
 
 const semver = __nccwpck_require__(1383)
-const { logError } = __nccwpck_require__(653)
+const { logError, logInfo } = __nccwpck_require__(653)
 const {
   parser,
   toConventionalChangelogFormat,
@@ -28396,7 +28396,6 @@ function getVersionFromCommits(currentVersion, commits) {
       // development. Anything MAY change at any time.
       // Breaking changes MUST NOT automatically bump the major version
       // from 0.x to 1.x.
-      console.log(`bumping major for 0.x`)
       isMinor = true
       break
     } else if (bumpType === versionMap.MAJOR) {
