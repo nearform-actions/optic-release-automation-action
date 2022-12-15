@@ -28625,7 +28625,7 @@ module.exports = transformCommitMessage
 
 const { StringDecoder } = __nccwpck_require__(6915)
 
-const { exec } = __nccwpck_require__(1514)
+const exec = __nccwpck_require__(1514)
 
 /**
  *
@@ -28643,20 +28643,29 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
 
   const options = {}
 
+  /* istanbul ignore else */
   if (cwd !== '') {
     options.cwd = cwd
   }
 
   options.listeners = {
+    /**
+     *
+     * @param {Buffer} data
+     */
     stdout: data => {
       output += stdoutDecoder.write(data)
     },
+    /**
+     *
+     * @param {Buffer} data
+     */
     stderr: data => {
       errorOutput += stderrDecoder.write(data)
     },
   }
 
-  const code = await exec(cmd, args, options)
+  const code = await exec.exec(cmd, args, options)
 
   output += stdoutDecoder.end()
   errorOutput += stderrDecoder.end()
