@@ -24,7 +24,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      - uses: nearform/optic-release-automation-action@main
+      - uses: nearform/optic-release-automation-action@replace-runspawn-with-exec
         with:
           semver: ${{ github.event.inputs.semver }}
           sync-semver-tags: 'true'
