@@ -28307,7 +28307,7 @@ exports.attach = attach
 
 
 const semver = __nccwpck_require__(1383)
-const { logError, logInfo } = __nccwpck_require__(653)
+const { logError } = __nccwpck_require__(653)
 const {
   parser,
   toConventionalChangelogFormat,

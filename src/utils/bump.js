@@ -1,7 +1,7 @@
 'use strict'
 
 const semver = require('semver')
-const { logError, logInfo } = require('../log')
+const { logError } = require('../log')
 const {
   parser,
   toConventionalChangelogFormat,
