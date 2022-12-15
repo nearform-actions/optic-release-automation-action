@@ -28961,20 +28961,43 @@ exports.revertCommit = revertCommit
 "use strict";
 
 
-const { getExecOutput } = __nccwpck_require__(1514)
+const { StringDecoder } = __nccwpck_require__(6915)
+
+const { exec } = __nccwpck_require__(1514)
 
 function runSpawn({ cwd } = {}) {
   return async (cmd, args) => {
-    const { exitCode, stdout, stderr } = await getExecOutput(cmd, args, { cwd })
+    let output = ''
+    let errorOutput = ''
 
-    if (exitCode === 0) {
-      return stdout
+    const stdoutDecoder = new StringDecoder('utf8')
+    const stderrDecoder = new StringDecoder('utf8')
+
+    const options = {}
+    options.cwd = cwd
+
+    options.listeners = {
+      stdout: data => {
+        output += stdoutDecoder.write(data)
+      },
+      stderr: data => {
+        errorOutput += stderrDecoder.write(data)
+      },
+    }
+
+    const code = await exec(cmd, args, options)
+
+    output += stdoutDecoder.end()
+    errorOutput += stderrDecoder.end()
+
+    if (code === 0) {
+      return output.trim()
     }
 
     throw new Error(
       `${cmd} ${args.join(
         ' '
-      )} returned code ${exitCode} \nSTDOUT: ${stdout}\nSTDERR: ${stderr}`
+      )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
     )
   }
 }
@@ -29089,6 +29112,14 @@ module.exports = require("https");
 
 "use strict";
 module.exports = require("net");
+
+/***/ }),
+
+/***/ 6915:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:string_decoder");
 
 /***/ }),
 
