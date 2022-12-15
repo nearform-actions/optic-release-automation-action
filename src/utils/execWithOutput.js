@@ -2,7 +2,7 @@
 
 const { StringDecoder } = require('node:string_decoder')
 
-const exec = require('@actions/exec')
+const { exec } = require('@actions/exec')
 
 /**
  *
@@ -42,7 +42,7 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
     },
   }
 
-  const code = await exec.exec(cmd, args, options)
+  const code = await exec(cmd, args, options)
 
   output += stdoutDecoder.end()
   errorOutput += stderrDecoder.end()
