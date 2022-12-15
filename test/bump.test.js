@@ -397,9 +397,16 @@ tap.test('should delete branch in case of pr failure', async t => {
 })
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
+  const branchName = `release/v${TEST_VERSION}`
+
   const { openPr, stubs } = setup()
   const { context, inputs, packageVersion } = DEFAULT_ACTION_DATA
   stubs.callApiStub.onCall(1).rejects()
+
+  stubs.execWithOutputStub
+    .withArgs('git', ['push', 'origin', '--delete', branchName])
+    .rejects()
+
   await openPr({ context, inputs, packageVersion })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)

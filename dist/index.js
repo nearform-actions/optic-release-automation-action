@@ -28261,6 +28261,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+    /* istanbul ignore else */
     if (response?.status !== 201) {
       const errMessage = response?.message || 'PR creation failed'
       throw new Error(errMessage)
