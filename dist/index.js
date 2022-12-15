@@ -28164,7 +28164,7 @@ const _template = __nccwpck_require__(417)
 const core = __nccwpck_require__(2186)
 
 const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
-const { runSpawn } = __nccwpck_require__(2137)
+const { execWithOutput } = __nccwpck_require__(8632)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
 const { logInfo } = __nccwpck_require__(653)
@@ -28184,8 +28184,7 @@ const addArtifact = async (inputs, releaseId) => {
 
 const createDraftRelease = async (inputs, newVersion) => {
   try {
-    const run = runSpawn()
-    const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
+    const releaseCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
 
     logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
@@ -28211,7 +28210,6 @@ const createDraftRelease = async (inputs, newVersion) => {
 
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
-  const run = runSpawn()
 
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
@@ -28222,15 +28220,15 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
-  await run('git', ['checkout', '-b', branchName])
-  await run('git', ['add', '-A'])
-  await run('git', [
+  await execWithOutput('git', ['checkout', '-b', branchName])
+  await execWithOutput('git', ['add', '-A'])
+  await execWithOutput('git', [
     'commit',
     '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
 
-  await run('git', ['push', 'origin', branchName])
+  await execWithOutput('git', ['push', 'origin', branchName])
 
   const draftRelease = await createDraftRelease(inputs, newVersion)
 
@@ -28270,7 +28268,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
-      await run('git', ['push', 'origin', '--delete', branchName])
+      await execWithOutput('git', ['push', 'origin', '--delete', branchName])
     } catch (error) {
       message += `\n Unable to delete branch ${branchName}:  ${error.message}`
     }
@@ -28295,7 +28293,7 @@ const semver = __nccwpck_require__(1383)
 const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
-const { runSpawn } = __nccwpck_require__(2137)
+const { execWithOutput } = __nccwpck_require__(8632)
 const { revertCommit } = __nccwpck_require__(5765)
 const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
@@ -28349,14 +28347,13 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
-  const run = runSpawn()
   const branchName = `release/${version}`
 
   try {
     // We "always" delete the release branch, if anything fails, the whole
     // workflow has to be restarted from scratch.
     logInfo(`deleting ${branchName}`)
-    await run('git', ['push', 'origin', '--delete', branchName])
+    await execWithOutput('git', ['push', 'origin', '--delete', branchName])
   } catch (err) {
     // That's not a big problem, so we don't want to mark the action as failed.
     logWarning('Unable to delete the release branch')
@@ -28620,6 +28617,66 @@ module.exports = transformCommitMessage
 
 /***/ }),
 
+/***/ 8632:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { StringDecoder } = __nccwpck_require__(6915)
+
+const { exec } = __nccwpck_require__(1514)
+
+/**
+ *
+ * @param {string} cmd
+ * @param {string[]} args
+ * @param {{cwd?: string}} options
+ * @returns Promise<string>
+ */
+async function execWithOutput(cmd, args, { cwd } = {}) {
+  let output = ''
+  let errorOutput = ''
+
+  const stdoutDecoder = new StringDecoder('utf8')
+  const stderrDecoder = new StringDecoder('utf8')
+
+  const options = {}
+
+  if (cwd !== '') {
+    options.cwd = cwd
+  }
+
+  options.listeners = {
+    stdout: data => {
+      output += stdoutDecoder.write(data)
+    },
+    stderr: data => {
+      errorOutput += stderrDecoder.write(data)
+    },
+  }
+
+  const code = await exec(cmd, args, options)
+
+  output += stdoutDecoder.end()
+  errorOutput += stderrDecoder.end()
+
+  if (code === 0) {
+    return output.trim()
+  }
+
+  throw new Error(
+    `${cmd} ${args.join(
+      ' '
+    )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
+  )
+}
+
+exports.execWithOutput = execWithOutput
+
+
+/***/ }),
+
 /***/ 8361:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -28774,17 +28831,15 @@ exports.notifyIssues = notifyIssues
 "use strict";
 
 
-const { runSpawn } = __nccwpck_require__(2137)
+const { execWithOutput } = __nccwpck_require__(8632)
 
 async function allowNpmPublish(version) {
-  const run = runSpawn()
-
   // We need to check if the package was already published. This can happen if
   // the action was already executed before, but it failed in its last step
   // (GH release).
   let packageName = null
   try {
-    const packageInfo = await run('npm', ['view', '--json'])
+    const packageInfo = await execWithOutput('npm', ['view', '--json'])
     packageName = packageInfo ? JSON.parse(packageInfo).name : null
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
@@ -28805,7 +28860,10 @@ async function allowNpmPublish(version) {
   try {
     // npm < v8.13.0 returns empty output, newer versions throw a E404
     // We handle both and consider them as package version not existing
-    packageVersionInfo = await run('npm', ['view', `${packageName}@${version}`])
+    packageVersionInfo = await execWithOutput('npm', [
+      'view',
+      `${packageName}@${version}`,
+    ])
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
       throw error
@@ -28822,21 +28880,22 @@ async function publishToNpm({
   npmTag,
   version,
 }) {
-  const run = runSpawn()
-
-  await run('npm', [
+  await execWithOutput('npm', [
     'config',
     'set',
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
 
   if (await allowNpmPublish(version)) {
-    await run('npm', ['pack', '--dry-run'])
+    await execWithOutput('npm', ['pack', '--dry-run'])
     if (opticToken) {
-      const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
-      await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      const otp = await execWithOutput('curl', [
+        '-s',
+        `${opticUrl}${opticToken}`,
+      ])
+      await execWithOutput('npm', ['publish', '--otp', otp, '--tag', npmTag])
     } else {
-      await run('npm', ['publish', '--tag', npmTag])
+      await execWithOutput('npm', ['publish', '--tag', npmTag])
     }
   }
 }
@@ -28941,68 +29000,14 @@ module.exports = {
 
 "use strict";
 
-const { runSpawn } = __nccwpck_require__(2137)
+const { execWithOutput } = __nccwpck_require__(8632)
 
 async function revertCommit(baseRef) {
-  const run = runSpawn()
-
-  await run('git', ['revert', 'HEAD'])
-  await run('git', ['push', 'origin', baseRef])
+  await execWithOutput('git', ['revert', 'HEAD'])
+  await execWithOutput('git', ['push', 'origin', baseRef])
 }
 
 exports.revertCommit = revertCommit
-
-
-/***/ }),
-
-/***/ 2137:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const { StringDecoder } = __nccwpck_require__(6915)
-
-const { exec } = __nccwpck_require__(1514)
-
-function runSpawn({ cwd } = {}) {
-  return async (cmd, args) => {
-    let output = ''
-    let errorOutput = ''
-
-    const stdoutDecoder = new StringDecoder('utf8')
-    const stderrDecoder = new StringDecoder('utf8')
-
-    const options = {}
-    options.cwd = cwd
-
-    options.listeners = {
-      stdout: data => {
-        output += stdoutDecoder.write(data)
-      },
-      stderr: data => {
-        errorOutput += stderrDecoder.write(data)
-      },
-    }
-
-    const code = await exec(cmd, args, options)
-
-    output += stdoutDecoder.end()
-    errorOutput += stderrDecoder.end()
-
-    if (code === 0) {
-      return output.trim()
-    }
-
-    throw new Error(
-      `${cmd} ${args.join(
-        ' '
-      )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
-    )
-  }
-}
-
-exports.runSpawn = runSpawn
 
 
 /***/ }),
@@ -29012,14 +29017,12 @@ exports.runSpawn = runSpawn
 
 "use strict";
 
-const { runSpawn } = __nccwpck_require__(2137)
+const { execWithOutput } = __nccwpck_require__(8632)
 
 async function tagVersionInGit(version) {
-  const run = runSpawn()
-
-  await run('git', ['push', 'origin', `:refs/tags/${version}`])
-  await run('git', ['tag', '-f', `"${version}"`])
-  await run('git', ['push', 'origin', `--tags`])
+  await execWithOutput('git', ['push', 'origin', `:refs/tags/${version}`])
+  await execWithOutput('git', ['tag', '-f', `"${version}"`])
+  await execWithOutput('git', ['push', 'origin', `--tags`])
 }
 
 exports.tagVersionInGit = tagVersionInGit
