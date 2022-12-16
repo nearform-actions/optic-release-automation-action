@@ -28338,7 +28338,6 @@ module.exports = async function ({ github, context, inputs }) {
     })
 
     if (!draftRelease) {
-      console.log('no draft release')
       core.setFailed(`Couldn't find draft release to publish. Aborting.`)
       return
     }
