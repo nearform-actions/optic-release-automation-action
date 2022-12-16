@@ -72,6 +72,32 @@ tap.test('Should publish to npm with optic', async t => {
   t.pass('npm publish called')
 })
 
+tap.test(
+  "Should publish to npm when package hasn't been published before",
+  async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
+
+    execWithOutputStub.withArgs('npm', ['view', '--json']).resolves('')
+
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
+
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'pack',
+      '--dry-run',
+    ])
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  }
+)
+
 tap.test('Should publish to npm without optic', async () => {
   const { publishToNpmProxy, execWithOutputStub } = setup()
   await publishToNpmProxy.publishToNpm({
