@@ -22,7 +22,6 @@ tap.test(
     const output = 'output'
 
     execStub.callsFake((_, __, options) => {
-      console.log('inside a fake')
       options.listeners.stdout(Buffer.from(output, 'utf8'))
 
       return Promise.resolve(0)
