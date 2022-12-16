@@ -28644,7 +28644,7 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
   const stderrDecoder = new StringDecoder('utf8')
 
   const options = {
-    silent: true,
+    silent: true, // don't print exec output to stdout
   }
 
   /* istanbul ignore else */
@@ -29036,7 +29036,7 @@ const { execWithOutput } = __nccwpck_require__(8632)
 
 async function tagVersionInGit(version) {
   await execWithOutput('git', ['push', 'origin', `:refs/tags/${version}`])
-  await execWithOutput('git', ['tag', '-f', `"${version}"`])
+  await execWithOutput('git', ['tag', '-f', `${version}`])
   await execWithOutput('git', ['push', 'origin', `--tags`])
 }
 
