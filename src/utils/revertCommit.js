@@ -1,9 +1,11 @@
 'use strict'
-const { execWithOutput } = require('./execWithOutput')
+const { runSpawn } = require('./runSpawn')
 
 async function revertCommit(baseRef) {
-  await execWithOutput('git', ['revert', 'HEAD'])
-  await execWithOutput('git', ['push', 'origin', baseRef])
+  const run = runSpawn()
+
+  await run('git', ['revert', 'HEAD'])
+  await run('git', ['push', 'origin', baseRef])
 }
 
 exports.revertCommit = revertCommit

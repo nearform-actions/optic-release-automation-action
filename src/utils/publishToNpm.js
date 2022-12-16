@@ -1,14 +1,16 @@
 'use strict'
 
-const { execWithOutput } = require('./execWithOutput')
+const { runSpawn } = require('./runSpawn')
 
 async function allowNpmPublish(version) {
+  const run = runSpawn()
+
   // We need to check if the package was already published. This can happen if
   // the action was already executed before, but it failed in its last step
   // (GH release).
   let packageName = null
   try {
-    const packageInfo = await execWithOutput('npm', ['view', '--json'])
+    const packageInfo = await run('npm', ['view', '--json'])
     packageName = packageInfo ? JSON.parse(packageInfo).name : null
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
@@ -29,10 +31,7 @@ async function allowNpmPublish(version) {
   try {
     // npm < v8.13.0 returns empty output, newer versions throw a E404
     // We handle both and consider them as package version not existing
-    packageVersionInfo = await execWithOutput('npm', [
-      'view',
-      `${packageName}@${version}`,
-    ])
+    packageVersionInfo = await run('npm', ['view', `${packageName}@${version}`])
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
       throw error
@@ -49,22 +48,21 @@ async function publishToNpm({
   npmTag,
   version,
 }) {
-  await execWithOutput('npm', [
+  const run = runSpawn()
+
+  await run('npm', [
     'config',
     'set',
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
 
   if (await allowNpmPublish(version)) {
-    await execWithOutput('npm', ['pack', '--dry-run'])
+    await run('npm', ['pack', '--dry-run'])
     if (opticToken) {
-      const otp = await execWithOutput('curl', [
-        '-s',
-        `${opticUrl}${opticToken}`,
-      ])
-      await execWithOutput('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      const otp = await run('curl', ['-s', `${opticUrl}${opticToken}`])
+      await run('npm', ['publish', '--otp', otp, '--tag', npmTag])
     } else {
-      await execWithOutput('npm', ['publish', '--tag', npmTag])
+      await run('npm', ['publish', '--tag', npmTag])
     }
   }
 }

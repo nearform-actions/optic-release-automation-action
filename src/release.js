@@ -6,7 +6,7 @@ const semver = require('semver')
 const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
-const { execWithOutput } = require('./utils/execWithOutput')
+const { runSpawn } = require('./utils/runSpawn')
 const { revertCommit } = require('./utils/revertCommit')
 const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
@@ -60,13 +60,14 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
+  const run = runSpawn()
   const branchName = `release/${version}`
 
   try {
     // We "always" delete the release branch, if anything fails, the whole
     // workflow has to be restarted from scratch.
     logInfo(`deleting ${branchName}`)
-    await execWithOutput('git', ['push', 'origin', '--delete', branchName])
+    await run('git', ['push', 'origin', '--delete', branchName])
   } catch (err) {
     // That's not a big problem, so we don't want to mark the action as failed.
     logWarning('Unable to delete the release branch')
