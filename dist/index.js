@@ -28515,6 +28515,7 @@ const { ZIP_EXTENSION } = __nccwpck_require__(6818)
 const attach = async (path, releaseId, token) => {
   const filename = deriveFilename(path, ZIP_EXTENSION)
 
+  /* istanbul ignore else */
   if (!path.endsWith(ZIP_EXTENSION)) {
     await archiveItem(path, filename)
   }
