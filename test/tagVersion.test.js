@@ -32,7 +32,7 @@ tap.test('Tag version in git', async t => {
   sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'tag',
     '-f',
-    `"${version}"`,
+    `${version}`,
   ])
   sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'push',
