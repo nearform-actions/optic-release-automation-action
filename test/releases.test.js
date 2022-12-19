@@ -99,3 +99,34 @@ tap.test(
     sinon.assert.calledOnce(logStub.logError)
   }
 )
+
+tap.test(
+  'fetchLatestRelease returns null if no previous releases are found',
+  async t => {
+    const logStub = sinon.stub(actionLog)
+    const releasesModule = tap.mock('../src/utils/releases.js', {
+      '../src/log.js': logStub,
+      '@actions/github': {
+        context: {
+          repo: {
+            repo: 'repo',
+            owner: 'owner',
+          },
+        },
+        getOctokit: () => ({
+          rest: {
+            repos: {
+              getLatestRelease: async () => {
+                throw new Error('Not Found')
+              },
+            },
+          },
+        }),
+      },
+    })
+
+    await t.resolves(releasesModule.fetchLatestRelease(inputs))
+
+    sinon.assert.calledTwice(logStub.logInfo)
+  }
+)

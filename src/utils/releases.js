@@ -22,6 +22,11 @@ async function fetchLatestRelease(inputs) {
 
     return latestRelease
   } catch (err) {
+    if (err.message === 'Not Found') {
+      logInfo(`No previous releases found`)
+      return null
+    }
+
     logError(err.message)
     throw new Error(
       `An error occurred while fetching the latest release: ${err.message}`
