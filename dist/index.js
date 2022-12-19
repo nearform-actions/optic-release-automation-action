@@ -26267,7 +26267,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
 
-  await run('git', ['push', '-f', 'origin', branchName])
+  await run('git', ['push', 'origin', branchName])
 
   const releaseNotes = await getReleaseNotes(inputs, newVersion)
 
