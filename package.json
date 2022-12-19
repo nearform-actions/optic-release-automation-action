@@ -20,6 +20,8 @@
     "@actions/github": "^5.1.1",
     "@conventional-commits/parser": "^0.4.1",
     "adm-zip": "^0.5.9",
+    "conventional-changelog-conventionalcommits": "^5.0.0",
+    "conventional-recommended-bump": "^6.1.0",
     "lodash.isequal": "^4.5.0",
     "lodash.template": "^4.5.0",
     "lodash.truncate": "^4.4.2",
