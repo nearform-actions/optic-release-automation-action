@@ -26260,13 +26260,13 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   const messageTemplate = inputs['commit-message']
   await run('git', ['checkout', '-b', branchName])
+  await run('git', ['pull', 'origin', branchName])
   await run('git', ['add', '-A'])
   await run('git', [
     'commit',
     '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
-  await run('git', ['fetch'])
 
   await run('git', ['push', 'origin', branchName])
 
