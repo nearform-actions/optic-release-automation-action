@@ -26205,7 +26205,10 @@ const addArtifact = async (inputs, releaseId) => {
 
 const getReleaseNotes = async (inputs, newVersion) => {
   const latestRelease = await fetchLatestRelease(inputs)
-  const latestVersion = latestRelease ? latestRelease.tag_name : null
+  if (!latestRelease) {
+    return null
+  }
+  const { tag_name: latestVersion } = latestRelease
   const releaseNotes = await generateReleaseNotes(
     inputs,
     newVersion,
@@ -27004,6 +27007,11 @@ async function fetchLatestRelease(inputs) {
 
     return latestRelease
   } catch (err) {
+    if (err.message === 'Not Found') {
+      logInfo(`No previous releases found`)
+      return null
+    }
+
     logError(err.message)
     throw new Error(
       `An error occurred while fetching the latest release: ${err.message}`
