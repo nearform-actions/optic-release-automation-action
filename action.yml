@@ -69,6 +69,10 @@ inputs:
     description: 'A prefix to apply to the version number, which reflects in the tag and GitHub release names'
     required: true
     default: 'v'
+  prerelease-prefix:
+    description: 'A prefix to apply to the prerelease version number'
+    required: false
+    default: 'rc'
 
 runs:
   using: 'composite'
@@ -86,7 +90,7 @@ runs:
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
-        npm version --no-git-tag-version ${{ inputs.semver }}
+        npm version --no-git-tag-version --preid=${{ inputs.prerelease-prefix }} ${{ inputs.semver }}
         echo "PACKAGE_VERSION=$(echo $(node -p "require('./package.json').version"))" >> $GITHUB_OUTPUT
       shell: 'bash'
 
