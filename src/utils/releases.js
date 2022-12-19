@@ -1,7 +1,7 @@
 'use strict'
 
 const github = require('@actions/github')
-const { logInfo } = require('../log')
+const { logInfo, logError } = require('../log')
 
 async function fetchLatestRelease(inputs) {
   try {
@@ -22,6 +22,7 @@ async function fetchLatestRelease(inputs) {
 
     return latestRelease
   } catch (err) {
+    logError(err.message)
     throw new Error(
       `An error occurred while fetching the latest release: ${err.message}`
     )
@@ -49,6 +50,7 @@ async function generateReleaseNotes(inputs, newVersion, latestVersion) {
 
     return releaseNotes
   } catch (err) {
+    logError(err.message)
     throw new Error(
       `An error occurred while generating the release notes: ${err.message}`
     )

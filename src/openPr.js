@@ -33,7 +33,7 @@ const getReleaseNotes = async (inputs, newVersion) => {
     newVersion,
     latestVersion
   )
-  return releaseNotes?.body || ''
+  return releaseNotes?.body || null
 }
 
 const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
@@ -50,8 +50,8 @@ const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
         body: {
           version: newVersion,
           target: releaseCommitHash,
-          generateReleaseNotes: false,
-          releaseNotes,
+          generateReleaseNotes: releaseNotes ? false : true,
+          ...(releaseNotes && { releaseNotes }),
         },
       },
       inputs
