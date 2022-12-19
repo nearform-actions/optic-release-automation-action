@@ -81,6 +81,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
+  await run('git', ['fetch', '--tags'])
   await run('git', ['checkout', '-b', branchName])
   await run('git', ['add', '-A'])
   await run('git', [
