@@ -9,8 +9,11 @@ const clone = require('lodash.clonedeep')
 const runSpawnAction = require('../src/utils/runSpawn')
 const callApiAction = require('../src/utils/callApi')
 const artifactAction = require('../src/utils/artifact')
+const releasesAction = require('../src/utils/releases')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
+const TEST_RELEASE_NOTES = 'Release Notes'
+const TEST_LATEST_VERSION = '3.1.0'
 const TEST_VERSION = '3.1.1'
 const TEST_COMMIT_HASH = 'c86b0a35014a7036b245f81ff9de9bd738a5fe95'
 const runSpawnStub = sinon.stub()
@@ -31,6 +34,16 @@ function setup() {
       label: 'label',
     },
   })
+  const releasesFetchLatestReleaseStub = sinon
+    .stub(releasesAction, 'fetchLatestRelease')
+    .returns({
+      tag_name: TEST_LATEST_VERSION,
+    })
+  const releasesGenerateReleaseNotesStub = sinon
+    .stub(releasesAction, 'generateReleaseNotes')
+    .returns({
+      body: TEST_RELEASE_NOTES,
+    })
 
   const openPr = proxyquire('../src/openPr', {
     './utils/runSpawn': utilStub,
@@ -46,6 +59,8 @@ function setup() {
       callApiStub,
       coreStub,
       attachArtifactStub,
+      releasesFetchLatestReleaseStub,
+      releasesGenerateReleaseNotesStub,
     },
   }
 }
@@ -186,6 +201,8 @@ tap.test('should work with a custom version-prefix', async () => {
       body: {
         version: TEST_VERSION,
         target: TEST_COMMIT_HASH,
+        generateReleaseNotes: false,
+        releaseNotes: TEST_RELEASE_NOTES,
       },
     },
     prData.inputs
@@ -212,6 +229,8 @@ tap.test('should call the release endpoint with a new version', async () => {
       body: {
         version: `v${TEST_VERSION}`,
         target: TEST_COMMIT_HASH,
+        generateReleaseNotes: false,
+        releaseNotes: TEST_RELEASE_NOTES,
       },
     },
     DEFAULT_ACTION_DATA.inputs
