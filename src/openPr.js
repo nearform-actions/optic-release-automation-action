@@ -40,7 +40,6 @@ const tryGetReleaseNotes = async (token, newVersion) => {
     return releaseNotes?.body
   } catch (err) {
     logWarning(err.message)
-    return false
   }
 }
 
