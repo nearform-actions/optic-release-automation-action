@@ -40,6 +40,10 @@ on:
           - patch
           - minor
           - major
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
       tag:
         description: "The npm tag"
         required: false
@@ -170,34 +174,15 @@ jobs:
 
 ## Prerelease support
 
-This action can be configured with the prerelease support. 
+This action can be configured with the prerelease support.
 
-In order to do that you can configure your action adding the [npm version](https://docs.npmjs.com/cli/v9/commands/npm-version) parameters `prerelease|prepatch|preminor|premajor`:
+In order to do that you can configure your action adding the [npm version](https://docs.npmjs.com/cli/v9/commands/npm-version) parameters `prerelease|prepatch|preminor|premajor` in the semver options.
 
-```yml
-name: release
+It's possible to specify a custom `prerelease-prefix` if you want to have one. This will be added as a prefix to the prerelease version. Let's suppose we want to use `next` as a `prerelease-prefix`, the prerelease version will be something like: `v1.0.0-next.1`.
 
-on:
-  workflow_dispatch:
-    inputs:
-      semver:
-        description: "The semver to use"
-        required: true
-        default: "patch"
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prerelease
-          - prepatch
-          - preminor
-          - premajor
-  ...
-```
+The `prerelease-prefix` is used as the input for the `--preid` in the `npm version` command.
 
-It's possible to specify a custom `prerelease-prefix` if you want to have one.
-
+An important note is that the `prerelease-prefix` is used to identify the release version, on the other hand we have the `npm-tag` which is responsible of identifying the proper [NPM tag](https://docs.npmjs.com/cli/v9/commands/npm-dist-tag) when a package is published to NPM, e.g.: `latest|experimental|next|rc|beta`.
 
 ## Inputs
 
