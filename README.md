@@ -40,10 +40,6 @@ on:
           - patch
           - minor
           - major
-          - prerelease
-          - prepatch
-          - preminor
-          - premajor
       tag:
         description: "The npm tag"
         required: false
@@ -172,6 +168,37 @@ jobs:
             npm run build
 ```
 
+## Prerelease support
+
+This action can be configured with the prerelease support. 
+
+In order to do that you can configure your action adding the [npm version](https://docs.npmjs.com/cli/v9/commands/npm-version) parameters `prerelease|prepatch|preminor|premajor`:
+
+```yml
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: "The semver to use"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
+  ...
+```
+
+It's possible to specify a custom `prerelease-prefix` if you want to have one.
+
+
 ## Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
@@ -192,7 +219,7 @@ jobs:
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
-| `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number. <br /> (_Default: 'rc'_)                                                                                                                                                                                                                                         |
+| `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*
