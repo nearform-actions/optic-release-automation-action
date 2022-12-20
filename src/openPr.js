@@ -9,7 +9,7 @@ const { PR_TITLE_PREFIX } = require('./const')
 const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
-const { logInfo } = require('./log')
+const { logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
 const { fetchLatestRelease, generateReleaseNotes } = require('./utils/releases')
@@ -25,18 +25,23 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const getReleaseNotes = async (inputs, newVersion) => {
-  const latestRelease = await fetchLatestRelease(inputs)
-  if (!latestRelease) {
-    return null
+const tryGetReleaseNotes = async (token, newVersion) => {
+  try {
+    const latestRelease = await fetchLatestRelease(token)
+    if (!latestRelease) {
+      return false
+    }
+    const { tag_name: baseVersion } = latestRelease
+    const releaseNotes = await generateReleaseNotes(
+      token,
+      newVersion,
+      baseVersion
+    )
+    return releaseNotes?.body
+  } catch (err) {
+    logWarning(err.message)
+    return false
   }
-  const { tag_name: latestVersion } = latestRelease
-  const releaseNotes = await generateReleaseNotes(
-    inputs,
-    newVersion,
-    latestVersion
-  )
-  return releaseNotes?.body || null
 }
 
 const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
@@ -91,7 +96,9 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await run('git', ['push', 'origin', branchName])
 
-  const releaseNotes = await getReleaseNotes(inputs, newVersion)
+  const token = inputs['github-token']
+
+  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
 
   const draftRelease = await createDraftRelease(
     inputs,

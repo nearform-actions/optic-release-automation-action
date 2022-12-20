@@ -1,13 +1,11 @@
 'use strict'
 
 const github = require('@actions/github')
-const { logInfo, logError } = require('../log')
+const { logInfo } = require('../log')
 
-async function fetchLatestRelease(inputs) {
+async function fetchLatestRelease(token) {
   try {
-    logInfo('Fetching latest release')
-
-    const token = inputs['github-token']
+    logInfo('Fetching the latest release')
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
@@ -24,21 +22,18 @@ async function fetchLatestRelease(inputs) {
   } catch (err) {
     if (err.message === 'Not Found') {
       logInfo(`No previous releases found`)
-      return null
+      return
     }
 
-    logError(err.message)
     throw new Error(
       `An error occurred while fetching the latest release: ${err.message}`
     )
   }
 }
 
-async function generateReleaseNotes(inputs, newVersion, latestVersion) {
+async function generateReleaseNotes(token, newVersion, baseVersion) {
   try {
-    logInfo(`Generating release notes: [${latestVersion} -> ${newVersion}]`)
-
-    const token = inputs['github-token']
+    logInfo(`Generating release notes: [${baseVersion} -> ${newVersion}]`)
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
@@ -48,14 +43,13 @@ async function generateReleaseNotes(inputs, newVersion, latestVersion) {
         owner,
         repo,
         tag_name: newVersion,
-        ...(latestVersion && { previous_tag_name: latestVersion }),
+        ...(baseVersion && { previous_tag_name: baseVersion }),
       })
 
-    logInfo(`Release notes generated: ${newVersion}`)
+    logInfo(`Release notes generated: [${baseVersion} -> ${newVersion}]`)
 
     return releaseNotes
   } catch (err) {
-    logError(err.message)
     throw new Error(
       `An error occurred while generating the release notes: ${err.message}`
     )
