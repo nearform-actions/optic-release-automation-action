@@ -72,7 +72,6 @@ inputs:
   prerelease-prefix:
     description: 'A prefix to apply to the prerelease version number'
     required: false
-    default: 'rc'
 
 runs:
   using: 'composite'
