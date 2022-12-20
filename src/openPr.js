@@ -29,7 +29,7 @@ const tryGetReleaseNotes = async (token, newVersion) => {
   try {
     const latestRelease = await fetchLatestRelease(token)
     if (!latestRelease) {
-      return false
+      return
     }
     const { tag_name: baseVersion } = latestRelease
     const releaseNotes = await generateReleaseNotes(
