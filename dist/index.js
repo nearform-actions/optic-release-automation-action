@@ -26187,7 +26187,7 @@ const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
-const { logInfo } = __nccwpck_require__(653)
+const { logInfo, logWarning } = __nccwpck_require__(653)
 const { attach } = __nccwpck_require__(930)
 const { getPRBody } = __nccwpck_require__(4098)
 const { fetchLatestRelease, generateReleaseNotes } = __nccwpck_require__(5560)
@@ -26203,18 +26203,23 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const getReleaseNotes = async (inputs, newVersion) => {
-  const latestRelease = await fetchLatestRelease(inputs)
-  if (!latestRelease) {
-    return null
+const tryGetReleaseNotes = async (token, newVersion) => {
+  try {
+    const latestRelease = await fetchLatestRelease(token)
+    if (!latestRelease) {
+      return false
+    }
+    const { tag_name: baseVersion } = latestRelease
+    const releaseNotes = await generateReleaseNotes(
+      token,
+      newVersion,
+      baseVersion
+    )
+    return releaseNotes?.body
+  } catch (err) {
+    logWarning(err.message)
+    return false
   }
-  const { tag_name: latestVersion } = latestRelease
-  const releaseNotes = await generateReleaseNotes(
-    inputs,
-    newVersion,
-    latestVersion
-  )
-  return releaseNotes?.body || null
 }
 
 const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
@@ -26269,7 +26274,9 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await run('git', ['push', 'origin', branchName])
 
-  const releaseNotes = await getReleaseNotes(inputs, newVersion)
+  const token = inputs['github-token']
+
+  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
 
   const draftRelease = await createDraftRelease(
     inputs,
@@ -26986,13 +26993,11 @@ module.exports = {
 
 
 const github = __nccwpck_require__(5438)
-const { logInfo, logError } = __nccwpck_require__(653)
+const { logInfo } = __nccwpck_require__(653)
 
-async function fetchLatestRelease(inputs) {
+async function fetchLatestRelease(token) {
   try {
-    logInfo('Fetching latest release')
-
-    const token = inputs['github-token']
+    logInfo('Fetching the latest release')
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
@@ -27009,21 +27014,18 @@ async function fetchLatestRelease(inputs) {
   } catch (err) {
     if (err.message === 'Not Found') {
       logInfo(`No previous releases found`)
-      return null
+      return
     }
 
-    logError(err.message)
     throw new Error(
       `An error occurred while fetching the latest release: ${err.message}`
     )
   }
 }
 
-async function generateReleaseNotes(inputs, newVersion, latestVersion) {
+async function generateReleaseNotes(token, newVersion, baseVersion) {
   try {
-    logInfo(`Generating release notes: [${latestVersion} -> ${newVersion}]`)
-
-    const token = inputs['github-token']
+    logInfo(`Generating release notes: [${baseVersion} -> ${newVersion}]`)
 
     const { owner, repo } = github.context.repo
     const octokit = github.getOctokit(token)
@@ -27033,14 +27035,13 @@ async function generateReleaseNotes(inputs, newVersion, latestVersion) {
         owner,
         repo,
         tag_name: newVersion,
-        ...(latestVersion && { previous_tag_name: latestVersion }),
+        ...(baseVersion && { previous_tag_name: baseVersion }),
       })
 
-    logInfo(`Release notes generated: ${newVersion}`)
+    logInfo(`Release notes generated: [${baseVersion} -> ${newVersion}]`)
 
     return releaseNotes
   } catch (err) {
-    logError(err.message)
     throw new Error(
       `An error occurred while generating the release notes: ${err.message}`
     )
