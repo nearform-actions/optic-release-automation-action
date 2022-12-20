@@ -174,7 +174,7 @@ jobs:
 
 ## Prerelease support
 
-This action can be configured with the prerelease support.
+This action can be used to create prereleases.
 
 In order to do that you can configure your action adding the [npm version](https://docs.npmjs.com/cli/v9/commands/npm-version) parameters `prerelease|prepatch|preminor|premajor` in the semver options.
 
