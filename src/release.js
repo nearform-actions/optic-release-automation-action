@@ -115,11 +115,14 @@ module.exports = async function ({ github, context, inputs }) {
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
     if (syncVersions) {
-      const { major, minor, patch } = semver.parse(version)
+      const { major, minor, patch, prerelease } = semver.parse(version)
 
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
+      if (prerelease.length > 0) {
+        await tagVersionInGit(`v${major}.${minor}.${patch}-${prerelease[0]}`)
+      }
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
