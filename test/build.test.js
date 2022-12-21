@@ -7,7 +7,7 @@ const actionLog = require('../src/log')
 const core = require('@actions/core')
 const exec = require('@actions/exec')
 const clone = require('lodash.clonedeep')
-const { PR_TITLE_PREFIX } = require('../src/const')
+const { PR_TITLE_PREFIX, APP_NAME } = require('../src/const')
 
 const DEFAULT_ACTION_DATA = {
   inputs: {},
@@ -26,7 +26,7 @@ const DEFAULT_ACTION_DATA = {
           ref: 'base-ref',
         },
         merged: true,
-        user: { login: 'optic-release-automation[bot]' },
+        user: { login: APP_NAME },
         title: PR_TITLE_PREFIX,
         body:
           '<!--\n' +
@@ -94,6 +94,7 @@ tap.test(
     const data = clone(DEFAULT_ACTION_DATA)
 
     data.inputs['build-command'] = 'npm install\n npm build'
+    data.inputs['app-name'] = APP_NAME
     data.context.payload.pull_request.body =
       '<!--\n' +
       '<release-meta>{"id":54503465,"version":"v5.1.3","npmTag":"latest", "monorepoPackage": "react-app", "monorepoRoot": "packages"}</release-meta>\n' +
@@ -121,6 +122,7 @@ tap.test("Should fail if release metadata can't be parsed as json", async t => {
   const data = clone(DEFAULT_ACTION_DATA)
 
   data.inputs['build-command'] = 'npm install\n npm build'
+  data.inputs['app-name'] = APP_NAME
   data.context.payload.pull_request.body =
     '<!--\n' + '<release-meta>{"invalidjson}</release-meta>\n' + '-->'
 
@@ -129,6 +131,7 @@ tap.test("Should fail if release metadata can't be parsed as json", async t => {
   } catch (err) {
     t.ok('Build expected to throw with invalid metadata')
   }
+  sinon.assert.calledOnce(stubs.coreStub.setFailed)
   sinon.assert.notCalled(stubs.execStub.exec)
 })
 

@@ -28118,28 +28118,28 @@ function getMonorepoData({ context, inputs, github }) {
 }
 
 module.exports = async function ({ github, context, inputs }) {
-  const { monorepoPackage, monorepoRoot } = getMonorepoData({
-    context,
-    inputs,
-    github,
-  })
-
-  const buildCommands = inputs['build-command']
-    .trim()
-    .split('\n')
-    .filter(cmd => !!cmd)
-    .map(cmd =>
-      cmd
-        .trim()
-        .split(' ')
-        .filter(c => !!c)
-    )
-
-  const options = {
-    cwd: monorepoPackage ? `${monorepoRoot}/${monorepoPackage}` : '.',
-  }
-
   try {
+    const { monorepoPackage, monorepoRoot } = getMonorepoData({
+      context,
+      inputs,
+      github,
+    })
+
+    const buildCommands = inputs['build-command']
+      .trim()
+      .split('\n')
+      .filter(cmd => !!cmd)
+      .map(cmd =>
+        cmd
+          .trim()
+          .split(' ')
+          .filter(c => !!c)
+      )
+
+    const options = {
+      cwd: monorepoPackage ? `${monorepoRoot}/${monorepoPackage}` : '.',
+    }
+
     await exec('node', ['-v'], options)
     await exec('npm', ['-v'], options)
 
@@ -28147,13 +28147,7 @@ module.exports = async function ({ github, context, inputs }) {
       await exec(command, args, options)
     }
   } catch (err) {
-    if (monorepoPackage) {
-      core.setFailed(
-        `Error when building package: ${monorepoPackage}\n${err.message}`
-      )
-    } else {
-      core.setFailed(`Error when building release: ${err.message}`)
-    }
+    core.setFailed(`Error when building release: ${err.message}`)
   }
 }
 
