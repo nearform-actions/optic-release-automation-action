@@ -307,8 +307,6 @@ tap.test(
       },
     })
 
-    sinon.assert.notCalled(stubs.tagVersionStub)
-
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
       {
