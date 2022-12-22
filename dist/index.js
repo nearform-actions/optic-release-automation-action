@@ -27619,7 +27619,7 @@ const _truncate = __nccwpck_require__(4436)
 
 const md = __nccwpck_require__(8561)()
 
-const PR_BODY_TRUNCATE_SIZE = 60000
+const PR_BODY_TRUNCATE_SIZE = 30000
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes, {})
