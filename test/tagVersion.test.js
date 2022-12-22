@@ -34,7 +34,10 @@ tap.test('Tag version in git', async t => {
   sinon.assert.calledWithExactly(runSpawnStub, 'git', [
     'tag',
     '-f',
+    '-s',
     `"${version}"`,
+    '-m',
+    '""',
   ])
   sinon.assert.calledWithExactly(runSpawnStub, 'git', [
     'push',
