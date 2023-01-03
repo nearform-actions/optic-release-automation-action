@@ -58713,9 +58713,10 @@ const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { runSpawn } = __nccwpck_require__(2137)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
-const { logInfo } = __nccwpck_require__(653)
+const { logInfo, logWarning } = __nccwpck_require__(653)
 const { attach } = __nccwpck_require__(930)
 const { getPRBody } = __nccwpck_require__(4098)
+const { fetchLatestRelease, generateReleaseNotes } = __nccwpck_require__(5560)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -58728,7 +58729,25 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const createDraftRelease = async (inputs, newVersion) => {
+const tryGetReleaseNotes = async (token, newVersion) => {
+  try {
+    const latestRelease = await fetchLatestRelease(token)
+    if (!latestRelease) {
+      return
+    }
+    const { tag_name: baseVersion } = latestRelease
+    const releaseNotes = await generateReleaseNotes(
+      token,
+      newVersion,
+      baseVersion
+    )
+    return releaseNotes?.body
+  } catch (err) {
+    logWarning(err.message)
+  }
+}
+
+const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   try {
     const run = runSpawn()
     const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
@@ -58742,6 +58761,8 @@ const createDraftRelease = async (inputs, newVersion) => {
         body: {
           version: newVersion,
           target: releaseCommitHash,
+          generateReleaseNotes: releaseNotes ? false : true,
+          ...(releaseNotes && { releaseNotes }),
         },
       },
       inputs
@@ -58778,7 +58799,15 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await run('git', ['push', 'origin', branchName])
 
-  const draftRelease = await createDraftRelease(inputs, newVersion)
+  const token = inputs['github-token']
+
+  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
+
+  const draftRelease = await createDraftRelease(
+    inputs,
+    newVersion,
+    releaseNotes
+  )
 
   logInfo(`New version ${newVersion}`)
 
@@ -58946,12 +58975,13 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
+  const { major, minor, patch, prerelease } = semver.parse(version)
+  const isPreRelease = prerelease.length > 0
+
   try {
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
-    if (syncVersions) {
-      const { major, minor, patch } = semver.parse(version)
-
+    if (syncVersions && !isPreRelease) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
@@ -58968,6 +58998,7 @@ module.exports = async function ({ github, context, inputs }) {
         body: {
           version: version,
           releaseId: id,
+          isPreRelease,
         },
       },
       inputs
@@ -59477,6 +59508,76 @@ function getPRBody(
 module.exports = {
   getPrNumbersFromReleaseNotes,
   getPRBody,
+}
+
+
+/***/ }),
+
+/***/ 5560:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const github = __nccwpck_require__(5438)
+const { logInfo } = __nccwpck_require__(653)
+
+async function fetchLatestRelease(token) {
+  try {
+    logInfo('Fetching the latest release')
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+    const { data: latestRelease } = await octokit.rest.repos.getLatestRelease({
+      owner,
+      repo,
+    })
+
+    logInfo(
+      `Latest release fetched successfully with tag: ${latestRelease.tag_name}`
+    )
+
+    return latestRelease
+  } catch (err) {
+    if (err.message === 'Not Found') {
+      logInfo(`No previous releases found`)
+      return
+    }
+
+    throw new Error(
+      `An error occurred while fetching the latest release: ${err.message}`
+    )
+  }
+}
+
+async function generateReleaseNotes(token, newVersion, baseVersion) {
+  try {
+    logInfo(`Generating release notes: [${baseVersion} -> ${newVersion}]`)
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+
+    const { data: releaseNotes } =
+      await octokit.rest.repos.generateReleaseNotes({
+        owner,
+        repo,
+        tag_name: newVersion,
+        ...(baseVersion && { previous_tag_name: baseVersion }),
+      })
+
+    logInfo(`Release notes generated: [${baseVersion} -> ${newVersion}]`)
+
+    return releaseNotes
+  } catch (err) {
+    throw new Error(
+      `An error occurred while generating the release notes: ${err.message}`
+    )
+  }
+}
+
+module.exports = {
+  fetchLatestRelease,
+  generateReleaseNotes,
 }
 
 

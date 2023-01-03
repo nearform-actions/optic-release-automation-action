@@ -41,6 +41,10 @@ on:
           - patch
           - minor
           - major
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
       tag:
         description: "The npm tag"
         required: false
@@ -172,6 +176,22 @@ jobs:
             npm run build
 ```
 
+## Prerelease support
+
+This action can be used to create prereleases.
+
+In order to do that you can configure your action adding the [npm version](https://docs.npmjs.com/cli/v9/commands/npm-version) parameters `prerelease|prepatch|preminor|premajor` in the semver options.
+
+It's possible to specify a custom `prerelease-prefix` if you want to have one. This will be added as a prefix to the prerelease version. Let's suppose we want to use `next` as a `prerelease-prefix`, the prerelease version will be something like: `v1.0.0-next.1`.
+
+The `prerelease-prefix` is used as the input for the `--preid` in the `npm version` command.
+
+An important note is that the `prerelease-prefix` is used to identify the release version, on the other hand we have the `npm-tag` which is responsible of identifying the proper [NPM tag](https://docs.npmjs.com/cli/v9/commands/npm-dist-tag) when a package is published to NPM, e.g.: `latest|experimental|next|rc|beta`.
+
+Generally, if you want to release a prerelease of a repository, and it is an NPM package, you usually want to use `prerelease-prefix` and `npm-tag` inputs together.
+
+Please note that in case of a prerelease the `sync-semver-tags` input will be treated as `false`, even if it's set to `true`. This because we don't want to update the main version tags to the latest prerelease commit but only to the latest official release.
+
 ## Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
@@ -188,10 +208,11 @@ jobs:
 | `build-command`| No       | An optional build commit to run after the version bump and before releasing the package |
 | `api-url`      | No       | GitHub App URL. You wouldn't need to set this unless you're deploying a custom GitHub app instead of [optic-release-automation](https://github.com/apps/optic-release-automation). <br /> (_Default: `https://optic-release-automation-ocrlhra4va-ue.a.run.app/`_) |
 | `app-name`     | No       | GitHub App name. You also wouldn't need to set this unless you're deploying a custom GitHub app. <br /> (_Default: `optic-release-automation[bot]`_) |
-| `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
+| `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit. Note: it will be evaluated as `false` in case of a prerelease. <br /> (_Default: `false`_)                                                                  |
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
+| `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*

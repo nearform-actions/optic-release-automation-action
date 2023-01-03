@@ -69,6 +69,9 @@ inputs:
     description: 'A prefix to apply to the version number, which reflects in the tag and GitHub release names'
     required: true
     default: 'v'
+  prerelease-prefix:
+    description: 'A prefix to apply to the prerelease version number'
+    required: false
 
 runs:
   using: 'composite'
@@ -85,13 +88,11 @@ runs:
     - name: Version bump
       uses: actions/github-script@v6
       id: version-bump
-      if: github.event_name == 'workflow_dispatch'
-      with:
-        result-encoding: string
-        github-token: ${{ inputs.github-token }}
-        script: |
-          const { getBumpedVersionNumber } = require('${{ github.action_path }}/dist/index.js')
-          return await getBumpedVersionNumber({ inputs: ${{ toJSON(inputs) }} })
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        npm version --no-git-tag-version --preid=${{ inputs.prerelease-prefix }} ${{ inputs.semver }}
+        echo "PACKAGE_VERSION=$(echo $(node -p "require('./package.json').version"))" >> $GITHUB_OUTPUT
+      shell: 'bash'
 
     - name: Build the package
       if: ${{ inputs.build-command }}
