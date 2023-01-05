@@ -6,8 +6,8 @@ const { runSpawn } = require('./utils/runSpawn')
 const { logError } = require('./log')
 const core = require('@actions/core')
 const util = require('util')
-const config = require('conventional-changelog-conventionalcommits')
-const conventionalRecommendedBump = require('conventional-recommended-bump')
+const conventionalCommitsConfig = require('conventional-changelog/conventional-changelog-conventionalcommits')
+const conventionalRecommendedBump = require('conventional-changelog/conventional-recommended-bump')
 const conventionalRecommendedBumpAsync = util.promisify(
   conventionalRecommendedBump
 )
@@ -26,18 +26,30 @@ async function runAction({ github, context, inputs, packageVersion }) {
   logError('Unsupported event')
 }
 
-async function getBumpedVersionNumber({ inputs }) {
+async function bumpVersion({ inputs }) {
   const newVersion =
-    inputs.semver === autoInput ? await getAutoBumpedVersion() : inputs.semver
+    inputs.semver === autoInput
+      ? await getAutoBumpedVersion(inputs['base-tag'])
+      : inputs.semver
+
+  const preReleasePrefix = inputs['prerelease-prefix'] || ''
 
   const run = runSpawn()
-  await run('npm', ['version', '--no-git-tag-version', newVersion])
+  await run('npm', [
+    'version',
+    '--no-git-tag-version',
+    `--preid=${preReleasePrefix}`,
+    newVersion,
+  ])
   return await run('npm', ['pkg', 'get', 'version'])
 }
 
-async function getAutoBumpedVersion() {
+async function getAutoBumpedVersion(baseTag = null) {
   try {
-    const { releaseType } = await conventionalRecommendedBumpAsync({ config })
+    const { releaseType = 'patch' } = await conventionalRecommendedBumpAsync({
+      baseTag,
+      config: conventionalCommitsConfig,
+    })
     return releaseType
   } catch (error) {
     core.setFailed(error.message)
@@ -47,5 +59,5 @@ async function getAutoBumpedVersion() {
 
 module.exports = {
   runAction,
-  getBumpedVersionNumber,
+  bumpVersion,
 }

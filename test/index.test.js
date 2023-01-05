@@ -15,7 +15,7 @@ function buildStubbedAction() {
   const bumpStub = sinon.stub()
   const runSpawnStub = sinon.stub()
 
-  const { runAction, getBumpedVersionNumber } = proxyquire('../src/index', {
+  const { runAction, bumpVersion } = proxyquire('../src/index', {
     './log': logStub,
     './release': releaseStub.resolves(),
     './openPr': openPrStub.resolves(),
@@ -30,7 +30,7 @@ function buildStubbedAction() {
 
   return {
     action: runAction,
-    getBumpedVersionNumber,
+    bumpVersion,
     stubs: {
       logStub,
       releaseStub,
@@ -135,14 +135,14 @@ tap.test(
 )
 
 tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
-  const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+  const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'major' })
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
   const inputs = { semver: 'auto' }
-  const newVersion = await getBumpedVersionNumber({
+  const newVersion = await bumpVersion({
     inputs,
   })
 
@@ -159,13 +159,13 @@ tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
 tap.test(
   'should not call getAutoBumpedVersion if semver is not auto',
   async t => {
-    const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+    const { bumpVersion, stubs } = buildStubbedAction()
 
     stubs.runSpawnStub.onFirstCall().resolves()
     stubs.runSpawnStub.onSecondCall().resolves('3.1.1')
 
     const inputs = { semver: 'patch' }
-    const newVersion = await getBumpedVersionNumber({
+    const newVersion = await bumpVersion({
       inputs,
     })
 
@@ -176,14 +176,14 @@ tap.test(
 )
 
 tap.test('semver-auto: should bump major if breaking change', async t => {
-  const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+  const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'major' })
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
   const inputs = { semver: 'auto' }
-  const newVersion = await getBumpedVersionNumber({
+  const newVersion = await bumpVersion({
     inputs,
   })
 
@@ -198,14 +198,14 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
 })
 
 tap.test('semver-auto: should bump minor if its a feat', async t => {
-  const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+  const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'minor' })
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
   const inputs = { semver: 'auto' }
-  const newVersion = await getBumpedVersionNumber({
+  const newVersion = await bumpVersion({
     inputs,
   })
 
@@ -220,14 +220,14 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
 })
 
 tap.test('semver-auto: should bump patch if its a fix', async t => {
-  const { getBumpedVersionNumber, stubs } = buildStubbedAction()
+  const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'patch' })
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
   const inputs = { semver: 'auto' }
-  const newVersion = await getBumpedVersionNumber({
+  const newVersion = await bumpVersion({
     inputs,
   })
 

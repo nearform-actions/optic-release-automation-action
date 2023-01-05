@@ -72,6 +72,9 @@ inputs:
   prerelease-prefix:
     description: 'A prefix to apply to the prerelease version number'
     required: false
+  base-tag:
+    description: 'Base release tag to use for analysing commits when auto version bump is enabled'
+    required: false
 
 runs:
   using: 'composite'
@@ -89,10 +92,12 @@ runs:
       uses: actions/github-script@v6
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
-      run: |
-        npm version --no-git-tag-version --preid=${{ inputs.prerelease-prefix }} ${{ inputs.semver }}
-        echo "PACKAGE_VERSION=$(echo $(node -p "require('./package.json').version"))" >> $GITHUB_OUTPUT
-      shell: 'bash'
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const { bumpVersion } = require('${{ github.action_path }}/dist/index.js')
+          return await bumpVersion({ inputs: ${{ toJSON(inputs) }} })
 
     - name: Build the package
       if: ${{ inputs.build-command }}

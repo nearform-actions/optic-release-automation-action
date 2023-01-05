@@ -27,7 +27,8 @@
     "node-fetch": "^2.6.6",
     "p-map": "^4.0.0",
     "semver": "^7.3.8",
-    "string-format": "^2.0.0"
+    "string-format": "^2.0.0",
+    "conventional-changelog": "github:nearform/conventional-changelog"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.36.0",
