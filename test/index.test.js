@@ -1,7 +1,7 @@
 'use strict'
 
 const tap = require('tap')
-const proxyquire = require('proxyquire')
+const proxyquire = require('proxyquire').noCallThru()
 const sinon = require('sinon')
 
 const actionLog = require('../src/log')
@@ -14,6 +14,7 @@ function buildStubbedAction() {
   const openPrStub = sinon.stub()
   const bumpStub = sinon.stub()
   const runSpawnStub = sinon.stub()
+  const conventionalcommitsStub = sinon.stub()
 
   const { runAction, bumpVersion } = proxyquire('../src/index', {
     './log': logStub,
@@ -22,10 +23,12 @@ function buildStubbedAction() {
     './utils/runSpawn': {
       runSpawn: () => runSpawnStub.resolves(),
     },
-    'conventional-recommended-bump': sinon.stub(),
     util: {
       promisify: () => bumpStub,
     },
+    'conventional-changelog/conventional-changelog-conventionalcommits':
+      conventionalcommitsStub,
+    'conventional-changelog/conventional-recommended-bump': sinon.stub(),
   })
 
   return {
@@ -37,6 +40,7 @@ function buildStubbedAction() {
       openPrStub,
       bumpStub,
       runSpawnStub,
+      conventionalcommitsStub,
     },
   }
 }
@@ -151,6 +155,7 @@ tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
+    '--preid=',
     'major',
   ])
   t.same(newVersion, '3.0.0')
@@ -192,6 +197,7 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
+    '--preid=',
     'major',
   ])
   t.same(newVersion, '3.0.0')
@@ -214,6 +220,7 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
+    '--preid=',
     'minor',
   ])
   t.same(newVersion, '3.0.0')
@@ -236,7 +243,39 @@ tap.test('semver-auto: should bump patch if its a fix', async t => {
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
+    '--preid=',
     'patch',
   ])
   t.same(newVersion, '3.0.0')
 })
+
+tap.test(
+  'semver-auto: should use the correct base tag if specified',
+  async t => {
+    const { bumpVersion, stubs } = buildStubbedAction()
+
+    stubs.bumpStub.resolves({ releaseType: 'patch' })
+    stubs.runSpawnStub.onFirstCall().resolves()
+    stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+
+    const inputs = { semver: 'auto' }
+    inputs['base-tag'] = 'v1.0.0'
+    const newVersion = await bumpVersion({
+      inputs,
+    })
+
+    sinon.assert.calledOnce(stubs.bumpStub)
+    sinon.assert.calledWithExactly(stubs.bumpStub, {
+      baseTag: 'v1.0.0',
+      config: stubs.conventionalcommitsStub,
+    })
+    sinon.assert.calledTwice(stubs.runSpawnStub)
+    sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+      'version',
+      '--no-git-tag-version',
+      '--preid=',
+      'patch',
+    ])
+    t.same(newVersion, '3.0.0')
+  }
+)
