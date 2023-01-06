@@ -77956,12 +77956,9 @@ async function getAutoBumpedVersion(baseTag = null) {
 
     let latestTag = null
     if (!baseTag) {
-      const allTags = await run('git', ['tag', '--sort=committerdate'])
-      logInfo(`allTags is ${allTags}`)
+      const allTags = await run('git', ['tag', '--sort=-creatordate'])
       const tags = allTags.split('\n')
-      logInfo(`tags is ${tags}`)
       latestTag = tags[0] || null
-      logInfo(`latestTag is ${latestTag}`)
     }
 
     const tag = baseTag || latestTag
