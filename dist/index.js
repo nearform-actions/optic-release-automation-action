@@ -77951,6 +77951,10 @@ async function bumpVersion({ inputs }) {
 
 async function getAutoBumpedVersion(baseTag) {
   try {
+    if (!baseTag) {
+      throw new Error('Base tag needs to be specified for auto version bump')
+    }
+
     const result = await conventionalRecommendedBumpAsync({
       baseTag,
       config: conventionalCommitsConfig,
