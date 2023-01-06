@@ -77949,9 +77949,8 @@ async function bumpVersion({ inputs }) {
   return await run('npm', ['pkg', 'get', 'version'])
 }
 
-async function getAutoBumpedVersion(baseTag = null) {
+async function getAutoBumpedVersion(baseTag) {
   try {
-    logInfo(`baseTag recieved is ${baseTag}`)
     const result = await conventionalRecommendedBumpAsync({
       baseTag,
       config: conventionalCommitsConfig,

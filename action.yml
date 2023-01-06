@@ -74,13 +74,15 @@ inputs:
     required: false
   base-tag:
     description: 'Base release tag to use for analysing commits when auto version bump is enabled'
-    required: false
+    required: true
 
 runs:
   using: 'composite'
   steps:
     - name: Checkout the fresh project
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Configure git
       run: |
