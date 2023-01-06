@@ -139,31 +139,34 @@ tap.test(
   }
 )
 
-tap.test('should call getAutoBumpedVersion if semver is auto', async t => {
-  const { bumpVersion, stubs } = buildStubbedAction()
+tap.test(
+  'semver-auto: should call getAutoBumpedVersion if semver is auto',
+  async t => {
+    const { bumpVersion, stubs } = buildStubbedAction()
 
-  stubs.bumpStub.resolves({ releaseType: 'major' })
-  stubs.runSpawnStub.onFirstCall().resolves()
-  stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+    stubs.bumpStub.resolves({ releaseType: 'major' })
+    stubs.runSpawnStub.onFirstCall().resolves()
+    stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
-  const inputs = { semver: 'auto' }
-  const newVersion = await bumpVersion({
-    inputs,
-  })
+    const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
+    const newVersion = await bumpVersion({
+      inputs,
+    })
 
-  sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.calledTwice(stubs.runSpawnStub)
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
-    'version',
-    '--no-git-tag-version',
-    '--preid=',
-    'major',
-  ])
-  t.same(newVersion, '3.0.0')
-})
+    sinon.assert.calledOnce(stubs.bumpStub)
+    sinon.assert.calledTwice(stubs.runSpawnStub)
+    sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+      'version',
+      '--no-git-tag-version',
+      '--preid=',
+      'major',
+    ])
+    t.same(newVersion, '3.0.0')
+  }
+)
 
 tap.test(
-  'should not call getAutoBumpedVersion if semver is not auto',
+  'semver-auto: should not call getAutoBumpedVersion if semver is not auto',
   async t => {
     const { bumpVersion, stubs } = buildStubbedAction()
 
@@ -188,7 +191,7 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
-  const inputs = { semver: 'auto' }
+  const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
     inputs,
   })
@@ -211,7 +214,7 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
-  const inputs = { semver: 'auto' }
+  const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
     inputs,
   })
@@ -234,7 +237,7 @@ tap.test('semver-auto: should bump patch if its a fix', async t => {
   stubs.runSpawnStub.onFirstCall().resolves()
   stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
-  const inputs = { semver: 'auto' }
+  const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
     inputs,
   })
@@ -259,7 +262,7 @@ tap.test(
     stubs.runSpawnStub.onFirstCall().resolves()
     stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
 
-    const inputs = { semver: 'auto' }
+    const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
     inputs['base-tag'] = 'v1.0.0'
     const newVersion = await bumpVersion({
       inputs,
