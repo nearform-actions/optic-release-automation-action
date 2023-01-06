@@ -145,8 +145,7 @@ tap.test(
     const { bumpVersion, stubs } = buildStubbedAction()
 
     stubs.bumpStub.resolves({ releaseType: 'major' })
-    stubs.runSpawnStub.onFirstCall().resolves()
-    stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+    stubs.runSpawnStub.onCall(2).resolves('3.0.0')
 
     const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
     const newVersion = await bumpVersion({
@@ -154,7 +153,7 @@ tap.test(
     })
 
     sinon.assert.calledOnce(stubs.bumpStub)
-    sinon.assert.calledTwice(stubs.runSpawnStub)
+    sinon.assert.callCount(stubs.runSpawnStub, 3)
     sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
       'version',
       '--no-git-tag-version',
@@ -170,8 +169,7 @@ tap.test(
   async t => {
     const { bumpVersion, stubs } = buildStubbedAction()
 
-    stubs.runSpawnStub.onFirstCall().resolves()
-    stubs.runSpawnStub.onSecondCall().resolves('3.1.1')
+    stubs.runSpawnStub.onCall(1).resolves('3.1.1')
 
     const inputs = { semver: 'patch' }
     const newVersion = await bumpVersion({
@@ -188,8 +186,7 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
   const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'major' })
-  stubs.runSpawnStub.onFirstCall().resolves()
-  stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+  stubs.runSpawnStub.onCall(2).resolves('3.0.0')
 
   const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
@@ -197,7 +194,7 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
   })
 
   sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.calledTwice(stubs.runSpawnStub)
+  sinon.assert.callCount(stubs.runSpawnStub, 3)
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
@@ -211,8 +208,7 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
   const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'minor' })
-  stubs.runSpawnStub.onFirstCall().resolves()
-  stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+  stubs.runSpawnStub.onCall(2).resolves('3.0.0')
 
   const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
@@ -220,7 +216,7 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
   })
 
   sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.calledTwice(stubs.runSpawnStub)
+  sinon.assert.callCount(stubs.runSpawnStub, 3)
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
@@ -234,8 +230,7 @@ tap.test('semver-auto: should bump patch if its a fix', async t => {
   const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'patch' })
-  stubs.runSpawnStub.onFirstCall().resolves()
-  stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+  stubs.runSpawnStub.onCall(2).resolves('3.0.0')
 
   const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
@@ -243,7 +238,7 @@ tap.test('semver-auto: should bump patch if its a fix', async t => {
   })
 
   sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.calledTwice(stubs.runSpawnStub)
+  sinon.assert.callCount(stubs.runSpawnStub, 3)
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
@@ -259,11 +254,9 @@ tap.test(
     const { bumpVersion, stubs } = buildStubbedAction()
 
     stubs.bumpStub.resolves({ releaseType: 'patch' })
-    stubs.runSpawnStub.onFirstCall().resolves()
-    stubs.runSpawnStub.onSecondCall().resolves('3.0.0')
+    stubs.runSpawnStub.onCall(2).resolves('3.0.0')
 
     const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
-    inputs['base-tag'] = 'v1.0.0'
     const newVersion = await bumpVersion({
       inputs,
     })
@@ -273,7 +266,37 @@ tap.test(
       baseTag: 'v1.0.0',
       config: stubs.conventionalcommitsStub,
     })
-    sinon.assert.calledTwice(stubs.runSpawnStub)
+    sinon.assert.callCount(stubs.runSpawnStub, 3)
+    sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+      'version',
+      '--no-git-tag-version',
+      '--preid=',
+      'patch',
+    ])
+    t.same(newVersion, '3.0.0')
+  }
+)
+
+tap.test(
+  'semver-auto: should get the latest tag if base tag not provided',
+  async t => {
+    const { bumpVersion, stubs } = buildStubbedAction()
+
+    stubs.bumpStub.resolves({ releaseType: 'patch' })
+    stubs.runSpawnStub.onCall(1).resolves('v1.0.0' + '\n' + 'v1.1.1')
+    stubs.runSpawnStub.onCall(3).resolves('3.0.0')
+
+    const inputs = { semver: 'auto' }
+    const newVersion = await bumpVersion({
+      inputs,
+    })
+
+    sinon.assert.calledOnce(stubs.bumpStub)
+    sinon.assert.calledWithExactly(stubs.bumpStub, {
+      baseTag: 'v1.0.0',
+      config: stubs.conventionalcommitsStub,
+    })
+    sinon.assert.callCount(stubs.runSpawnStub, 4)
     sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
       'version',
       '--no-git-tag-version',

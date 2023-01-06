@@ -77949,18 +77949,28 @@ async function bumpVersion({ inputs }) {
   return await run('npm', ['pkg', 'get', 'version'])
 }
 
-async function getAutoBumpedVersion(baseTag) {
+async function getAutoBumpedVersion(baseTag = null) {
   try {
+    const run = runSpawn()
+    await run('git', ['fetch', '--unshallow']) // by default optic does a shallow clone so we need to do this to get full commit history
+
+    let latestTag = null
     if (!baseTag) {
-      throw new Error('Base tag needs to be specified for auto version bump')
+      const allTags = await run('git', ['tag'])
+      const tags = allTags.split('\n')
+      latestTag = tags[0] || null
     }
 
-    const result = await conventionalRecommendedBumpAsync({
-      baseTag,
+    const tag = baseTag || latestTag
+
+    logInfo(`Using ${tag} as base release tag for version bump`)
+
+    const { releaseType = 'patch' } = await conventionalRecommendedBumpAsync({
+      baseTag: tag,
       config: conventionalCommitsConfig,
     })
-    logInfo(`Auto generated release type is ${JSON.stringify(result)}`)
-    return result.releaseType
+    logInfo(`Auto generated release type is ${JSON.stringify(releaseType)}`)
+    return releaseType
   } catch (error) {
     core.setFailed(error.message)
     throw error
