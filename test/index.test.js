@@ -26,9 +26,10 @@ function buildStubbedAction() {
     util: {
       promisify: () => bumpStub,
     },
-    'conventional-changelog/conventional-changelog-conventionalcommits':
+    'conventional-changelog-monorepo/conventional-changelog-conventionalcommits':
       conventionalcommitsStub,
-    'conventional-changelog/conventional-recommended-bump': sinon.stub(),
+    'conventional-changelog-monorepo/conventional-recommended-bump':
+      sinon.stub(),
   })
 
   return {

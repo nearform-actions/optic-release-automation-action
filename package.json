@@ -19,6 +19,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
     "adm-zip": "^0.5.10",
+    "conventional-changelog-monorepo": "github:nearform/conventional-changelog",
     "lodash.isequal": "^4.5.0",
     "lodash.template": "^4.5.0",
     "lodash.truncate": "^4.4.2",
@@ -27,8 +28,7 @@
     "node-fetch": "^2.6.6",
     "p-map": "^4.0.0",
     "semver": "^7.3.8",
-    "string-format": "^2.0.0",
-    "conventional-changelog": "github:nearform/conventional-changelog"
+    "string-format": "^2.0.0"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.36.0",

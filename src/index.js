@@ -3,11 +3,11 @@
 const openPr = require('./openPr')
 const release = require('./release')
 const { runSpawn } = require('./utils/runSpawn')
-const { logError } = require('./log')
+const { logError, logInfo } = require('./log')
 const core = require('@actions/core')
 const util = require('util')
-const conventionalCommitsConfig = require('conventional-changelog/conventional-changelog-conventionalcommits')
-const conventionalRecommendedBump = require('conventional-changelog/conventional-recommended-bump')
+const conventionalCommitsConfig = require('conventional-changelog-monorepo/conventional-changelog-conventionalcommits')
+const conventionalRecommendedBump = require('conventional-changelog-monorepo/conventional-recommended-bump')
 const conventionalRecommendedBumpAsync = util.promisify(
   conventionalRecommendedBump
 )
@@ -46,11 +46,13 @@ async function bumpVersion({ inputs }) {
 
 async function getAutoBumpedVersion(baseTag = null) {
   try {
-    const { releaseType = 'patch' } = await conventionalRecommendedBumpAsync({
+    logInfo(`baseTag recieved is ${baseTag}`)
+    const result = await conventionalRecommendedBumpAsync({
       baseTag,
       config: conventionalCommitsConfig,
     })
-    return releaseType
+    logInfo(`Auto generated release type is ${JSON.stringify(result)}`)
+    return result.releaseType
   } catch (error) {
     core.setFailed(error.message)
     throw error
