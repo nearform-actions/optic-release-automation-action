@@ -77953,6 +77953,7 @@ async function getAutoBumpedVersion(baseTag = null) {
   try {
     const run = runSpawn()
     await run('git', ['fetch', '--unshallow']) // by default optic does a shallow clone so we need to do this to get full commit history
+    await run('git', ['fetch', '--tags'])
 
     let latestTag = null
     if (!baseTag) {

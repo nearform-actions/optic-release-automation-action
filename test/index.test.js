@@ -145,7 +145,7 @@ tap.test(
     const { bumpVersion, stubs } = buildStubbedAction()
 
     stubs.bumpStub.resolves({ releaseType: 'major' })
-    stubs.runSpawnStub.onCall(2).resolves('3.0.0')
+    stubs.runSpawnStub.onCall(3).resolves('3.0.0')
 
     const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
     const newVersion = await bumpVersion({
@@ -153,7 +153,7 @@ tap.test(
     })
 
     sinon.assert.calledOnce(stubs.bumpStub)
-    sinon.assert.callCount(stubs.runSpawnStub, 3)
+    sinon.assert.callCount(stubs.runSpawnStub, 4)
     sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
       'version',
       '--no-git-tag-version',
@@ -186,7 +186,7 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
   const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'major' })
-  stubs.runSpawnStub.onCall(2).resolves('3.0.0')
+  stubs.runSpawnStub.onCall(3).resolves('3.0.0')
 
   const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
@@ -194,7 +194,7 @@ tap.test('semver-auto: should bump major if breaking change', async t => {
   })
 
   sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.callCount(stubs.runSpawnStub, 3)
+  sinon.assert.callCount(stubs.runSpawnStub, 4)
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
@@ -208,7 +208,7 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
   const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'minor' })
-  stubs.runSpawnStub.onCall(2).resolves('3.0.0')
+  stubs.runSpawnStub.onCall(3).resolves('3.0.0')
 
   const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
@@ -216,7 +216,7 @@ tap.test('semver-auto: should bump minor if its a feat', async t => {
   })
 
   sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.callCount(stubs.runSpawnStub, 3)
+  sinon.assert.callCount(stubs.runSpawnStub, 4)
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
@@ -230,7 +230,7 @@ tap.test('semver-auto: should bump patch if its a fix', async t => {
   const { bumpVersion, stubs } = buildStubbedAction()
 
   stubs.bumpStub.resolves({ releaseType: 'patch' })
-  stubs.runSpawnStub.onCall(2).resolves('3.0.0')
+  stubs.runSpawnStub.onCall(3).resolves('3.0.0')
 
   const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
   const newVersion = await bumpVersion({
@@ -238,7 +238,7 @@ tap.test('semver-auto: should bump patch if its a fix', async t => {
   })
 
   sinon.assert.calledOnce(stubs.bumpStub)
-  sinon.assert.callCount(stubs.runSpawnStub, 3)
+  sinon.assert.callCount(stubs.runSpawnStub, 4)
   sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
     'version',
     '--no-git-tag-version',
@@ -254,7 +254,7 @@ tap.test(
     const { bumpVersion, stubs } = buildStubbedAction()
 
     stubs.bumpStub.resolves({ releaseType: 'patch' })
-    stubs.runSpawnStub.onCall(2).resolves('3.0.0')
+    stubs.runSpawnStub.onCall(3).resolves('3.0.0')
 
     const inputs = { semver: 'auto', 'base-tag': 'v1.0.0' }
     const newVersion = await bumpVersion({
@@ -266,7 +266,7 @@ tap.test(
       baseTag: 'v1.0.0',
       config: stubs.conventionalcommitsStub,
     })
-    sinon.assert.callCount(stubs.runSpawnStub, 3)
+    sinon.assert.callCount(stubs.runSpawnStub, 4)
     sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
       'version',
       '--no-git-tag-version',
@@ -283,8 +283,8 @@ tap.test(
     const { bumpVersion, stubs } = buildStubbedAction()
 
     stubs.bumpStub.resolves({ releaseType: 'patch' })
-    stubs.runSpawnStub.onCall(1).resolves('v1.0.0' + '\n' + 'v1.1.1')
-    stubs.runSpawnStub.onCall(3).resolves('3.0.0')
+    stubs.runSpawnStub.onCall(2).resolves('v1.0.0' + '\n' + 'v1.1.1')
+    stubs.runSpawnStub.onCall(4).resolves('3.0.0')
 
     const inputs = { semver: 'auto' }
     const newVersion = await bumpVersion({
@@ -296,7 +296,7 @@ tap.test(
       baseTag: 'v1.0.0',
       config: stubs.conventionalcommitsStub,
     })
-    sinon.assert.callCount(stubs.runSpawnStub, 4)
+    sinon.assert.callCount(stubs.runSpawnStub, 5)
     sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
       'version',
       '--no-git-tag-version',
