@@ -63,7 +63,8 @@ async function generateReleaseNotes(token, newVersion, baseVersion) {
 
     logInfo(`Release notes generated: [${baseVersion} -> ${newVersion}]`)
 
-    return excludeUnwantedReleaseNotes(releaseNotes)
+    const filteredReleaseNotes = excludeUnwantedReleaseNotes(releaseNotes)
+    return filteredReleaseNotes
   } catch (err) {
     throw new Error(
       `An error occurred while generating the release notes: ${err.message}`
