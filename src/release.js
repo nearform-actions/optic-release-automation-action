@@ -115,23 +115,19 @@ module.exports = async function ({ github, context, inputs }) {
   const isPreRelease = prerelease.length > 0
 
   try {
-    const tagShouldBeSigned =
-      inputs['gpg-private-key'] && inputs['gpg-passphrase']
-
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
     if (isPreRelease) {
       await tagVersionInGit(
-        `v${major}.${minor}.${patch}-${prerelease.join('.')}`,
-        tagShouldBeSigned
+        `v${major}.${minor}.${patch}-${prerelease.join('.')}`
       )
     } else {
-      await tagVersionInGit(`v${major}.${minor}.${patch}`, tagShouldBeSigned)
+      await tagVersionInGit(`v${major}.${minor}.${patch}`)
     }
 
     if (syncVersions && !isPreRelease) {
-      await tagVersionInGit(`v${major}`, tagShouldBeSigned)
-      await tagVersionInGit(`v${major}.${minor}`, tagShouldBeSigned)
+      await tagVersionInGit(`v${major}`)
+      await tagVersionInGit(`v${major}.${minor}`)
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)

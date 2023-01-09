@@ -26267,7 +26267,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   await run('git', ['add', '-A'])
   await run('git', [
     'commit',
-    '-S',
     '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
@@ -26454,23 +26453,19 @@ module.exports = async function ({ github, context, inputs }) {
   const isPreRelease = prerelease.length > 0
 
   try {
-    const tagShouldBeSigned =
-      inputs['gpg-private-key'] && inputs['gpg-passphrase']
-
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
     if (isPreRelease) {
       await tagVersionInGit(
-        `v${major}.${minor}.${patch}-${prerelease.join('.')}`,
-        tagShouldBeSigned
+        `v${major}.${minor}.${patch}-${prerelease.join('.')}`
       )
     } else {
-      await tagVersionInGit(`v${major}.${minor}.${patch}`, tagShouldBeSigned)
+      await tagVersionInGit(`v${major}.${minor}.${patch}`)
     }
 
     if (syncVersions && !isPreRelease) {
-      await tagVersionInGit(`v${major}`, tagShouldBeSigned)
-      await tagVersionInGit(`v${major}.${minor}`, tagShouldBeSigned)
+      await tagVersionInGit(`v${major}`)
+      await tagVersionInGit(`v${major}.${minor}`)
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
@@ -27139,18 +27134,11 @@ exports.runSpawn = runSpawn
 
 const { runSpawn } = __nccwpck_require__(2137)
 
-async function tagVersionInGit(version, signTag) {
+async function tagVersionInGit(version) {
   const run = runSpawn()
 
   await run('git', ['push', 'origin', `:refs/tags/${version}`])
-  await run('git', [
-    'tag',
-    '-f',
-    signTag ? '-s' : '',
-    `"${version}"`,
-    '-m',
-    '""',
-  ])
+  await run('git', ['tag', '-f', `"${version}"`])
   await run('git', ['push', 'origin', `--tags`])
 }
 
