@@ -115,6 +115,13 @@ module.exports = async function ({ github, context, inputs }) {
   const isPreRelease = prerelease.length > 0
 
   try {
+    // TEST - START
+    const outputLog = await run('gpg', [
+      '--list-secret-keys',
+      '--keyid-format=long',
+    ])
+    core.info('outputLog: ', outputLog)
+    // TEST - END
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
     if (isPreRelease) {
