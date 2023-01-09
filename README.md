@@ -90,7 +90,8 @@ When you merge this PR:
 When you close the PR without merging it: nothing will happen.
 
 ## Using 'auto' bump version option
-If you choose the "auto" option for semver version updates, the action will attempt to determine the new version number based on the commit messages. For this option to work, the repository must use the conventional commits standard.
+If you choose the "auto" option for semver version updates, the action will attempt to determine the new version number based on the commit messages. For this option to work, the repository must use the conventional commits standard. You can refer the [conventional commits documention](https://www.conventionalcommits.org/en/v1.0.0/)
+for more information.
 
 ## Using branches filter
 
