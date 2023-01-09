@@ -27711,7 +27711,9 @@ module.exports = {
 
 
 const github = __nccwpck_require__(5438)
-const { logInfo } = __nccwpck_require__(653)
+const { logInfo, logWarning } = __nccwpck_require__(653)
+
+const opticLabelText = '* [OPTIC-RELEASE-AUTOMATION]'
 
 async function fetchLatestRelease(token) {
   try {
@@ -27741,6 +27743,19 @@ async function fetchLatestRelease(token) {
   }
 }
 
+function excludeUnwantedReleaseNotes(releaseNotes = '') {
+  try {
+    const splitLines = releaseNotes.split('\n')
+
+    return splitLines.filter(line => !line.includes(opticLabelText)).join('\n')
+  } catch (error) {
+    logWarning(
+      `Error excluding unwanted release notes. Error - ${error.message}`
+    )
+  }
+  return releaseNotes
+}
+
 async function generateReleaseNotes(token, newVersion, baseVersion) {
   try {
     logInfo(`Generating release notes: [${baseVersion} -> ${newVersion}]`)
@@ -27758,7 +27773,7 @@ async function generateReleaseNotes(token, newVersion, baseVersion) {
 
     logInfo(`Release notes generated: [${baseVersion} -> ${newVersion}]`)
 
-    return releaseNotes
+    return excludeUnwantedReleaseNotes(releaseNotes)
   } catch (err) {
     throw new Error(
       `An error occurred while generating the release notes: ${err.message}`
