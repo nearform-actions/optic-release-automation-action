@@ -72,6 +72,12 @@ inputs:
   prerelease-prefix:
     description: 'A prefix to apply to the prerelease version number'
     required: false
+  gpg-private-key:
+    description: 'GPG private key exported as an ASCII armored version or its base64 encoding'
+    required: false
+  gpg-passphrase:
+    description: 'Passphrase of the GPG private key'
+    required: false
 
 runs:
   using: 'composite'
@@ -87,9 +93,10 @@ runs:
 
     - name: Import GPG
       uses: crazy-max/ghaction-import-gpg@v5
+      if: ${{ inputs.gpg-private-key }} && ${{ inputs.gpg-passphrase }}
       with:
-        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-        passphrase: ${{ secrets.GPG_PASSPHRASE }}
+        gpg_private_key: ${{ inputs.gpg-private-key }}
+        passphrase: ${{ inputs.gpg-passphrase }}
         git_committer_name: ${{ inputs.actor-name }}
         git_committer_email: ${{ inputs.actor-email }}
 

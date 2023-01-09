@@ -26136,19 +26136,13 @@ const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
 const { logError } = __nccwpck_require__(653)
 
-module.exports = async function ({
-  github,
-  context,
-  inputs,
-  secrets,
-  packageVersion,
-}) {
+module.exports = async function ({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
     return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs, secrets })
+    return release({ github, context, inputs })
   }
 
   logError('Unsupported event')
@@ -26460,11 +26454,11 @@ module.exports = async function ({ github, context, inputs, secrets }) {
 
   try {
     const tagShouldBeSigned =
-      secrets['GPG_PRIVATE_KEY'] && secrets['GPG_PASSPHRASE']
+      inputs['gpg-private-key'] && inputs['gpg-passphrase']
 
     core.info(`tag should be signed: ${tagShouldBeSigned}`)
-    core.info(`secret gpg_private_key: ${secrets['GPG_PRIVATE_KEY']}`)
-    core.info(`secret gpg_passphrase: ${secrets['GPG_PASSPHRASE']}`)
+    core.info(`input gpg-private-key: ${secrets['gpg-private-key']}`)
+    core.info(`input gpg-passphrase: ${secrets['gpg-passphrase']}`)
 
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 

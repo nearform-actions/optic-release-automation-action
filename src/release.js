@@ -116,11 +116,11 @@ module.exports = async function ({ github, context, inputs, secrets }) {
 
   try {
     const tagShouldBeSigned =
-      secrets['GPG_PRIVATE_KEY'] && secrets['GPG_PASSPHRASE']
+      inputs['gpg-private-key'] && inputs['gpg-passphrase']
 
     core.info(`tag should be signed: ${tagShouldBeSigned}`)
-    core.info(`secret gpg_private_key: ${secrets['GPG_PRIVATE_KEY']}`)
-    core.info(`secret gpg_passphrase: ${secrets['GPG_PASSPHRASE']}`)
+    core.info(`input gpg-private-key: ${secrets['gpg-private-key']}`)
+    core.info(`input gpg-passphrase: ${secrets['gpg-passphrase']}`)
 
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
