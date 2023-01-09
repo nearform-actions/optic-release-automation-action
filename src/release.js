@@ -12,7 +12,7 @@ const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 
-module.exports = async function ({ github, context, inputs }) {
+module.exports = async function ({ github, context, inputs, secrets }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -115,26 +115,27 @@ module.exports = async function ({ github, context, inputs }) {
   const isPreRelease = prerelease.length > 0
 
   try {
-    // TEST - START
-    const outputLog = await run('gpg', [
-      '--list-secret-keys',
-      '--keyid-format=long',
-    ])
-    core.info('outputLog: ', outputLog)
-    // TEST - END
+    const tagShouldBeSigned =
+      secrets['GPG_PRIVATE_KEY'] && secrets['GPG_PASSPHRASE']
+
+    core.info(`tag should be signed: ${tagShouldBeSigned}`)
+    core.info(`secret gpg_private_key: ${secrets['GPG_PRIVATE_KEY']}`)
+    core.info(`secret gpg_passphrase: ${secrets['GPG_PASSPHRASE']}`)
+
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
     if (isPreRelease) {
       await tagVersionInGit(
-        `v${major}.${minor}.${patch}-${prerelease.join('.')}`
+        `v${major}.${minor}.${patch}-${prerelease.join('.')}`,
+        tagShouldBeSigned
       )
     } else {
-      await tagVersionInGit(`v${major}.${minor}.${patch}`)
+      await tagVersionInGit(`v${major}.${minor}.${patch}`, tagShouldBeSigned)
     }
 
     if (syncVersions && !isPreRelease) {
-      await tagVersionInGit(`v${major}`)
-      await tagVersionInGit(`v${major}.${minor}`)
+      await tagVersionInGit(`v${major}`, tagShouldBeSigned)
+      await tagVersionInGit(`v${major}.${minor}`, tagShouldBeSigned)
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)

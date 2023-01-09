@@ -26136,13 +26136,19 @@ const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
 const { logError } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs, packageVersion }) {
+module.exports = async function ({
+  github,
+  context,
+  inputs,
+  secrets,
+  packageVersion,
+}) {
   if (context.eventName === 'workflow_dispatch') {
     return openPr({ context, inputs, packageVersion })
   }
 
   if (context.eventName === 'pull_request') {
-    return release({ github, context, inputs })
+    return release({ github, context, inputs, secrets })
   }
 
   logError('Unsupported event')
@@ -26350,7 +26356,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs }) {
+module.exports = async function ({ github, context, inputs, secrets }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -26453,26 +26459,27 @@ module.exports = async function ({ github, context, inputs }) {
   const isPreRelease = prerelease.length > 0
 
   try {
-    // TEST - START
-    const outputLog = await run('gpg', [
-      '--list-secret-keys',
-      '--keyid-format=long',
-    ])
-    core.info('outputLog: ', outputLog)
-    // TEST - END
+    const tagShouldBeSigned =
+      secrets['GPG_PRIVATE_KEY'] && secrets['GPG_PASSPHRASE']
+
+    core.info(`tag should be signed: ${tagShouldBeSigned}`)
+    core.info(`secret gpg_private_key: ${secrets['GPG_PRIVATE_KEY']}`)
+    core.info(`secret gpg_passphrase: ${secrets['GPG_PASSPHRASE']}`)
+
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
     if (isPreRelease) {
       await tagVersionInGit(
-        `v${major}.${minor}.${patch}-${prerelease.join('.')}`
+        `v${major}.${minor}.${patch}-${prerelease.join('.')}`,
+        tagShouldBeSigned
       )
     } else {
-      await tagVersionInGit(`v${major}.${minor}.${patch}`)
+      await tagVersionInGit(`v${major}.${minor}.${patch}`, tagShouldBeSigned)
     }
 
     if (syncVersions && !isPreRelease) {
-      await tagVersionInGit(`v${major}`)
-      await tagVersionInGit(`v${major}.${minor}`)
+      await tagVersionInGit(`v${major}`, tagShouldBeSigned)
+      await tagVersionInGit(`v${major}.${minor}`, tagShouldBeSigned)
     }
   } catch (err) {
     core.setFailed(`Unable to update the semver tags ${err.message}`)
@@ -27141,11 +27148,18 @@ exports.runSpawn = runSpawn
 
 const { runSpawn } = __nccwpck_require__(2137)
 
-async function tagVersionInGit(version) {
+async function tagVersionInGit(version, signTag) {
   const run = runSpawn()
 
   await run('git', ['push', 'origin', `:refs/tags/${version}`])
-  await run('git', ['tag', '-f', '-s', `"${version}"`, '-m', '""'])
+  await run('git', [
+    'tag',
+    '-f',
+    signTag ? '-s' : '',
+    `"${version}"`,
+    '-m',
+    '""',
+  ])
   await run('git', ['push', 'origin', `--tags`])
 }
 

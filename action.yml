@@ -85,6 +85,15 @@ runs:
         git config --global user.name "${{ inputs.actor-name }}"
       shell: 'bash'
 
+    - name: Import GPG
+      uses: crazy-max/ghaction-import-gpg@v5
+      if: ${{ secrets.GPG_PRIVATE_KEY && secrets.GPG_PASSPHRASE }}
+      with:
+        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+        passphrase: ${{ secrets.GPG_PASSPHRASE }}
+        git_committer_name: ${{ inputs.actor-name }}
+        git_committer_email: ${{ inputs.actor-email }}
+
     - name: Version bump
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
