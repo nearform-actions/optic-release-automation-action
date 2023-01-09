@@ -99,6 +99,10 @@ runs:
         passphrase: ${{ inputs.gpg-passphrase }}
         git_committer_name: ${{ inputs.actor-name }}
         git_committer_email: ${{ inputs.actor-email }}
+        git_config_global: true
+        git_user_signingkey: true
+        git_commit_gpgsign: true
+        git_tag_gpgsign: true
 
     - name: Version bump
       id: version-bump

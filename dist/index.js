@@ -26350,7 +26350,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 
-module.exports = async function ({ github, context, inputs, secrets }) {
+module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
 
   const pr = context.payload.pull_request
@@ -26455,10 +26455,6 @@ module.exports = async function ({ github, context, inputs, secrets }) {
   try {
     const tagShouldBeSigned =
       inputs['gpg-private-key'] && inputs['gpg-passphrase']
-
-    core.info(`tag should be signed: ${tagShouldBeSigned}`)
-    core.info(`input gpg-private-key: ${inputs['gpg-private-key']}`)
-    core.info(`input gpg-passphrase: ${inputs['gpg-passphrase']}`)
 
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
