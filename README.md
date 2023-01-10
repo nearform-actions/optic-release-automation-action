@@ -44,6 +44,8 @@ on:
           - prepatch
           - preminor
           - premajor
+      baseTag:
+        description: "base release tag"
       tag:
         description: "The npm tag"
         required: false
@@ -209,6 +211,7 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
 | `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
+| `base-tag`       | No       | Specifies the starting release tag and the changelog will include all the changes made in releases that occur after the base release, up until the latest release. For example, if the base release is specified as `v1.0.0` and the latest release is `v2.0.0`, the release changelog will include all changes made in releases between `v1.0.0` and `v2.0.0`                                                                                                                                                                                                                                         |
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*

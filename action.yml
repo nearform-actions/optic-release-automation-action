@@ -72,6 +72,9 @@ inputs:
   prerelease-prefix:
     description: 'A prefix to apply to the prerelease version number'
     required: false
+  base-tag:
+    description: 'Specifies the starting release base tag and the changelog will include all the changes made in releases that occur after the base release, up until the latest release.'
+    required: false
 
 runs:
   using: 'composite'

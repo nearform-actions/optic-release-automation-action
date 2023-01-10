@@ -56,7 +56,30 @@ async function generateReleaseNotes(token, newVersion, baseVersion) {
   }
 }
 
+async function fetchReleaseByTag(token, tag) {
+  try {
+    logInfo(`Fetching release with tag: ${tag}`)
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+    const { data: release } = await octokit.rest.repos.getReleaseByTag({
+      owner,
+      repo,
+      tag: tag,
+    })
+
+    logInfo(`Release fetched successfully with tag: ${release.tag_name}`)
+
+    return release
+  } catch (err) {
+    throw new Error(
+      `An error occurred while fetching the release with tag ${tag}. Probably the specified release does not exist. ${err.message}`
+    )
+  }
+}
+
 module.exports = {
   fetchLatestRelease,
   generateReleaseNotes,
+  fetchReleaseByTag,
 }
