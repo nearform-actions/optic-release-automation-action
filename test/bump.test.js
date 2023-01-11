@@ -6,7 +6,6 @@ const sinon = require('sinon')
 const core = require('@actions/core')
 const clone = require('lodash.clonedeep')
 
-const runSpawnAction = require('../src/utils/runSpawn')
 const callApiAction = require('../src/utils/callApi')
 const artifactAction = require('../src/utils/artifact')
 const releasesAction = require('../src/utils/releases')
@@ -16,14 +15,15 @@ const TEST_RELEASE_NOTES = 'Release Notes'
 const TEST_LATEST_VERSION = '3.1.0'
 const TEST_VERSION = '3.1.1'
 const TEST_COMMIT_HASH = 'c86b0a35014a7036b245f81ff9de9bd738a5fe95'
-const runSpawnStub = sinon.stub()
+const execWithOutputStub = sinon.stub()
 
-runSpawnStub.returns(TEST_VERSION)
-runSpawnStub.withArgs('git', ['rev-parse', 'HEAD']).returns(TEST_COMMIT_HASH)
+execWithOutputStub.resolves(TEST_VERSION)
+execWithOutputStub
+  .withArgs('git', ['rev-parse', 'HEAD'])
+  .resolves(TEST_COMMIT_HASH)
 
 function setup() {
   const coreStub = sinon.stub(core)
-  const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
     .resolves({ data: {} })
@@ -46,7 +46,7 @@ function setup() {
     })
 
   const openPr = proxyquire('../src/openPr', {
-    './utils/runSpawn': utilStub,
+    './utils/execWithOutput': { execWithOutput: execWithOutputStub },
     './utils/artifact': attachArtifactStub,
     '@actions/core': coreStub,
   })
@@ -54,8 +54,7 @@ function setup() {
   return {
     openPr,
     stubs: {
-      utilStub,
-      runSpawnStub,
+      execWithOutputStub,
       callApiStub,
       coreStub,
       attachArtifactStub,
@@ -115,18 +114,18 @@ tap.test('should create a new git branch', async () => {
 
   const branchName = `release/v${TEST_VERSION}`
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'checkout',
     '-b',
     branchName,
   ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', ['add', '-A'])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', ['add', '-A'])
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
     '-m',
     `"Release v${TEST_VERSION}"`,
   ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
     'origin',
     branchName,
@@ -142,17 +141,17 @@ tap.test('should handle custom commit messages', async () => {
 
   const branchName = `release/v${TEST_VERSION}`
 
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'checkout',
     '-b',
     branchName,
   ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
     '-m',
     `"[v${TEST_VERSION}] The brand new v${TEST_VERSION} has been released"`,
   ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
     'origin',
     branchName,
@@ -175,18 +174,18 @@ tap.test('should work with a custom version-prefix', async () => {
   const branchName = `release/${TEST_VERSION}`
 
   // git
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'checkout',
     '-b',
     branchName,
   ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', ['add', '-A'])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', ['add', '-A'])
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
     '-m',
     `"Release v${TEST_VERSION}"`,
   ])
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
     'origin',
     branchName,
@@ -292,7 +291,7 @@ tap.test(
   async () => {
     const localVersion = '2.0.0'
     const { openPr, stubs } = setup()
-    runSpawnStub.returns(localVersion)
+    execWithOutputStub.returns(localVersion)
     await openPr({
       ...DEFAULT_ACTION_DATA,
       packageVersion: localVersion,
@@ -348,7 +347,7 @@ tap.test(
   async () => {
     const localVersion = '0.0.5'
     const { openPr, stubs } = setup()
-    runSpawnStub.returns(localVersion)
+    execWithOutputStub.returns(localVersion)
     await openPr({
       ...DEFAULT_ACTION_DATA,
       packageVersion: localVersion,
@@ -407,7 +406,7 @@ tap.test('should delete branch in case of pr failure', async t => {
   await openPr({ context, inputs, packageVersion: localVersion })
 
   const branchName = `release/v${localVersion}`
-  sinon.assert.calledWithExactly(stubs.runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
     'origin',
     '--delete',
@@ -417,9 +416,16 @@ tap.test('should delete branch in case of pr failure', async t => {
 })
 
 tap.test('Should call core.setFailed if it fails to create a PR', async t => {
+  const branchName = `release/v${TEST_VERSION}`
+
   const { openPr, stubs } = setup()
   const { context, inputs, packageVersion } = DEFAULT_ACTION_DATA
   stubs.callApiStub.onCall(1).rejects()
+
+  stubs.execWithOutputStub
+    .withArgs('git', ['push', 'origin', '--delete', branchName])
+    .rejects()
+
   await openPr({ context, inputs, packageVersion })
 
   sinon.assert.calledOnce(stubs.coreStub.setFailed)
@@ -452,3 +458,55 @@ tap.test('should not open Pr if create release draft fails', async t => {
     t.match(error.message, 'Unable to create draft release: error message')
   }
 })
+
+tap.test(
+  'should automatically generate release notes if an error occurred while generating the specific release notes',
+  async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesFetchLatestReleaseStub =
+      stubs.releasesFetchLatestReleaseStub.throws({
+        message: 'Unexpected Error',
+      })
+
+    await openPr(DEFAULT_ACTION_DATA)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  }
+)
+
+tap.test(
+  'should generate release notes if the latest release has not been found -> first release',
+  async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesFetchLatestReleaseStub =
+      stubs.releasesFetchLatestReleaseStub.returns(null)
+
+    await openPr(DEFAULT_ACTION_DATA)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  }
+)
