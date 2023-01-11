@@ -110,12 +110,13 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
+  const { major, minor, patch, prerelease } = semver.parse(version)
+  const isPreRelease = prerelease.length > 0
+
   try {
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
-    if (syncVersions) {
-      const { major, minor, patch } = semver.parse(version)
-
+    if (syncVersions && !isPreRelease) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
@@ -132,6 +133,7 @@ module.exports = async function ({ github, context, inputs }) {
         body: {
           version: version,
           releaseId: id,
+          isPreRelease,
         },
       },
       inputs

@@ -271,6 +271,7 @@ tap.test('Should call the release method', async () => {
       body: {
         version: 'v5.1.3',
         releaseId: 54503465,
+        isPreRelease: false,
       },
     },
     {
@@ -281,6 +282,51 @@ tap.test('Should call the release method', async () => {
     }
   )
 })
+
+tap.test(
+  'Should call the release method with the prerelease flag if the release is a prerelease',
+  async () => {
+    const { release, stubs } = setup()
+
+    const version = 'v5.1.3-next.1'
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.context.payload.pull_request.body =
+      '<!--\n' +
+      `<release-meta>{"id":54503465,"version":"${version}","npmTag":"latest","opticUrl":"https://optic-test.run.app/api/generate/"}</release-meta>\n` +
+      '-->'
+
+    await release({
+      ...data,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        'optic-token': 'optic-token',
+        'sync-semver-tags': 'true',
+      },
+    })
+
+    sinon.assert.notCalled(stubs.tagVersionStub)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {
+          version,
+          releaseId: 54503465,
+          isPreRelease: true,
+        },
+      },
+      {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        'optic-token': 'optic-token',
+        'sync-semver-tags': 'true',
+      }
+    )
+  }
+)
 
 tap.test(
   "Should NOT call the release method if the pr wasn't merged",

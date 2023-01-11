@@ -5871,8 +5871,9 @@ module.exports = function (/**String*/ input, /** object */ options) {
          * @param zipPath optional path inside zip
          * @param filter optional RegExp or Function if files match will
          *               be included.
+         * @param {number | object} attr - number as unix file permissions, object as filesystem Stats object
          */
-        addLocalFolder: function (/**String*/ localPath, /**String=*/ zipPath, /**=RegExp|Function*/ filter) {
+        addLocalFolder: function (/**String*/ localPath, /**String=*/ zipPath, /**=RegExp|Function*/ filter, /**=number|object*/ attr) {
             // Prepare filter
             if (filter instanceof RegExp) {
                 // if filter is RegExp wrap it
@@ -5904,9 +5905,9 @@ module.exports = function (/**String*/ input, /** object */ options) {
                         if (filter(p)) {
                             var stats = filetools.fs.statSync(filepath);
                             if (stats.isFile()) {
-                                self.addFile(zipPath + p, filetools.fs.readFileSync(filepath), "", stats);
+                                self.addFile(zipPath + p, filetools.fs.readFileSync(filepath), "", attr ? attr : stats);
                             } else {
-                                self.addFile(zipPath + p + "/", Buffer.alloc(0), "", stats);
+                                self.addFile(zipPath + p + "/", Buffer.alloc(0), "", attr ? attr : stats);
                             }
                         }
                     });
@@ -5980,7 +5981,9 @@ module.exports = function (/**String*/ input, /** object */ options) {
                                     }
                                 });
                             } else {
-                                next();
+                                process.nextTick(() => {
+                                    next();
+                                });
                             }
                         } else {
                             callback(true, undefined);
@@ -6046,23 +6049,21 @@ module.exports = function (/**String*/ input, /** object */ options) {
             var fileattr = entry.isDirectory ? 0x10 : 0; // (MS-DOS directory flag)
 
             // extended attributes field for Unix
-            if (!Utils.isWin) {
-                // set file type either S_IFDIR / S_IFREG
-                let unix = entry.isDirectory ? 0x4000 : 0x8000;
+            // set file type either S_IFDIR / S_IFREG
+            let unix = entry.isDirectory ? 0x4000 : 0x8000;
 
-                if (isStat) {
-                    // File attributes from file stats
-                    unix |= 0xfff & attr.mode;
-                } else if ("number" === typeof attr) {
-                    // attr from given attr values
-                    unix |= 0xfff & attr;
-                } else {
-                    // Default values:
-                    unix |= entry.isDirectory ? 0o755 : 0o644; // permissions (drwxr-xr-x) or (-r-wr--r--)
-                }
-
-                fileattr = (fileattr | (unix << 16)) >>> 0; // add attributes
+            if (isStat) {
+                // File attributes from file stats
+                unix |= 0xfff & attr.mode;
+            } else if ("number" === typeof attr) {
+                // attr from given attr values
+                unix |= 0xfff & attr;
+            } else {
+                // Default values:
+                unix |= entry.isDirectory ? 0o755 : 0o644; // permissions (drwxr-xr-x) or (-r-wr--r--)
             }
+
+            fileattr = (fileattr | (unix << 16)) >>> 0; // add attributes
 
             entry.attr = fileattr;
 
@@ -6238,12 +6239,14 @@ module.exports = function (/**String*/ input, /** object */ options) {
          * @param callback The callback will be executed when all entries are extracted successfully or any error is thrown.
          */
         extractAllToAsync: function (/**String*/ targetPath, /**Boolean*/ overwrite, /**Boolean*/ keepOriginalPermission, /**Function*/ callback) {
-            if (!callback) {
-                callback = function () {};
-            }
             overwrite = get_Bool(overwrite, false);
             if (typeof keepOriginalPermission === "function" && !callback) callback = keepOriginalPermission;
             keepOriginalPermission = get_Bool(keepOriginalPermission, false);
+            if (!callback) {
+                callback = function (err) {
+                    throw new Error(err);
+                };
+            }
             if (!_zip) {
                 callback(new Error(Utils.Errors.NO_ZIP));
                 return;
@@ -6825,7 +6828,7 @@ module.exports = function () {
                 // total number of entries
                 _totalEntries = Utils.readBigUInt64LE(data, Constants.ZIP64TOT);
                 // central directory size in bytes
-                _size = Utils.readBigUInt64LE(data, Constants.ZIP64SIZ);
+                _size = Utils.readBigUInt64LE(data, Constants.ZIP64SIZE);
                 // offset of first CEN header
                 _offset = Utils.readBigUInt64LE(data, Constants.ZIP64OFF);
 
@@ -6876,7 +6879,7 @@ module.exports = function () {
         }
     };
 };
-
+ // Misspelled 
 
 /***/ }),
 
@@ -7458,6 +7461,7 @@ module.exports.FileAttr = __nccwpck_require__(8321);
 const fsystem = (__nccwpck_require__(2895).require)();
 const pth = __nccwpck_require__(1017);
 const Constants = __nccwpck_require__(4522);
+const Errors = __nccwpck_require__(1255);
 const isWin = typeof process === "object" && "win32" === process.platform;
 
 const is_Obj = (obj) => obj && typeof obj === "object";
@@ -28166,10 +28170,11 @@ const core = __nccwpck_require__(2186)
 const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { callApi } = __nccwpck_require__(4235)
 const transformCommitMessage = __nccwpck_require__(6701)
-const { logInfo } = __nccwpck_require__(653)
+const { logInfo, logWarning } = __nccwpck_require__(653)
 const { attach } = __nccwpck_require__(930)
 const { getPRBody } = __nccwpck_require__(4098)
 const { execWithOutput } = __nccwpck_require__(8632)
+const { fetchLatestRelease, generateReleaseNotes } = __nccwpck_require__(5560)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -28182,7 +28187,25 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const createDraftRelease = async (inputs, newVersion) => {
+const tryGetReleaseNotes = async (token, newVersion) => {
+  try {
+    const latestRelease = await fetchLatestRelease(token)
+    if (!latestRelease) {
+      return
+    }
+    const { tag_name: baseVersion } = latestRelease
+    const releaseNotes = await generateReleaseNotes(
+      token,
+      newVersion,
+      baseVersion
+    )
+    return releaseNotes?.body
+  } catch (err) {
+    logWarning(err.message)
+  }
+}
+
+const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   try {
     const releaseCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
 
@@ -28195,6 +28218,8 @@ const createDraftRelease = async (inputs, newVersion) => {
         body: {
           version: newVersion,
           target: releaseCommitHash,
+          generateReleaseNotes: releaseNotes ? false : true,
+          ...(releaseNotes && { releaseNotes }),
         },
       },
       inputs
@@ -28230,7 +28255,15 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await execWithOutput('git', ['push', 'origin', branchName])
 
-  const draftRelease = await createDraftRelease(inputs, newVersion)
+  const token = inputs['github-token']
+
+  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
+
+  const draftRelease = await createDraftRelease(
+    inputs,
+    newVersion,
+    releaseNotes
+  )
 
   logInfo(`New version ${newVersion}`)
 
@@ -28398,12 +28431,13 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
+  const { major, minor, patch, prerelease } = semver.parse(version)
+  const isPreRelease = prerelease.length > 0
+
   try {
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
-    if (syncVersions) {
-      const { major, minor, patch } = semver.parse(version)
-
+    if (syncVersions && !isPreRelease) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
@@ -28420,6 +28454,7 @@ module.exports = async function ({ github, context, inputs }) {
         body: {
           version: version,
           releaseId: id,
+          isPreRelease,
         },
       },
       inputs
@@ -28929,7 +28964,7 @@ const _truncate = __nccwpck_require__(4436)
 
 const md = __nccwpck_require__(8561)()
 
-const PR_BODY_TRUNCATE_SIZE = 60000
+const PR_BODY_TRUNCATE_SIZE = 30000
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes, {})
@@ -29003,6 +29038,76 @@ function getPRBody(
 module.exports = {
   getPrNumbersFromReleaseNotes,
   getPRBody,
+}
+
+
+/***/ }),
+
+/***/ 5560:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const github = __nccwpck_require__(5438)
+const { logInfo } = __nccwpck_require__(653)
+
+async function fetchLatestRelease(token) {
+  try {
+    logInfo('Fetching the latest release')
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+    const { data: latestRelease } = await octokit.rest.repos.getLatestRelease({
+      owner,
+      repo,
+    })
+
+    logInfo(
+      `Latest release fetched successfully with tag: ${latestRelease.tag_name}`
+    )
+
+    return latestRelease
+  } catch (err) {
+    if (err.message === 'Not Found') {
+      logInfo(`No previous releases found`)
+      return
+    }
+
+    throw new Error(
+      `An error occurred while fetching the latest release: ${err.message}`
+    )
+  }
+}
+
+async function generateReleaseNotes(token, newVersion, baseVersion) {
+  try {
+    logInfo(`Generating release notes: [${baseVersion} -> ${newVersion}]`)
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+
+    const { data: releaseNotes } =
+      await octokit.rest.repos.generateReleaseNotes({
+        owner,
+        repo,
+        tag_name: newVersion,
+        ...(baseVersion && { previous_tag_name: baseVersion }),
+      })
+
+    logInfo(`Release notes generated: [${baseVersion} -> ${newVersion}]`)
+
+    return releaseNotes
+  } catch (err) {
+    throw new Error(
+      `An error occurred while generating the release notes: ${err.message}`
+    )
+  }
+}
+
+module.exports = {
+  fetchLatestRelease,
+  generateReleaseNotes,
 }
 
 

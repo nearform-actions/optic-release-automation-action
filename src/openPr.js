@@ -8,10 +8,11 @@ const core = require('@actions/core')
 const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
-const { logInfo } = require('./log')
+const { logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
 const { execWithOutput } = require('./utils/execWithOutput')
+const { fetchLatestRelease, generateReleaseNotes } = require('./utils/releases')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -24,7 +25,25 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const createDraftRelease = async (inputs, newVersion) => {
+const tryGetReleaseNotes = async (token, newVersion) => {
+  try {
+    const latestRelease = await fetchLatestRelease(token)
+    if (!latestRelease) {
+      return
+    }
+    const { tag_name: baseVersion } = latestRelease
+    const releaseNotes = await generateReleaseNotes(
+      token,
+      newVersion,
+      baseVersion
+    )
+    return releaseNotes?.body
+  } catch (err) {
+    logWarning(err.message)
+  }
+}
+
+const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   try {
     const releaseCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
 
@@ -37,6 +56,8 @@ const createDraftRelease = async (inputs, newVersion) => {
         body: {
           version: newVersion,
           target: releaseCommitHash,
+          generateReleaseNotes: releaseNotes ? false : true,
+          ...(releaseNotes && { releaseNotes }),
         },
       },
       inputs
@@ -72,7 +93,15 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await execWithOutput('git', ['push', 'origin', branchName])
 
-  const draftRelease = await createDraftRelease(inputs, newVersion)
+  const token = inputs['github-token']
+
+  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
+
+  const draftRelease = await createDraftRelease(
+    inputs,
+    newVersion,
+    releaseNotes
+  )
 
   logInfo(`New version ${newVersion}`)
 
