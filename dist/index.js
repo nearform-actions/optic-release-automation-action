@@ -26267,9 +26267,11 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     throw new Error('packageVersion is missing!')
   }
 
+  const token = inputs['github-token']
+
   const baseReleaseTag = inputs['base-tag']
   if (baseReleaseTag) {
-    await fetchReleaseByTag(baseReleaseTag)
+    await fetchReleaseByTag(token, baseReleaseTag)
   }
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
@@ -26285,8 +26287,6 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   ])
 
   await run('git', ['push', 'origin', branchName])
-
-  const token = inputs['github-token']
 
   const releaseNotes = await tryGetReleaseNotes(
     token,
