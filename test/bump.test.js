@@ -458,3 +458,55 @@ tap.test('should not open Pr if create release draft fails', async t => {
     t.match(error.message, 'Unable to create draft release: error message')
   }
 })
+
+tap.test(
+  'should automatically generate release notes if an error occurred while generating the specific release notes',
+  async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesFetchLatestReleaseStub =
+      stubs.releasesFetchLatestReleaseStub.throws({
+        message: 'Unexpected Error',
+      })
+
+    await openPr(DEFAULT_ACTION_DATA)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  }
+)
+
+tap.test(
+  'should generate release notes if the latest release has not been found -> first release',
+  async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesFetchLatestReleaseStub =
+      stubs.releasesFetchLatestReleaseStub.returns(null)
+
+    await openPr(DEFAULT_ACTION_DATA)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  }
+)
