@@ -6,7 +6,6 @@ const sinon = require('sinon')
 const core = require('@actions/core')
 const clone = require('lodash.clonedeep')
 
-const runSpawnAction = require('../src/utils/runSpawn')
 const tagVersionAction = require('../src/utils/tagVersion')
 const publishToNpmAction = require('../src/utils/publishToNpm')
 const notifyIssuesAction = require('../src/utils/notifyIssues')
@@ -70,17 +69,13 @@ function setup() {
   deleteReleaseStub.resetHistory()
   deleteReleaseStub.resolves()
 
-  const runSpawnStub = sinon.stub()
-  runSpawnStub
+  const execWithOutputStub = sinon.stub()
+  execWithOutputStub
     .withArgs('curl', [
       '-s',
       'https://optic-test.run.app/api/generate/optic-token',
     ])
     .returns('otp123')
-
-  const runSpawnProxy = sinon
-    .stub(runSpawnAction, 'runSpawn')
-    .returns(runSpawnStub)
 
   const tagVersionStub = sinon.stub(tagVersionAction, 'tagVersionInGit')
   const revertCommitStub = sinon.stub(revertCommitAction, 'revertCommit')
@@ -92,7 +87,7 @@ function setup() {
     .resolves({ data: { body: 'test_body', html_url: 'test_url' } })
 
   const release = proxyquire('../src/release', {
-    './utils/runSpawn': runSpawnProxy,
+    './utils/execWithOutput': { execWithOutput: execWithOutputStub },
     './utils/tagVersion': tagVersionStub,
     './utils/revertCommit': revertCommitStub,
     './utils/publishToNpm': publishToNpmStub,
@@ -107,8 +102,7 @@ function setup() {
       revertCommitStub,
       publishToNpmStub,
       notifyIssuesStub,
-      runSpawnProxy,
-      runSpawnStub,
+      execWithOutputStub,
       callApiStub,
       logStub,
       coreStub,
@@ -139,7 +133,9 @@ tap.test(
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
-    stubs.runSpawnStub.rejects(new Error('Something went wrong in the branch'))
+    stubs.execWithOutputStub.rejects(
+      new Error('Something went wrong in the branch')
+    )
 
     await release(data)
 
@@ -172,7 +168,9 @@ tap.test(
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
-    stubs.runSpawnStub.rejects(new Error('Something went wrong in the branch'))
+    stubs.execWithOutputStub.rejects(
+      new Error('Something went wrong in the branch')
+    )
     deleteReleaseStub.rejects(new Error('Something went wrong in the release'))
 
     await release(data)
@@ -385,7 +383,7 @@ tap.test(
     await release(data)
 
     sinon.assert.notCalled(stubs.callApiStub)
-    sinon.assert.notCalled(stubs.runSpawnStub)
+    sinon.assert.notCalled(stubs.execWithOutputStub)
   }
 )
 
@@ -397,7 +395,7 @@ tap.test('Should fail if the release metadata is incorrect', async () => {
 
   sinon.assert.calledOnce(stubs.logStub.logError)
   sinon.assert.notCalled(stubs.callApiStub)
-  sinon.assert.notCalled(stubs.runSpawnStub)
+  sinon.assert.notCalled(stubs.execWithOutputStub)
 })
 
 tap.test(
@@ -544,7 +542,7 @@ tap.test(
     })
 
     // We check that it's actually the first command line command to be executed
-    sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(0), 'git', [
+    sinon.assert.calledWithExactly(stubs.execWithOutputStub.getCall(0), 'git', [
       'push',
       'origin',
       '--delete',
@@ -569,7 +567,7 @@ tap.test(
 
     await release(data)
 
-    sinon.assert.neverCalledWith(stubs.runSpawnStub, 'git', [
+    sinon.assert.neverCalledWith(stubs.execWithOutputStub, 'git', [
       'push',
       'origin',
       '--delete',
@@ -619,6 +617,43 @@ tap.test(
   }
 )
 
+tap.test('Should not reject when notifyIssues fails', async t => {
+  const { release, stubs } = setup()
+
+  stubs.notifyIssuesStub.rejects()
+
+  t.resolves(
+    release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        'notify-linked-issues': 'true',
+      },
+    })
+  )
+})
+
+tap.test('Should fail when getting draft release fails', async () => {
+  const { release, stubs } = setup()
+
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    github: {
+      ...DEFAULT_ACTION_DATA.github,
+      rest: {
+        ...DEFAULT_ACTION_DATA.github.rest,
+        repos: {
+          ...DEFAULT_ACTION_DATA.github.rest,
+          getRelease: sinon.stub().rejects(),
+        },
+      },
+    },
+  })
+
+  sinon.assert.called(stubs.coreStub.setFailed)
+})
+
 tap.test('Should fail when release is not found', async () => {
   const { release, stubs } = setup()
 
@@ -630,13 +665,16 @@ tap.test('Should fail when release is not found', async () => {
         ...DEFAULT_ACTION_DATA.github.rest,
         repos: {
           ...DEFAULT_ACTION_DATA.github.rest,
-          getRelease: sinon.stub().returns(undefined),
+          getRelease: sinon.stub().returns({ data: undefined }),
         },
       },
     },
   })
 
-  sinon.assert.called(stubs.coreStub.setFailed)
+  sinon.assert.calledWith(
+    stubs.coreStub.setFailed,
+    `Couldn't find draft release to publish. Aborting.`
+  )
 })
 
 tap.test('Should not fail when release is not a draft', async () => {

@@ -6,12 +6,12 @@ const _template = require('lodash.template')
 const core = require('@actions/core')
 
 const { PR_TITLE_PREFIX } = require('./const')
-const { runSpawn } = require('./utils/runSpawn')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
 const { logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
+const { execWithOutput } = require('./utils/execWithOutput')
 const {
   generateReleaseNotes,
   fetchReleaseByTag,
@@ -50,8 +50,7 @@ const tryGetReleaseNotes = async (token, baseRelease, newVersion) => {
 
 const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   try {
-    const run = runSpawn()
-    const releaseCommitHash = await run('git', ['rev-parse', 'HEAD'])
+    const releaseCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
 
     logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
@@ -79,7 +78,6 @@ const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
 
 module.exports = async function ({ context, inputs, packageVersion }) {
   logInfo('** Starting Opening Release PR **')
-  const run = runSpawn()
 
   if (!packageVersion) {
     throw new Error('packageVersion is missing!')
@@ -97,15 +95,15 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
-  await run('git', ['checkout', '-b', branchName])
-  await run('git', ['add', '-A'])
-  await run('git', [
+  await execWithOutput('git', ['checkout', '-b', branchName])
+  await execWithOutput('git', ['add', '-A'])
+  await execWithOutput('git', [
     'commit',
     '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
 
-  await run('git', ['push', 'origin', branchName])
+  await execWithOutput('git', ['push', 'origin', branchName])
 
   const releaseNotes = await tryGetReleaseNotes(token, baseRelease, newVersion)
 
@@ -144,6 +142,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
       },
       inputs
     )
+    /* istanbul ignore else */
     if (response?.status !== 201) {
       const errMessage = response?.message || 'PR creation failed'
       throw new Error(errMessage)
@@ -151,7 +150,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   } catch (err) {
     let message = `Unable to create the pull request ${err.message}`
     try {
-      await run('git', ['push', 'origin', '--delete', branchName])
+      await execWithOutput('git', ['push', 'origin', '--delete', branchName])
     } catch (error) {
       message += `\n Unable to delete branch ${branchName}:  ${error.message}`
     }
