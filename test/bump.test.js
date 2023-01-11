@@ -34,8 +34,8 @@ function setup() {
       label: 'label',
     },
   })
-  const releasesGetBaseReleaseTagStub = sinon
-    .stub(releasesAction, 'getBaseReleaseTag')
+  const releasesFetchLatestReleaseStub = sinon
+    .stub(releasesAction, 'fetchLatestRelease')
     .returns({
       tag_name: TEST_LATEST_VERSION,
     })
@@ -59,7 +59,7 @@ function setup() {
       callApiStub,
       coreStub,
       attachArtifactStub,
-      releasesGetBaseReleaseTagStub,
+      releasesFetchLatestReleaseStub,
       releasesGenerateReleaseNotesStub,
     },
   }

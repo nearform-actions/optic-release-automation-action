@@ -61,28 +61,20 @@ tap.afterEach(() => {
   sinon.restore()
 })
 
-tap.test('getBaseReleaseTag return properly the latest release', async t => {
+tap.test('fetchLatestRelease return properly the latest release', async t => {
   const { releasesModule } = setup({ throwsError: false })
 
-  await t.resolves(releasesModule.getBaseReleaseTag(TOKEN))
+  await t.resolves(releasesModule.fetchLatestRelease(TOKEN))
 })
 
 tap.test(
-  'getBaseReleaseTag throws an error if an exception occurs while calling GitHub APIs',
+  'fetchLatestRelease throws an error if an exception occurs while calling GitHub APIs',
   async t => {
     const { releasesModule } = setup({ throwsError: true })
 
-    await t.rejects(releasesModule.getBaseReleaseTag(TOKEN))
+    await t.rejects(releasesModule.fetchLatestRelease(TOKEN))
   }
 )
-
-tap.test('getBaseReleaseTag returns the input tag if specified', async t => {
-  const { releasesModule } = setup({ throwsError: true })
-
-  await t.resolves(releasesModule.getBaseReleaseTag(TOKEN, TAG))
-  const tag = await releasesModule.getBaseReleaseTag(TOKEN, TAG)
-  t.equal(tag, TAG)
-})
 
 tap.test(
   'generateReleaseNotes return properly the generated release notes',
@@ -105,7 +97,7 @@ tap.test(
 )
 
 tap.test(
-  'getBaseReleaseTag returns null if no previous releases are found',
+  'fetchLatestRelease returns null if no previous releases are found',
   async t => {
     const logStub = sinon.stub(actionLog)
     const releasesModule = tap.mock('../src/utils/releases.js', {
@@ -129,7 +121,7 @@ tap.test(
       },
     })
 
-    await t.resolves(releasesModule.getBaseReleaseTag(TOKEN))
+    await t.resolves(releasesModule.fetchLatestRelease(TOKEN))
   }
 )
 

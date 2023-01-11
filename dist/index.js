@@ -26910,7 +26910,7 @@ const { getPRBody } = __nccwpck_require__(4098)
 const {
   generateReleaseNotes,
   fetchReleaseByTag,
-  getBaseReleaseTag,
+  fetchLatestRelease,
 } = __nccwpck_require__(5560)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
@@ -26926,15 +26926,16 @@ const addArtifact = async (inputs, releaseId) => {
 
 const tryGetReleaseNotes = async (token, baseRelease, newVersion) => {
   try {
-    const baseVersion = await getBaseReleaseTag(token, baseRelease)
-    if (!baseVersion) {
+    if (!baseRelease) {
       return
     }
+
+    const { tag_name: baseReleaseTag } = baseRelease
 
     const releaseNotes = await generateReleaseNotes(
       token,
       newVersion,
-      baseVersion
+      baseReleaseTag
     )
     return releaseNotes?.body
   } catch (err) {
@@ -26981,10 +26982,11 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   const token = inputs['github-token']
 
-  const baseReleaseTag = inputs['base-tag']
-  if (baseReleaseTag) {
-    await fetchReleaseByTag(token, baseReleaseTag)
-  }
+  const baseTag = inputs['base-tag']
+  const baseRelease = baseTag
+    ? await fetchReleaseByTag(token, baseTag)
+    : await fetchLatestRelease(token)
+
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
@@ -27000,11 +27002,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await run('git', ['push', 'origin', branchName])
 
-  const releaseNotes = await tryGetReleaseNotes(
-    token,
-    baseReleaseTag,
-    newVersion
-  )
+  const releaseNotes = await tryGetReleaseNotes(token, baseRelease, newVersion)
 
   const draftRelease = await createDraftRelease(
     inputs,
@@ -27805,23 +27803,10 @@ async function fetchReleaseByTag(token, tag) {
   }
 }
 
-async function getBaseReleaseTag(token, baseReleaseTag = null) {
-  if (baseReleaseTag) {
-    return baseReleaseTag
-  }
-
-  const latestRelease = await fetchLatestRelease(token)
-  if (!latestRelease) {
-    return
-  }
-
-  return latestRelease.tag_name
-}
-
 module.exports = {
+  fetchLatestRelease,
   generateReleaseNotes,
   fetchReleaseByTag,
-  getBaseReleaseTag,
 }
 
 

@@ -83,21 +83,8 @@ async function fetchReleaseByTag(token, tag) {
   }
 }
 
-async function getBaseReleaseTag(token, baseReleaseTag = null) {
-  if (baseReleaseTag) {
-    return baseReleaseTag
-  }
-
-  const latestRelease = await fetchLatestRelease(token)
-  if (!latestRelease) {
-    return
-  }
-
-  return latestRelease.tag_name
-}
-
 module.exports = {
+  fetchLatestRelease,
   generateReleaseNotes,
   fetchReleaseByTag,
-  getBaseReleaseTag,
 }
