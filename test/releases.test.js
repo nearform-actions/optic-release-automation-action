@@ -136,15 +136,32 @@ tap.test(
   async t => {
     const { releasesModule } = setup({ throwsError: true })
 
-    await t.rejects(releasesModule.fetchLatestRelease(TOKEN, TAG))
+    await t.rejects(releasesModule.fetchReleaseByTag(TOKEN, TAG))
   }
 )
 
-tap.test(
-  'fetchReleaseByTag throws an error if an exception occurs while calling GitHub APIs or if the release does not exist',
-  async t => {
-    const { releasesModule } = setup({ throwsError: true })
+tap.test('fetchReleaseByTag throws an error if Not Found', async t => {
+  const logStub = sinon.stub(actionLog)
+  const releasesModule = tap.mock('../src/utils/releases.js', {
+    '../src/log.js': logStub,
+    '@actions/github': {
+      context: {
+        repo: {
+          repo: 'repo',
+          owner: 'owner',
+        },
+      },
+      getOctokit: () => ({
+        rest: {
+          repos: {
+            getReleaseByTag: async () => {
+              throw new Error('Not Found')
+            },
+          },
+        },
+      }),
+    },
+  })
 
-    await t.rejects(releasesModule.fetchLatestRelease(TOKEN, TAG))
-  }
-)
+  await t.rejects(releasesModule.fetchReleaseByTag(TOKEN, TAG))
+})

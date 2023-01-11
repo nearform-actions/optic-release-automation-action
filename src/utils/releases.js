@@ -1,7 +1,7 @@
 'use strict'
 
 const github = require('@actions/github')
-const { logInfo } = require('../log')
+const { logInfo, logError } = require('../log')
 
 async function fetchLatestRelease(token) {
   try {
@@ -72,8 +72,13 @@ async function fetchReleaseByTag(token, tag) {
 
     return release
   } catch (err) {
+    if (err.message === 'Not Found') {
+      logError(`Release with tag ${tag} not found.`)
+      throw err
+    }
+
     throw new Error(
-      `An error occurred while fetching the release with tag ${tag}. Probably the specified release does not exist. ${err.message}`
+      `An error occurred while fetching the release with tag ${tag}: ${err.message}`
     )
   }
 }
