@@ -524,7 +524,7 @@ tap.test(
     const { openPr, stubs } = setup()
 
     const data = clone(DEFAULT_ACTION_DATA)
-    data.inputs['base-tag'] = 'v1.0.1'
+    data.inputs['base-tag'] = TEST_BASE_TAG_VERSION
 
     await openPr(data)
 
