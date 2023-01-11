@@ -13,9 +13,9 @@ const { logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
 const {
-  fetchLatestRelease,
   generateReleaseNotes,
   fetchReleaseByTag,
+  getBaseReleaseTag,
 } = require('./utils/releases')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
@@ -31,14 +31,9 @@ const addArtifact = async (inputs, releaseId) => {
 
 const tryGetReleaseNotes = async (token, baseRelease, newVersion) => {
   try {
-    let baseVersion = baseRelease
-    if (!baseRelease) {
-      const latestRelease = await fetchLatestRelease(token)
-      if (!latestRelease) {
-        return
-      }
-      const { tag_name } = latestRelease
-      baseVersion = tag_name
+    const baseVersion = await getBaseReleaseTag(token, baseRelease)
+    if (!baseVersion) {
+      return
     }
 
     const releaseNotes = await generateReleaseNotes(
