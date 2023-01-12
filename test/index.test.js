@@ -14,6 +14,7 @@ function buildStubbedAction() {
   const openPrStub = sinon.stub()
   const bumpStub = sinon.stub()
   const runSpawnStub = sinon.stub()
+  const coreStub = sinon.stub()
   const conventionalcommitsStub = sinon.stub()
 
   const { runAction, bumpVersion } = proxyquire('../src/index', {
@@ -30,6 +31,9 @@ function buildStubbedAction() {
       conventionalcommitsStub,
     'conventional-changelog-monorepo/conventional-recommended-bump':
       sinon.stub(),
+    '@actions/core': {
+      setFailed: coreStub,
+    },
   })
 
   return {
@@ -41,6 +45,7 @@ function buildStubbedAction() {
       openPrStub,
       bumpStub,
       runSpawnStub,
+      coreStub,
       conventionalcommitsStub,
     },
   }
@@ -294,6 +299,80 @@ tap.test(
     sinon.assert.calledOnce(stubs.bumpStub)
     sinon.assert.calledWithExactly(stubs.bumpStub, {
       baseTag: 'v1.0.0',
+      config: stubs.conventionalcommitsStub,
+    })
+    sinon.assert.callCount(stubs.runSpawnStub, 5)
+    sinon.assert.calledWithExactly(stubs.runSpawnStub, 'npm', [
+      'version',
+      '--no-git-tag-version',
+      '--preid=',
+      'patch',
+    ])
+    t.same(newVersion, '3.0.0')
+  }
+)
+
+tap.test('semver-auto: should throw if auto bump fails', async t => {
+  const { bumpVersion, stubs } = buildStubbedAction()
+
+  stubs.bumpStub.throws(new Error('bump failed'))
+  stubs.runSpawnStub.onCall(2).resolves('v1.0.0' + '\n' + 'v1.1.1')
+
+  const inputs = { semver: 'auto' }
+  try {
+    await bumpVersion({
+      inputs,
+    })
+  } catch (error) {
+    stubs.coreStub.calledOnceWithExactly('bump failed')
+    t.pass()
+  }
+})
+
+tap.test('semver-auto: should default to patch if auto bump fails', async t => {
+  const { bumpVersion, stubs } = buildStubbedAction()
+
+  stubs.bumpStub.resolves({})
+  stubs.runSpawnStub.onCall(2).resolves('v1.0.0' + '\n' + 'v1.1.1')
+  stubs.runSpawnStub.onCall(4).resolves('3.0.0')
+
+  const inputs = { semver: 'auto' }
+  const newVersion = await bumpVersion({
+    inputs,
+  })
+
+  sinon.assert.calledOnce(stubs.bumpStub)
+  sinon.assert.calledWithExactly(stubs.bumpStub, {
+    baseTag: 'v1.0.0',
+    config: stubs.conventionalcommitsStub,
+  })
+  sinon.assert.callCount(stubs.runSpawnStub, 5)
+  sinon.assert.calledWithExactly(stubs.runSpawnStub.getCall(3), 'npm', [
+    'version',
+    '--no-git-tag-version',
+    '--preid=',
+    'patch',
+  ])
+  t.same(newVersion, '3.0.0')
+})
+
+tap.test(
+  'semver-auto: should provide latestTag as null to recommended bump if couldnt get latest tag',
+  async t => {
+    const { bumpVersion, stubs } = buildStubbedAction()
+
+    stubs.bumpStub.resolves({ releaseType: 'patch' })
+    stubs.runSpawnStub.onCall(2).resolves('')
+    stubs.runSpawnStub.onCall(4).resolves('3.0.0')
+
+    const inputs = { semver: 'auto' }
+    const newVersion = await bumpVersion({
+      inputs,
+    })
+
+    sinon.assert.calledOnce(stubs.bumpStub)
+    sinon.assert.calledWithExactly(stubs.bumpStub, {
+      baseTag: null,
       config: stubs.conventionalcommitsStub,
     })
     sinon.assert.callCount(stubs.runSpawnStub, 5)
