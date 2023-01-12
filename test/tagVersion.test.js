@@ -3,16 +3,14 @@
 const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
-const runSpawnAction = require('../src/utils/runSpawn')
 
 const setup = () => {
-  const runSpawnStub = sinon.stub()
-  const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
+  const execWithOutputStub = sinon.stub()
   const tagVersionProxy = proxyquire('../src/utils/tagVersion', {
-    './runSpawn': utilStub,
+    './execWithOutput': { execWithOutput: execWithOutputStub },
   })
 
-  return { runSpawnStub, tagVersionProxy }
+  return { execWithOutputStub, tagVersionProxy }
 }
 
 tap.afterEach(() => {
@@ -20,23 +18,23 @@ tap.afterEach(() => {
 })
 
 tap.test('Tag version in git', async t => {
-  const { tagVersionProxy, runSpawnStub } = setup()
+  const { tagVersionProxy, execWithOutputStub } = setup()
   const version = 'v3.0.0'
   await tagVersionProxy.tagVersionInGit(version)
 
-  t.ok(runSpawnStub.callCount === 3)
+  t.ok(execWithOutputStub.callCount === 3)
 
-  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'push',
     'origin',
     `:refs/tags/${version}`,
   ])
-  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'tag',
     '-f',
-    `"${version}"`,
+    `${version}`,
   ])
-  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'push',
     'origin',
     `--tags`,

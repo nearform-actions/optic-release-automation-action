@@ -5,6 +5,7 @@ const sinon = require('sinon')
 const actionLog = require('../src/log')
 
 const TOKEN = 'GH-TOKEN'
+const TAG = 'v1.0.1'
 
 const setup = ({ throwsError }) => {
   const logStub = sinon.stub(actionLog)
@@ -30,6 +31,15 @@ const setup = ({ throwsError }) => {
               }
             },
             generateReleaseNotes: async () => {
+              if (throwsError) {
+                throw new Error()
+              }
+              return {
+                status: 200,
+                data: {},
+              }
+            },
+            getReleaseByTag: async () => {
               if (throwsError) {
                 throw new Error()
               }
@@ -114,3 +124,44 @@ tap.test(
     await t.resolves(releasesModule.fetchLatestRelease(TOKEN))
   }
 )
+
+tap.test('fetchReleaseByTag return properly the specified release', async t => {
+  const { releasesModule } = setup({ throwsError: false })
+
+  await t.resolves(releasesModule.fetchReleaseByTag(TOKEN, TAG))
+})
+
+tap.test(
+  'fetchReleaseByTag throws an error if an exception occurs while calling GitHub APIs',
+  async t => {
+    const { releasesModule } = setup({ throwsError: true })
+
+    await t.rejects(releasesModule.fetchReleaseByTag(TOKEN, TAG))
+  }
+)
+
+tap.test('fetchReleaseByTag throws an error if Not Found', async t => {
+  const logStub = sinon.stub(actionLog)
+  const releasesModule = tap.mock('../src/utils/releases.js', {
+    '../src/log.js': logStub,
+    '@actions/github': {
+      context: {
+        repo: {
+          repo: 'repo',
+          owner: 'owner',
+        },
+      },
+      getOctokit: () => ({
+        rest: {
+          repos: {
+            getReleaseByTag: async () => {
+              throw new Error('Not Found')
+            },
+          },
+        },
+      }),
+    },
+  })
+
+  await t.rejects(releasesModule.fetchReleaseByTag(TOKEN, TAG))
+})

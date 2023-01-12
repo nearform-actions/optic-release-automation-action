@@ -9,6 +9,7 @@ const { ZIP_EXTENSION } = require('../const')
 const attach = async (path, releaseId, token) => {
   const filename = deriveFilename(path, ZIP_EXTENSION)
 
+  /* istanbul ignore else */
   if (!path.endsWith(ZIP_EXTENSION)) {
     await archiveItem(path, filename)
   }

@@ -3,16 +3,14 @@
 const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
-const runSpawnAction = require('../src/utils/runSpawn')
 
 const setup = () => {
-  const runSpawnStub = sinon.stub()
-  const utilStub = sinon.stub(runSpawnAction, 'runSpawn').returns(runSpawnStub)
+  const execWithOutputStub = sinon.stub()
   const revertCommitProxy = proxyquire('../src/utils/revertCommit', {
-    './runSpawn': utilStub,
+    './execWithOutput': { execWithOutput: execWithOutputStub },
   })
 
-  return { runSpawnStub, revertCommitProxy }
+  return { execWithOutputStub, revertCommitProxy }
 }
 
 tap.afterEach(() => {
@@ -20,14 +18,14 @@ tap.afterEach(() => {
 })
 
 tap.test('Revert commit', async t => {
-  const { revertCommitProxy, runSpawnStub } = setup()
+  const { revertCommitProxy, execWithOutputStub } = setup()
   const baseRef = 'master'
   await revertCommitProxy.revertCommit(baseRef)
 
-  t.ok(runSpawnStub.callCount === 2)
+  t.ok(execWithOutputStub.callCount === 2)
 
-  sinon.assert.calledWithExactly(runSpawnStub, 'git', ['revert', 'HEAD'])
-  sinon.assert.calledWithExactly(runSpawnStub, 'git', [
+  sinon.assert.calledWithExactly(execWithOutputStub, 'git', ['revert', 'HEAD'])
+  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'push',
     'origin',
     `${baseRef}`,
