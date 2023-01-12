@@ -1,7 +1,7 @@
 'use strict'
 
 const github = require('@actions/github')
-const { logInfo } = require('../log')
+const { logInfo, logError } = require('../log')
 
 async function fetchLatestRelease(token) {
   try {
@@ -56,7 +56,35 @@ async function generateReleaseNotes(token, newVersion, baseVersion) {
   }
 }
 
+async function fetchReleaseByTag(token, tag) {
+  try {
+    logInfo(`Fetching release with tag: ${tag}`)
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+    const { data: release } = await octokit.rest.repos.getReleaseByTag({
+      owner,
+      repo,
+      tag: tag,
+    })
+
+    logInfo(`Release fetched successfully with tag: ${release.tag_name}`)
+
+    return release
+  } catch (err) {
+    if (err.message === 'Not Found') {
+      logError(`Release with tag ${tag} not found.`)
+      throw err
+    }
+
+    throw new Error(
+      `An error occurred while fetching the release with tag ${tag}: ${err.message}`
+    )
+  }
+}
+
 module.exports = {
   fetchLatestRelease,
   generateReleaseNotes,
+  fetchReleaseByTag,
 }

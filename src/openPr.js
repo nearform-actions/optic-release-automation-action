@@ -12,7 +12,11 @@ const { logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
 const { execWithOutput } = require('./utils/execWithOutput')
-const { fetchLatestRelease, generateReleaseNotes } = require('./utils/releases')
+const {
+  generateReleaseNotes,
+  fetchReleaseByTag,
+  fetchLatestRelease,
+} = require('./utils/releases')
 
 const tpl = fs.readFileSync(path.join(__dirname, 'pr.tpl'), 'utf8')
 
@@ -25,17 +29,18 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const tryGetReleaseNotes = async (token, newVersion) => {
+const tryGetReleaseNotes = async (token, baseRelease, newVersion) => {
   try {
-    const latestRelease = await fetchLatestRelease(token)
-    if (!latestRelease) {
+    if (!baseRelease) {
       return
     }
-    const { tag_name: baseVersion } = latestRelease
+
+    const { tag_name: baseReleaseTag } = baseRelease
+
     const releaseNotes = await generateReleaseNotes(
       token,
       newVersion,
-      baseVersion
+      baseReleaseTag
     )
     return releaseNotes?.body
   } catch (err) {
@@ -78,6 +83,13 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     throw new Error('packageVersion is missing!')
   }
 
+  const token = inputs['github-token']
+
+  const baseTag = inputs['base-tag']
+  const baseRelease = baseTag
+    ? await fetchReleaseByTag(token, baseTag)
+    : await fetchLatestRelease(token)
+
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
@@ -93,9 +105,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await execWithOutput('git', ['push', 'origin', branchName])
 
-  const token = inputs['github-token']
-
-  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
+  const releaseNotes = await tryGetReleaseNotes(token, baseRelease, newVersion)
 
   const draftRelease = await createDraftRelease(
     inputs,

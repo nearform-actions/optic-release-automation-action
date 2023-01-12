@@ -12,6 +12,7 @@ const releasesAction = require('../src/utils/releases')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_RELEASE_NOTES = 'Release Notes'
+const TEST_BASE_TAG_VERSION = 'v1.0.0'
 const TEST_LATEST_VERSION = '3.1.0'
 const TEST_VERSION = '3.1.1'
 const TEST_COMMIT_HASH = 'c86b0a35014a7036b245f81ff9de9bd738a5fe95'
@@ -34,6 +35,11 @@ function setup() {
       label: 'label',
     },
   })
+  const releasesFetchReleaseByTagStub = sinon
+    .stub(releasesAction, 'fetchReleaseByTag')
+    .returns({
+      tag_name: TEST_BASE_TAG_VERSION,
+    })
   const releasesFetchLatestReleaseStub = sinon
     .stub(releasesAction, 'fetchLatestRelease')
     .returns({
@@ -58,6 +64,7 @@ function setup() {
       callApiStub,
       coreStub,
       attachArtifactStub,
+      releasesFetchReleaseByTagStub,
       releasesFetchLatestReleaseStub,
       releasesGenerateReleaseNotesStub,
     },
@@ -460,11 +467,36 @@ tap.test('should not open Pr if create release draft fails', async t => {
 })
 
 tap.test(
-  'should automatically generate release notes if an error occurred while generating the specific release notes',
+  'should generate release notes if the latest release has not been found -> first release',
   async () => {
     const { openPr, stubs } = setup()
     stubs.releasesFetchLatestReleaseStub =
-      stubs.releasesFetchLatestReleaseStub.throws({
+      stubs.releasesFetchLatestReleaseStub.returns(null)
+
+    await openPr(DEFAULT_ACTION_DATA)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  }
+)
+
+tap.test(
+  'should automatically generate release notes if an error occurred while generating the specific release notes',
+  async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesGenerateReleaseNotesStub =
+      stubs.releasesGenerateReleaseNotesStub.throws({
         message: 'Unexpected Error',
       })
 
@@ -487,13 +519,14 @@ tap.test(
 )
 
 tap.test(
-  'should generate release notes if the latest release has not been found -> first release',
+  'should retrieve the specified base-tag release and POST a release with the generated release notes',
   async () => {
     const { openPr, stubs } = setup()
-    stubs.releasesFetchLatestReleaseStub =
-      stubs.releasesFetchLatestReleaseStub.returns(null)
 
-    await openPr(DEFAULT_ACTION_DATA)
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs['base-tag'] = TEST_BASE_TAG_VERSION
+
+    await openPr(data)
 
     sinon.assert.calledWithExactly(
       stubs.callApiStub,
@@ -503,10 +536,11 @@ tap.test(
         body: {
           version: `v${TEST_VERSION}`,
           target: TEST_COMMIT_HASH,
-          generateReleaseNotes: true,
+          generateReleaseNotes: false,
+          releaseNotes: TEST_RELEASE_NOTES,
         },
       },
-      DEFAULT_ACTION_DATA.inputs
+      data.inputs
     )
   }
 )

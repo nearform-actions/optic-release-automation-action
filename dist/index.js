@@ -28174,7 +28174,11 @@ const { logInfo, logWarning } = __nccwpck_require__(653)
 const { attach } = __nccwpck_require__(930)
 const { getPRBody } = __nccwpck_require__(4098)
 const { execWithOutput } = __nccwpck_require__(8632)
-const { fetchLatestRelease, generateReleaseNotes } = __nccwpck_require__(5560)
+const {
+  generateReleaseNotes,
+  fetchReleaseByTag,
+  fetchLatestRelease,
+} = __nccwpck_require__(5560)
 
 const tpl = fs.readFileSync(__nccwpck_require__.ab + "pr.tpl", 'utf8')
 
@@ -28187,17 +28191,18 @@ const addArtifact = async (inputs, releaseId) => {
   return artifact
 }
 
-const tryGetReleaseNotes = async (token, newVersion) => {
+const tryGetReleaseNotes = async (token, baseRelease, newVersion) => {
   try {
-    const latestRelease = await fetchLatestRelease(token)
-    if (!latestRelease) {
+    if (!baseRelease) {
       return
     }
-    const { tag_name: baseVersion } = latestRelease
+
+    const { tag_name: baseReleaseTag } = baseRelease
+
     const releaseNotes = await generateReleaseNotes(
       token,
       newVersion,
-      baseVersion
+      baseReleaseTag
     )
     return releaseNotes?.body
   } catch (err) {
@@ -28240,6 +28245,13 @@ module.exports = async function ({ context, inputs, packageVersion }) {
     throw new Error('packageVersion is missing!')
   }
 
+  const token = inputs['github-token']
+
+  const baseTag = inputs['base-tag']
+  const baseRelease = baseTag
+    ? await fetchReleaseByTag(token, baseTag)
+    : await fetchLatestRelease(token)
+
   const newVersion = `${inputs['version-prefix']}${packageVersion}`
 
   const branchName = `release/${newVersion}`
@@ -28255,9 +28267,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 
   await execWithOutput('git', ['push', 'origin', branchName])
 
-  const token = inputs['github-token']
-
-  const releaseNotes = await tryGetReleaseNotes(token, newVersion)
+  const releaseNotes = await tryGetReleaseNotes(token, baseRelease, newVersion)
 
   const draftRelease = await createDraftRelease(
     inputs,
@@ -29050,7 +29060,7 @@ module.exports = {
 
 
 const github = __nccwpck_require__(5438)
-const { logInfo } = __nccwpck_require__(653)
+const { logInfo, logError } = __nccwpck_require__(653)
 
 async function fetchLatestRelease(token) {
   try {
@@ -29105,9 +29115,37 @@ async function generateReleaseNotes(token, newVersion, baseVersion) {
   }
 }
 
+async function fetchReleaseByTag(token, tag) {
+  try {
+    logInfo(`Fetching release with tag: ${tag}`)
+
+    const { owner, repo } = github.context.repo
+    const octokit = github.getOctokit(token)
+    const { data: release } = await octokit.rest.repos.getReleaseByTag({
+      owner,
+      repo,
+      tag: tag,
+    })
+
+    logInfo(`Release fetched successfully with tag: ${release.tag_name}`)
+
+    return release
+  } catch (err) {
+    if (err.message === 'Not Found') {
+      logError(`Release with tag ${tag} not found.`)
+      throw err
+    }
+
+    throw new Error(
+      `An error occurred while fetching the release with tag ${tag}: ${err.message}`
+    )
+  }
+}
+
 module.exports = {
   fetchLatestRelease,
   generateReleaseNotes,
+  fetchReleaseByTag,
 }
 
 

@@ -12,6 +12,8 @@ on:
           - patch
           - minor
           - major
+      baseTag:
+        description: 'base release tag'
   pull_request:
     types: [closed]
 
@@ -27,5 +29,6 @@ jobs:
       - uses: nearform/optic-release-automation-action@main
         with:
           semver: ${{ github.event.inputs.semver }}
+          base-tag: ${{ github.event.inputs.baseTag }}
           sync-semver-tags: 'true'
           build-command: npm ci
