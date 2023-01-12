@@ -73,7 +73,7 @@ inputs:
     description: 'A prefix to apply to the prerelease version number'
     required: false
   base-tag:
-    description: 'Use a specific tag release instead of the latest available one taken by default.'
+    description: 'This input allows you to specify a base release and will include all changes made in releases between the base release and the latest release'
     required: false
 
 runs:
