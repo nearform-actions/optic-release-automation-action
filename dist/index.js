@@ -79154,14 +79154,17 @@ try {
 /***/ }),
 
 /***/ 6818:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((module) => {
 
 "use strict";
 
 
-exports.PR_TITLE_PREFIX = '[OPTIC-RELEASE-AUTOMATION]'
-exports.ZIP_EXTENSION = '.zip'
-exports.APP_NAME = 'optic-release-automation[bot]'
+module.exports = {
+  PR_TITLE_PREFIX: '[OPTIC-RELEASE-AUTOMATION]',
+  ZIP_EXTENSION: '.zip',
+  APP_NAME: 'optic-release-automation[bot]',
+  AUTO_INPUT: 'auto',
+}
 
 
 /***/ }),
@@ -79174,17 +79177,15 @@ exports.APP_NAME = 'optic-release-automation[bot]'
 
 const openPr = __nccwpck_require__(1515)
 const release = __nccwpck_require__(2026)
-const { runSpawn } = __nccwpck_require__(4311)
+const { AUTO_INPUT } = __nccwpck_require__(6818)
+const { execWithOutput } = __nccwpck_require__(8632)
 const { logError, logInfo } = __nccwpck_require__(653)
-const core = __nccwpck_require__(2186)
 const util = __nccwpck_require__(3837)
 const conventionalCommitsConfig = __nccwpck_require__(4369)
 const conventionalRecommendedBump = __nccwpck_require__(7559)
 const conventionalRecommendedBumpAsync = util.promisify(
   conventionalRecommendedBump
 )
-
-const autoInput = 'auto'
 
 async function runAction({ github, context, inputs, packageVersion }) {
   if (context.eventName === 'workflow_dispatch') {
@@ -79200,49 +79201,37 @@ async function runAction({ github, context, inputs, packageVersion }) {
 
 async function bumpVersion({ inputs }) {
   const newVersion =
-    inputs.semver === autoInput
+    inputs.semver === AUTO_INPUT
       ? await getAutoBumpedVersion(inputs['base-tag'])
       : inputs.semver
 
   const preReleasePrefix = inputs['prerelease-prefix'] || ''
 
-  const run = runSpawn()
-  await run('npm', [
+  await execWithOutput('npm', [
     'version',
     '--no-git-tag-version',
     `--preid=${preReleasePrefix}`,
     newVersion,
   ])
-  return await run('npm', ['pkg', 'get', 'version'])
+  return await execWithOutput('npm', ['pkg', 'get', 'version'])
 }
 
-async function getAutoBumpedVersion(baseTag = null) {
-  try {
-    const run = runSpawn()
-    await run('git', ['fetch', '--unshallow']) // by default optic does a shallow clone so we need to do this to get full commit history
-    await run('git', ['fetch', '--tags'])
+async function getAutoBumpedVersion(baseTag) {
+  await execWithOutput('git', ['fetch', '--unshallow']) // by default optic does a shallow clone so we need to do this to get full commit history
+  await execWithOutput('git', ['fetch', '--tags'])
 
-    let latestTag = null
-    if (!baseTag) {
-      const allTags = await run('git', ['tag', '--sort=-creatordate'])
-      const tags = allTags.split('\n')
-      latestTag = tags[0] || null
-    }
+  const tag =
+    baseTag ||
+    (await execWithOutput('git', ['tag', '--sort=-creatordate'])).split('\n')[0]
 
-    const tag = baseTag || latestTag
+  logInfo(`Using ${tag} as base release tag for version bump`)
 
-    logInfo(`Using ${tag} as base release tag for version bump`)
-
-    const { releaseType = 'patch' } = await conventionalRecommendedBumpAsync({
-      baseTag: tag,
-      config: conventionalCommitsConfig,
-    })
-    logInfo(`Auto generated release type is ${JSON.stringify(releaseType)}`)
-    return releaseType
-  } catch (error) {
-    core.setFailed(error.message)
-    throw error
-  }
+  const { releaseType = 'patch' } = await conventionalRecommendedBumpAsync({
+    baseTag: tag,
+    config: conventionalCommitsConfig,
+  })
+  logInfo(`Auto generated release type is ${JSON.stringify(releaseType)}`)
+  return releaseType
 }
 
 module.exports = {
@@ -80302,14 +80291,6 @@ async function tagVersionInGit(version) {
 }
 
 exports.tagVersionInGit = tagVersionInGit
-
-
-/***/ }),
-
-/***/ 4311:
-/***/ ((module) => {
-
-module.exports = eval("require")("./utils/runSpawn");
 
 
 /***/ }),

@@ -33,4 +33,3 @@ jobs:
           base-tag: ${{ github.event.inputs.baseTag }}
           sync-semver-tags: 'true'
           build-command: npm ci
-          base-tag: ${{ github.event.inputs.baseTag }}
