@@ -20,6 +20,7 @@
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
     "adm-zip": "^0.5.10",
+    "conventional-changelog-monorepo": "github:nearform/conventional-changelog",
     "lodash.isequal": "^4.5.0",
     "lodash.template": "^4.5.0",
     "lodash.truncate": "^4.4.2",

@@ -89,12 +89,15 @@ runs:
       shell: 'bash'
 
     - name: Version bump
+      uses: actions/github-script@v6
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
-      run: |
-        npm version --no-git-tag-version --preid=${{ inputs.prerelease-prefix }} ${{ inputs.semver }}
-        echo "PACKAGE_VERSION=$(echo $(node -p "require('./package.json').version"))" >> $GITHUB_OUTPUT
-      shell: 'bash'
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const { bumpVersion } = require('${{ github.action_path }}/dist/index.js')
+          return await bumpVersion({ inputs: ${{ toJSON(inputs) }} })
 
     - name: Build the package
       if: ${{ inputs.build-command }}
@@ -110,8 +113,8 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
+          const { runAction } = require('${{ github.action_path }}/dist/index.js')
+          await runAction({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: ${{ steps.version-bump.outputs.result }} })
 
     - name: Release the package
       uses: actions/github-script@v6
@@ -119,5 +122,5 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const script = require('${{ github.action_path }}/dist/index.js')
-          await script({ github, context, inputs: ${{ toJSON(inputs) }} })
+          const { runAction } = require('${{ github.action_path }}/dist/index.js')
+          await runAction({ github, context, inputs: ${{ toJSON(inputs) }} })

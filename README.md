@@ -37,6 +37,7 @@ on:
         default: "patch"
         type: choice
         options:
+          - auto
           - patch
           - minor
           - major
@@ -89,6 +90,10 @@ When you merge this PR:
 - Leave a comment on each issues that are linked to the pull reqeuests of this release. This feature can be turned off by the `notify-on-the-issue` flag.
 
 When you close the PR without merging it: nothing will happen.
+
+## Using 'auto' bump version option
+If you choose the "auto" option for semver version updates, the action will attempt to determine the new version number based on the commit messages. For this option to work, the repository must use the conventional commits standard. You can refer the [conventional commits documention](https://www.conventionalcommits.org/en/v1.0.0/)
+for more information.
 
 ## Using branches filter
 
@@ -195,7 +200,7 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
 | `github-token` | No      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
-| `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
+| `semver`       | Yes      | The version you want to bump. For more info please refer to [npm semver docs](https://docs.npmjs.com/about-semantic-versioning). Use `auto` to automatically determine the bump. verion                                                                                                                                        |
 | `commit-message`| No      | The commit message template. The keyword `{version}` will be replaced with the new version.  (_Default: `Release {version}`_)                                                              |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) access tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published. |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
