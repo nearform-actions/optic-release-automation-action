@@ -19,7 +19,7 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
   const stderrDecoder = new StringDecoder('utf8')
 
   const options = {
-    silent: true, // don't print exec output to stdout
+    silent: false,
   }
 
   /* istanbul ignore else */
