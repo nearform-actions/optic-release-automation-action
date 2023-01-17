@@ -19,22 +19,24 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
   const stderrDecoder = new StringDecoder('utf8')
 
   const options = {
-    silent: false, // don't print exec output to stdout
+    silent: true, // don't print exec output to stdout
   }
 
   /* istanbul ignore else */
-  if (cwd) {
+  if (cwd !== '') {
     options.cwd = cwd
   }
 
   options.listeners = {
     /**
+     *
      * @param {Buffer} data
      */
     stdout: data => {
       output += stdoutDecoder.write(data)
     },
     /**
+     *
      * @param {Buffer} data
      */
     stderr: data => {
