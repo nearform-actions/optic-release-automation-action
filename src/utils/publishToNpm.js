@@ -11,6 +11,7 @@ async function allowNpmPublish(version) {
     const packageInfo = await execWithOutput('npm', ['view', '--json'])
     packageName = packageInfo ? JSON.parse(packageInfo).name : null
   } catch (error) {
+    console.log(error)
     if (!error?.message?.match(/code E404/)) {
       throw error
     }
@@ -34,6 +35,7 @@ async function allowNpmPublish(version) {
       `${packageName}@${version}`,
     ])
   } catch (error) {
+    console.log(error)
     if (!error?.message?.match(/code E404/)) {
       throw error
     }
