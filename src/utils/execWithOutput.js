@@ -44,7 +44,13 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
     },
   }
 
-  const code = await exec(cmd, args, options)
+  let code = 0
+  try {
+    code = await exec(cmd, args, options)
+  } catch {
+    //the actual error does not matter, because it does not contain any relevant information. The actual exec output is collected bellow in output and errorOutput
+    code = 1
+  }
 
   output += stdoutDecoder.end()
   errorOutput += stderrDecoder.end()
