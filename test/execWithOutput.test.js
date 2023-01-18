@@ -32,11 +32,29 @@ tap.test(
   }
 )
 
+tap.test(
+  'Throws with output of the exec command if exit code is not 0',
+  async t => {
+    const output = 'output'
+
+    execStub.callsFake((_, __, options) => {
+      options.listeners.stderr(Buffer.from(output, 'utf8'))
+      return Promise.reject(new Error())
+    })
+
+    t.rejects(
+      () => execWithOutputModule.execWithOutput('ls', ['-al']),
+      'Error: ls -al returned code 1  \nSTDOUT:  \nSTDERR: ${output}'
+    )
+
+    execStub.calledWith('ls', ['-al'])
+  }
+)
+
 tap.test('provides cwd to exec function', async () => {
   const cwd = './'
 
   execStub.resolves(0)
-
   execWithOutputModule.execWithOutput('command', [], cwd)
   execStub.calledWith('command', [], { cwd })
 })
