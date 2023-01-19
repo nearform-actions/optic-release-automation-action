@@ -79368,7 +79368,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   await execWithOutput('git', ['add', '-A'])
   await execWithOutput('git', [
     'commit',
-    '--no-verify',
+    // '--no-verify',
     '-m',
     `"${transformCommitMessage(messageTemplate, newVersion)}"`,
   ])
