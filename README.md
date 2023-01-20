@@ -286,7 +286,7 @@ Once your changes are in `main` you can trigger the `release` action that will u
 
 This is what should happen:
 
-- the release action will create a "release PR", in the PR there are details of what will be included in the release
+- the release action will create a release PR, in the PR there are details of what will be included in the release
 - if all is good, click "merge"
 - the relase action is triggered again and the process of publishing the package starts
 - you should receive a notification on the Optic app on your phone to allow the package new version to be published (note: there is a time limit after which the release action will fail. If that happens you can re-run the release job.)
