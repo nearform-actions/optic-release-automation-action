@@ -7,7 +7,8 @@
     "lint": "eslint .",
     "test": "tap",
     "build": "ncc build src/index.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "update-readme-TOC": "doctoc README.md"
   },
   "keywords": [],
   "author": {
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@vercel/ncc": "^0.36.0",
+    "doctoc": "^2.2.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-prettier": "^4.2.1",

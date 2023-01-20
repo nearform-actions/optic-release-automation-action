@@ -4,6 +4,24 @@
 
 This action allows you to automate the release process of your npm modules, apps and actions. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [What does it do?](#what-does-it-do)
+- [Usage](#usage)
+- [Example](#example)
+- [Using 'auto' bump version option](#using-auto-bump-version-option)
+- [Using branches filter](#using-branches-filter)
+- [Multiple user scenario](#multiple-user-scenario)
+  - [Example](#example-1)
+- [How to add a build step to your workflow](#how-to-add-a-build-step-to-your-workflow)
+- [Prerelease support](#prerelease-support)
+- [Inputs](#inputs)
+- [Motivation](#motivation)
+- [Playground / Testing](#playground--testing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## What does it do?
 
 - When run, it opens a new PR for the release.
@@ -217,6 +235,7 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
 | `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 | `base-tag`       | No       | Choose a specific tag release for your release notes. This input allows you to specify a base release (for example, v1.0.0) and will include all changes made in releases between the base release and the latest release. This input is only used for generating release notes and has no functional implications on the rest of the workflow.                                                                                                                                                                                                                                         |
+
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*
@@ -224,3 +243,8 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 > An automation token will bypass two-factor authentication when publishing. If you have two-factor authentication enabled, you will not be prompted when using an automation token, making it suitable for CI/CD workflows.
 
 Although you can generate a Npm token that would let you bypass the OTP while publishing, this service lets you use the Publish token and generate a token on the fly while publishing. It will request Optic service which would request OTP from your phone and only after your approval, will the release proceed.
+
+## Playground / Testing
+
+Please look at the [playground reposity](https://github.com/nearform/optic-release-automation-playground) for more informations (only accessible by users in the NearForm org).
+
