@@ -8,7 +8,7 @@
     "test": "tap",
     "build": "ncc build src/index.js",
     "prepare": "husky install",
-    "update-readme-TOC": "doctoc README.md && git add README.md"
+    "update-readme-TOC": "doctoc README.md"
   },
   "keywords": [],
   "author": {
