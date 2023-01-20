@@ -19,9 +19,6 @@ This action allows you to automate the release process of your npm modules, apps
 - [Inputs](#inputs)
 - [Motivation](#motivation)
 - [Playground / Testing](#playground--testing)
-  - [What do you need to use the playground](#what-do-you-need-to-use-the-playground)
-  - [Adding tokens to publish package](#adding-tokens-to-publish-package)
-  - [Testing changes](#testing-changes)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -249,47 +246,5 @@ Although you can generate a Npm token that would let you bypass the OTP while pu
 
 ## Playground / Testing
 
-For those who are able to contribute to this repository (right now it's just people in NearForm), we have created a playground repository https://github.com/nearform/optic-release-automation-playground. That repository can be used as a shared playground to test out your changes.
-
-### What do you need to use the playground
-
-1. Access to the [playground repository](https://github.com/nearform/optic-release-automation-playground)
-2. You will need to run the [optic-expo app](https://github.com/nearform/optic-expo) on your phone
-3. You will need to be added to the [NPM optic-release-automation-playground package](https://www.npmjs.com/package/optic-release-automation-playground) as a maintainer
-
-### Adding tokens to publish package
-
-Once you have access and the app on your phone, you need to
-
-1. Enable 2FA on NPM (you may have it already enabled)
-2. Use Optic as your OTP app for NPM (if you have acces to the QR code or the secret from another 2FA app, you can use that to enable Optic to generate tokens for NPM as well)
-3. Generate a [NPM Publish token](https://docs.npmjs.com/creating-and-viewing-access-tokens) and copy it
-4. In the Optic app, [generate a token](https://github.com/nearform/optic-expo#user-guide) for NPM and copy it
-
-Now you have 2 tokens: NPM and Optic.
-
-Go to the https://github.com/nearform/optic-release-automation-playground repo, click on `Settings`, then on `Secrets and variables` on the left side menu and then on the `Actions` option in the submenu.
-
-Click on `New repository secret` and add your tokens with the following names:
-
-- `NPM_TOKEN_<GITHUB_USERNAME>`: the value will be your NPM Publish token
-- `OPTIC_TOKEN_<GITHUB_USERNAME>`: the value will be your Optic NPM token
-
-### Testing changes
-
-Once you created a branch in https://github.com/nearform/optic-release-automation-action and added the changes you want to test, you can do the following:
-
-- change the [release.yml](https://github.com/nearform/optic-release-automation-playground/blob/master/.github/workflows/release.yml) file to reference your optic-release-automation-action branch in the `uses` entry
-- push your changes to `main` (or open a PR and merge it)
-
-Once your changes are in `main` you can trigger the `release` action that will use your optic-release-automation-action branch.
-
-This is what should happen:
-
-- the release action will create a release PR, in the PR there are details of what will be included in the release
-- if all is good, click "merge"
-- the relase action is triggered again and the process of publishing the package starts
-- you should receive a notification on the Optic app on your phone to allow the package new version to be published (note: there is a time limit after which the release action will fail. If that happens you can re-run the release job.)
-- once you confirm via the Optic app, the new version should be released on NPM
-
+Please look at the [playground reposity](https://github.com/nearform/optic-release-automation-playground) for more informations (only accessible by users in the NearForm org).
 
