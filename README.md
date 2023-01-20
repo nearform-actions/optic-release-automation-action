@@ -262,7 +262,7 @@ For those who are able to contribute to this repository (right now it's just peo
 Once you have access and the app on your phone, you need to
 
 1. Enable 2FA on NPM (you may have it already enabled)
-2. Use Optic as your OTP app for NPM (if you have acces to the QR code or the secret from another 2FA app, you can use that to enable Optic to generate tokes for NPM as well)
+2. Use Optic as your OTP app for NPM (if you have acces to the QR code or the secret from another 2FA app, you can use that to enable Optic to generate tokens for NPM as well)
 3. Generate a [NPM Publish token](https://docs.npmjs.com/creating-and-viewing-access-tokens) and copy it
 4. In the Optic app, [generate a token](https://github.com/nearform/optic-expo#user-guide) for NPM and copy it
 
@@ -270,7 +270,7 @@ Now you have 2 tokens: NPM and Optic.
 
 Go to the https://github.com/nearform/optic-release-automation-playground repo, click on `Settings`, then on `Secrets and variables` on the left side menu and then on the `Actions` option in the submenu.
 
-Click on `New repository secret` and add your tokes with the following names:
+Click on `New repository secret` and add your tokens with the following names:
 
 - `NPM_TOKEN_<GITHUB_USERNAME>`: the value will be your NPM Publish token
 - `OPTIC_TOKEN_<GITHUB_USERNAME>`: the value will be your Optic NPM token
