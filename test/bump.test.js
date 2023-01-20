@@ -129,9 +129,8 @@ tap.test('should create a new git branch', async () => {
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', ['add', '-A'])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
-    '--no-verify',
     '-m',
-    `"Release v${TEST_VERSION}"`,
+    `Release v${TEST_VERSION}`,
   ])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
@@ -156,9 +155,8 @@ tap.test('should handle custom commit messages', async () => {
   ])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
-    '--no-verify',
     '-m',
-    `"[v${TEST_VERSION}] The brand new v${TEST_VERSION} has been released"`,
+    `[v${TEST_VERSION}] The brand new v${TEST_VERSION} has been released`,
   ])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
@@ -191,9 +189,8 @@ tap.test('should work with a custom version-prefix', async () => {
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', ['add', '-A'])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
-    '--no-verify',
     '-m',
-    `"Release v${TEST_VERSION}"`,
+    `Release v${TEST_VERSION}`,
   ])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
