@@ -4,6 +4,27 @@
 
 This action allows you to automate the release process of your npm modules, apps and actions. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [What does it do?](#what-does-it-do)
+- [Usage](#usage)
+- [Example](#example)
+- [Using 'auto' bump version option](#using-auto-bump-version-option)
+- [Using branches filter](#using-branches-filter)
+- [Multiple user scenario](#multiple-user-scenario)
+  - [Example](#example-1)
+- [How to add a build step to your workflow](#how-to-add-a-build-step-to-your-workflow)
+- [Prerelease support](#prerelease-support)
+- [Inputs](#inputs)
+- [Motivation](#motivation)
+- [Playground / Testing](#playground--testing)
+  - [What do you need to use the playground](#what-do-you-need-to-use-the-playground)
+  - [Adding tokens to publish package](#adding-tokens-to-publish-package)
+  - [Testing changes](#testing-changes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## What does it do?
 
 - When run, it opens a new PR for the release.
@@ -217,6 +238,7 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
 | `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 | `base-tag`       | No       | Choose a specific tag release for your release notes. This input allows you to specify a base release (for example, v1.0.0) and will include all changes made in releases between the base release and the latest release. This input is only used for generating release notes and has no functional implications on the rest of the workflow.                                                                                                                                                                                                                                         |
+
 ## Motivation
 
 *Why do I need this when I can create Npm automation tokens?*
@@ -224,3 +246,50 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 > An automation token will bypass two-factor authentication when publishing. If you have two-factor authentication enabled, you will not be prompted when using an automation token, making it suitable for CI/CD workflows.
 
 Although you can generate a Npm token that would let you bypass the OTP while publishing, this service lets you use the Publish token and generate a token on the fly while publishing. It will request Optic service which would request OTP from your phone and only after your approval, will the release proceed.
+
+## Playground / Testing
+
+For those who are able to contribute to this repository (right now it's just people in NearForm), we have created a playground repository https://github.com/nearform/optic-release-automation-playground. That repository can be used as a shared playground to test out your changes.
+
+### What do you need to use the playground
+
+1. Access to the [playground repository](https://github.com/nearform/optic-release-automation-playground)
+2. You will need to run the [optic-expo app](https://github.com/nearform/optic-expo) on your phone
+3. You will need to be added to the [NPM optic-release-automation-playground package](https://www.npmjs.com/package/optic-release-automation-playground) as a maintainer
+
+### Adding tokens to publish package
+
+Once you have access and the app on your phone, you need to
+
+1. Enable 2FA on NPM (you may have it already enabled)
+2. Use Optic as your OTP app for NPM (if you have acces to the QR code or the secret from another 2FA app, you can use that to enable Optic to generate tokes for NPM as well)
+3. Generate a [NPM Publish token](https://docs.npmjs.com/creating-and-viewing-access-tokens) and copy it
+4. In the Optic app, [generate a token](https://github.com/nearform/optic-expo#user-guide) for NPM and copy it
+
+Now you have 2 tokens: NPM and Optic.
+
+Go to the https://github.com/nearform/optic-release-automation-playground repo, click on `Settings`, then on `Secrets and variables` on the left side menu and then on the `Actions` option in the submenu.
+
+Click on `New repository secret` and add your tokes with the following names:
+
+- `NPM_TOKEN_<GITHUB_USERNAME>`: the value will be your NPM Publish token
+- `OPTIC_TOKEN_<GITHUB_USERNAME>`: the value will be your Optic NPM token
+
+### Testing changes
+
+Once you created a branch in https://github.com/nearform/optic-release-automation-action and added the changes you want to test, you can do the following:
+
+- change the [release.yml](https://github.com/nearform/optic-release-automation-playground/blob/master/.github/workflows/release.yml) file to reference your optic-release-automation-action branch in the `uses` entry
+- push your changes to `main` (or open a PR and merge it)
+
+Once your changes are in `main` you can trigger the `release` action that will use your optic-release-automation-action branch.
+
+This is what should happen:
+
+- the release action will create a "release PR", in the PR there are details of what will be included in the release
+- if all is good, click "merge"
+- the relase action is triggered again and the process of publishing the package starts
+- you should receive a notification on the Optic app on your phone to allow the package new version to be published (note: there is a time limit after which the release action will fail. If that happens you can re-run the release job.)
+- once you confirm via the Optic app, the new version should be released on NPM
+
+
