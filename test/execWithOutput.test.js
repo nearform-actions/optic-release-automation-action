@@ -4,11 +4,11 @@ const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
 
-const execStub = sinon.stub()
+const actionExecStub = sinon.stub()
 
 const execWithOutputModule = proxyquire('../src/utils/execWithOutput', {
   '@actions/exec': {
-    exec: () => execStub,
+    exec: actionExecStub,
   },
 })
 
@@ -21,14 +21,15 @@ tap.test(
   async t => {
     const output = 'output'
 
-    execStub.callsFake((_, __, options) => {
+    actionExecStub.callsFake((_, __, options) => {
       options.listeners.stdout(Buffer.from(output, 'utf8'))
 
       return Promise.resolve(0)
     })
 
-    t.resolves(execWithOutputModule.execWithOutput('ls', ['-al']), output)
-    execStub.calledWith('ls', ['-al'])
+    const exec = execWithOutputModule.execWithOutput()
+    t.resolves(exec('ls', ['-al']), output)
+    actionExecStub.calledWith('ls', ['-al'])
   }
 )
 
@@ -37,37 +38,55 @@ tap.test(
   async t => {
     const output = 'output'
 
-    execStub.callsFake((_, __, options) => {
+    actionExecStub.callsFake((_, __, options) => {
       options.listeners.stderr(Buffer.from(output, 'utf8'))
       return Promise.reject(new Error())
     })
+    const exec = execWithOutputModule.execWithOutput()
 
     t.rejects(
-      () => execWithOutputModule.execWithOutput('ls', ['-al']),
+      () => exec('ls', ['-al']),
       'Error: ls -al returned code 1  \nSTDOUT:  \nSTDERR: ${output}'
     )
 
-    execStub.calledWith('ls', ['-al'])
+    actionExecStub.calledWith('ls', ['-al'])
   }
 )
 
 tap.test('provides cwd to exec function', async () => {
   const cwd = './'
 
-  execStub.resolves(0)
-  execWithOutputModule.execWithOutput('command', [], cwd)
-  execStub.calledWith('command', [], { cwd })
+  actionExecStub.resolves(0)
+  const exec = execWithOutputModule.execWithOutput()
+  exec('command', [], cwd)
+  actionExecStub.calledWith('command', [], { cwd })
 })
 
 tap.test('rejects if exit code is not 0', async t => {
   const errorOutput = 'error output'
 
-  execStub.callsFake((_, __, options) => {
+  actionExecStub.callsFake((_, __, options) => {
     options.listeners.stderr(Buffer.from(errorOutput, 'utf8'))
 
     return Promise.resolve(1)
   })
 
-  t.rejects(execWithOutputModule.execWithOutput('command'))
-  execStub.calledWith('command')
+  const exec = execWithOutputModule.execWithOutput()
+  t.rejects(exec('command'))
+  actionExecStub.calledWith('command')
+})
+
+tap.test('use proper cwd when supplied', async t => {
+  const output = 'output'
+  const cwd = '/test/path'
+
+  actionExecStub.callsFake((_, __, options) => {
+    t.equal(options.cwd, cwd)
+    options.listeners.stdout(Buffer.from(output, 'utf8'))
+
+    return Promise.resolve(0)
+  })
+
+  const exec = execWithOutputModule.execWithOutput({ cwd })
+  t.resolves(exec('ls', ['-al']), output)
 })
