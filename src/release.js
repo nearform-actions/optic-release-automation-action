@@ -6,12 +6,12 @@ const semver = require('semver')
 const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
-const { runSpawn } = require('./utils/runSpawn')
 const { revertCommit } = require('./utils/revertCommit')
 const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 const parseReleaseMetadata = require('./utils/parseReleaseMetadata')
+const { execWithOutput } = require('./utils/execWithOutput')
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -50,7 +50,6 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
-  const run = runSpawn()
   const branchName = monorepoPackage
     ? `release/${monorepoPackage}-${version}`
     : `release/${version}`
@@ -59,7 +58,8 @@ module.exports = async function ({ github, context, inputs }) {
     // We "always" delete the release branch, if anything fails, the whole
     // workflow has to be restarted from scratch.
     logInfo(`deleting ${branchName}`)
-    await run('git', ['push', 'origin', '--delete', branchName])
+    const exec = execWithOutput()
+    await exec('git', ['push', 'origin', '--delete', branchName])
   } catch (err) {
     // That's not a big problem, so we don't want to mark the action as failed.
     logWarning('Unable to delete the release branch')
@@ -114,12 +114,13 @@ module.exports = async function ({ github, context, inputs }) {
     return
   }
 
+  const { major, minor, patch, prerelease } = semver.parse(version)
+  const isPreRelease = prerelease.length > 0
+
   try {
     const syncVersions = /true/i.test(inputs['sync-semver-tags'])
 
-    if (syncVersions) {
-      const { major, minor, patch } = semver.parse(version)
-
+    if (syncVersions && !isPreRelease) {
       await tagVersionInGit(`v${major}`)
       await tagVersionInGit(`v${major}.${minor}`)
       await tagVersionInGit(`v${major}.${minor}.${patch}`)
@@ -136,6 +137,7 @@ module.exports = async function ({ github, context, inputs }) {
         body: {
           version: version,
           releaseId: id,
+          isPreRelease,
         },
       },
       inputs

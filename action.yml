@@ -76,6 +76,12 @@ inputs:
     description: 'The monorepo root folder for packages. Only used when monorepo-package is defined. The default is "packages".'
     required: false
     default: 'packages'
+  prerelease-prefix:
+    description: 'A prefix to apply to the prerelease version number'
+    required: false
+  base-tag:
+    description: 'This input allows you to specify a base release and will include all changes made in releases between the base release and the latest release'
+    required: false
 
 runs:
   using: 'composite'
@@ -90,12 +96,15 @@ runs:
       shell: 'bash'
 
     - name: Version bump
+      uses: actions/github-script@v6
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
-      run: |
-        npm version --no-git-tag-version ${{ inputs.semver }}
-        echo "PACKAGE_VERSION=$(echo $(node -p "require('./package.json').version"))" >> $GITHUB_OUTPUT
-      shell: 'bash'
+      with:
+        result-encoding: string
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const { bumpVersion } = require('${{ github.action_path }}/dist/index.js')
+          return await bumpVersion({ inputs: ${{ toJSON(inputs) }} })
 
     - name: Build the package
       uses: actions/github-script@v6
@@ -114,7 +123,7 @@ runs:
         result-encoding: string
         script: |
           const { openPr } = require('${{ github.action_path }}/dist/index.js')
-          await openPr({ context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
+          await openPr({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: "${{ steps.version-bump.outputs.PACKAGE_VERSION }}" })
 
     - name: Release the package
       uses: actions/github-script@v6

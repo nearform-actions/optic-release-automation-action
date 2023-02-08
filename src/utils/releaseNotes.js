@@ -5,7 +5,7 @@ const _truncate = require('lodash.truncate')
 
 const md = require('markdown-it')()
 
-const PR_BODY_TRUNCATE_SIZE = 60000
+const PR_BODY_TRUNCATE_SIZE = 30000
 
 function getPrNumbersFromReleaseNotes(releaseNotes) {
   const parsedReleaseNotes = md.parse(releaseNotes, {})

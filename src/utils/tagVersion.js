@@ -1,12 +1,12 @@
 'use strict'
-const { runSpawn } = require('./runSpawn')
+
+const { execWithOutput } = require('./execWithOutput')
 
 async function tagVersionInGit(version) {
-  const run = runSpawn()
-
-  await run('git', ['push', 'origin', `:refs/tags/${version}`])
-  await run('git', ['tag', '-f', `"${version}"`])
-  await run('git', ['push', 'origin', `--tags`])
+  const exec = execWithOutput()
+  await exec('git', ['push', 'origin', `:refs/tags/${version}`])
+  await exec('git', ['tag', '-f', `${version}`])
+  await exec('git', ['push', 'origin', `--tags`])
 }
 
 exports.tagVersionInGit = tagVersionInGit

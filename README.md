@@ -4,6 +4,25 @@
 
 This action allows you to automate the release process of your npm modules, apps and actions. It can fetch OTP for Npm on the fly using [Optic](https://github.com/nearform/optic-expo).
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [What does it do?](#what-does-it-do)
+- [Usage](#usage)
+- [Example](#example)
+- [Using 'auto' bump version option](#using-auto-bump-version-option)
+- [Using branches filter](#using-branches-filter)
+- [Multiple user scenario](#multiple-user-scenario)
+  - [Example](#example-1)
+- [How to add a build step to your workflow](#how-to-add-a-build-step-to-your-workflow)
+- [Releasing monorepo packages](#releasing-monorepo-packages)
+- [Prerelease support](#prerelease-support)
+- [Inputs](#inputs)
+- [Motivation](#motivation)
+- [Playground / Testing](#playground--testing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## What does it do?
 
 - When run, it opens a new PR for the release.
@@ -37,9 +56,16 @@ on:
         default: "patch"
         type: choice
         options:
+          - auto
           - patch
           - minor
           - major
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
+      baseTag:
+        description: "base release tag"
       tag:
         description: "The npm tag"
         required: false
@@ -83,6 +109,10 @@ When you merge this PR:
 - Leave a comment on each issues that are linked to the pull reqeuests of this release. This feature can be turned off by the `notify-on-the-issue` flag.
 
 When you close the PR without merging it: nothing will happen.
+
+## Using 'auto' bump version option
+If you choose the "auto" option for semver version updates, the action will attempt to determine the new version number based on the commit messages. For this option to work, the repository must use the conventional commits standard. You can refer the [conventional commits documention](https://www.conventionalcommits.org/en/v1.0.0/)
+for more information.
 
 ## Using branches filter
 
@@ -200,12 +230,28 @@ jobs:
           monorepo-package: ${{ inputs.monorepo-package  }} # monorepo-package would be `react-app` for a package located in `packages/react-app`
 ```
 
+## Prerelease support
+
+This action can be used to create prereleases.
+
+In order to do that you can configure your action adding the [npm version](https://docs.npmjs.com/cli/v9/commands/npm-version) parameters `prerelease|prepatch|preminor|premajor` in the semver options.
+
+It's possible to specify a custom `prerelease-prefix` if you want to have one. This will be added as a prefix to the prerelease version. Let's suppose we want to use `next` as a `prerelease-prefix`, the prerelease version will be something like: `v1.0.0-next.1`.
+
+The `prerelease-prefix` is used as the input for the `--preid` in the `npm version` command.
+
+An important note is that the `prerelease-prefix` is used to identify the release version, on the other hand we have the `npm-tag` which is responsible of identifying the proper [NPM tag](https://docs.npmjs.com/cli/v9/commands/npm-dist-tag) when a package is published to NPM, e.g.: `latest|experimental|next|rc|beta`.
+
+Generally, if you want to release a prerelease of a repository, and it is an NPM package, you usually want to use `prerelease-prefix` and `npm-tag` inputs together.
+
+Please note that in case of a prerelease the `sync-semver-tags` input will be treated as `false`, even if it's set to `true`. This because we don't want to update the main version tags to the latest prerelease commit but only to the latest official release.
+
 ## Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
 | ---            | ---      | ---                                                                                                                                                                                        |
 | `github-token` | No      | This is your GitHub token, it's [already available](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret) to your GitHub action |
-| `semver`       | Yes      | The version you want to bump (`patch|minor|major`).                                                                                                                                        |
+| `semver`       | Yes      | The version you want to bump. For more info please refer to [npm semver docs](https://docs.npmjs.com/about-semantic-versioning). Use `auto` to automatically determine the bump. verion                                                                                                                                        |
 | `commit-message`| No      | The commit message template. The keyword `{version}` will be replaced with the new version.  (_Default: `Release {version}`_)                                                              |
 | `npm-token`    | No       | This is your Npm Publish token. Read [how to create](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-tokens-on-the-website) access tokens. Required only if you want to release to Npm. If you omit this, no Npm release will be published. |
 | `optic-url`    | No       | URL if you have a custom application that serves OTP. <br /> (_Default: <Optic service URL>_)                                                                                              |
@@ -216,12 +262,15 @@ jobs:
 | `build-command`| No       | An optional build commit to run after the version bump and before releasing the package |
 | `api-url`      | No       | GitHub App URL. You wouldn't need to set this unless you're deploying a custom GitHub app instead of [optic-release-automation](https://github.com/apps/optic-release-automation). <br /> (_Default: `https://optic-release-automation-ocrlhra4va-ue.a.run.app/`_) |
 | `app-name`     | No       | GitHub App name. You also wouldn't need to set this unless you're deploying a custom GitHub app. <br /> (_Default: `optic-release-automation[bot]`_) |
-| `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit <br /> (_Default: `false`_)                                                                  |
+| `sync-semver-tags`| No    | If you want to keep the major and minor versions git tags synced to the latest appropriate commit. Note: it will be evaluated as `false` in case of a prerelease. <br /> (_Default: `false`_)                                                                  |
 | `notify-linked-issues`| No       | An optional flag to enable an automatic comment on all issues linked to each release so that people following those issues get notified of the code being released. <br /> (_Default: `true`_)                                                                  |
 | `artifact-path`| No       | Set this input to the distribution folder or file you want to add as the main asset for your release. It will be downloadable from the release page and a preview of it will be available in the pull request.                                                                  |
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)|
 | `monorepo-package`     | No       | The name of the monorepo package folder to be released, relative to `monorepo-root` |
 | `monorepo-root`        | No       | The root folder for monorepo packages (_Default: 'packages'_) |
+
+| `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
+| `base-tag`       | No       | Choose a specific tag release for your release notes. This input allows you to specify a base release (for example, v1.0.0) and will include all changes made in releases between the base release and the latest release. This input is only used for generating release notes and has no functional implications on the rest of the workflow.                                                                                                                                                                                                                                         |
 
 ## Motivation
 
@@ -230,3 +279,7 @@ jobs:
 > An automation token will bypass two-factor authentication when publishing. If you have two-factor authentication enabled, you will not be prompted when using an automation token, making it suitable for CI/CD workflows.
 
 Although you can generate a Npm token that would let you bypass the OTP while publishing, this service lets you use the Publish token and generate a token on the fly while publishing. It will request Optic service which would request OTP from your phone and only after your approval, will the release proceed.
+
+## Playground / Testing
+
+Please look at the [playground reposity](https://github.com/nearform/optic-release-automation-playground) for more informations (only accessible by users in the NearForm org).
