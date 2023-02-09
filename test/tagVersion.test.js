@@ -7,7 +7,7 @@ const proxyquire = require('proxyquire')
 const setup = () => {
   const execWithOutputStub = sinon.stub()
   const tagVersionProxy = proxyquire('../src/utils/tagVersion', {
-    './execWithOutput': { execWithOutput: execWithOutputStub },
+    './execWithOutput': { execWithOutput: () => execWithOutputStub },
   })
 
   return { execWithOutputStub, tagVersionProxy }

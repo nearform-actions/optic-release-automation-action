@@ -46184,8 +46184,6 @@ const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   try {
     const releaseCommitHash = await exec('git', ['rev-parse', 'HEAD'])
 
-    console.log(releaseCommitHash)
-
     logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
     const monorepoPackage = inputs['monorepo-package']

@@ -7,7 +7,7 @@ const proxyquire = require('proxyquire')
 const setup = () => {
   const execWithOutputStub = sinon.stub()
   const revertCommitProxy = proxyquire('../src/utils/revertCommit', {
-    './execWithOutput': { execWithOutput: execWithOutputStub },
+    './execWithOutput': { execWithOutput: () => execWithOutputStub },
   })
 
   return { execWithOutputStub, revertCommitProxy }
