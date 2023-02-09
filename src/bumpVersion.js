@@ -1,3 +1,5 @@
+'use strict'
+
 const { AUTO_INPUT } = require('./const')
 const { execWithOutput } = require('./utils/execWithOutput')
 const { logInfo } = require('./log')
