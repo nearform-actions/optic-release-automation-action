@@ -46019,6 +46019,9 @@ module.exports = async function ({ github, context, inputs }) {
 /***/ 3286:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+"use strict";
+
+
 const { AUTO_INPUT } = __nccwpck_require__(6818)
 const { execWithOutput } = __nccwpck_require__(8632)
 const { logInfo } = __nccwpck_require__(653)
@@ -46180,6 +46183,8 @@ const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
   const exec = execWithOutput()
   try {
     const releaseCommitHash = await exec('git', ['rev-parse', 'HEAD'])
+
+    console.log(releaseCommitHash)
 
     logInfo(`Creating draft release from commit: ${releaseCommitHash}`)
 
