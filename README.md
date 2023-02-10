@@ -200,7 +200,7 @@ jobs:
 
 ## Releasing monorepo packages
 
-For use in a monorepo this action expects two new inputs `monorepo-package` and `monorepo-root`, they will be used to run command and publish from the package folder instead of the project root.
+For use in a monorepo this action expects two new inputs `monorepo-package` and `monorepo-root`, they will be used to run command and publish from the package folder instead of the repository root.
 When releasing a single package a new github release will be created with the zipped package folder as artifact. Commands defined in `build-command` and `npm-publish` will run inside the package folder.
 
 ```yml

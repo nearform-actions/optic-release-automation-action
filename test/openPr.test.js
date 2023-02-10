@@ -182,12 +182,10 @@ tap.only('should work with a custom version-prefix', async () => {
     },
   }
 
-  console.log(stubs.callApiStub.getCalls())
   await openPr(prData)
 
   const branchName = `release/${TEST_VERSION}`
 
-  console.log(stubs.callApiStub.getCalls())
   // git
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'checkout',
