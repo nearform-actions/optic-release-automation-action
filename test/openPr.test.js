@@ -53,10 +53,14 @@ function setup() {
       label: 'label',
     },
   })
+
+  const logWarningStub = sinon.stub()
+  const logInfoStub = sinon.stub()
   const openPr = proxyquire('../src/openPr', {
     './utils/execWithOutput': { execWithOutput: () => execWithOutputStub },
     './utils/artifact': attachArtifactStub,
     './utils/releases': { fetchLatestRelease: fetchLatestReleaseStub },
+    './log': { logWarning: logWarningStub, logInfo: logInfoStub },
     '@actions/core': coreStub,
   })
 
@@ -70,6 +74,8 @@ function setup() {
       releasesFetchLatestReleaseStub,
       releasesFetchReleaseByTagStub,
       releasesGenerateReleaseNotesStub,
+      logWarningStub,
+      logInfoStub,
     },
   }
 }
@@ -610,6 +616,7 @@ tap.test(
     )
   }
 )
+
 tap.test(
   'should automatically generate release notes if an error occurred while generating the specific release notes',
   async () => {
@@ -636,3 +643,46 @@ tap.test(
     )
   }
 )
+
+tap.test(
+  'should set failed message if unable to delete branch after failing to create pull request',
+  async () => {
+    const { openPr, stubs } = setup()
+    stubs.execWithOutputStub
+      .withArgs('git', [
+        'push',
+        'origin',
+        '--delete',
+        `release/v${TEST_VERSION}`,
+      ])
+      .throws()
+
+    await openPr(DEFAULT_ACTION_DATA)
+
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+    sinon.assert.calledOnce(stubs.coreStub.setFailed)
+  }
+)
+
+tap.test('should set warning message if tryGetReleaseNotes fails', async () => {
+  const { openPr, stubs } = setup()
+  stubs.releasesGenerateReleaseNotesStub.throws()
+
+  const data = clone(DEFAULT_ACTION_DATA)
+  data.inputs['base-tag'] = TEST_BASE_TAG_VERSION
+
+  await openPr(data)
+  sinon.assert.calledOnce(stubs.logWarningStub)
+})
