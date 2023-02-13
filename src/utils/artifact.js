@@ -6,8 +6,8 @@ const path = require('path')
 const { archiveItem } = require('./archiver')
 const { ZIP_EXTENSION } = require('../const')
 
-const attach = async (path, releaseId, token, _filename) => {
-  const filename = _filename || deriveFilename(path, ZIP_EXTENSION)
+const attach = async (path, releaseId, token, filenameInput) => {
+  const filename = filenameInput || deriveFilename(path, ZIP_EXTENSION)
 
   /* istanbul ignore else */
   if (!path.endsWith(ZIP_EXTENSION)) {
