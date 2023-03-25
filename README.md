@@ -1,4 +1,4 @@
-[![ci](https://github.com/nearform/optic-release-automation-action/actions/workflows/ci.yml/badge.svg)](https://github.com/nearform/optic-release-automation-action/actions/workflows/ci.yml)
+[![ci](https://github.com/nearform-actions/optic-release-automation-action/actions/workflows/ci.yml/badge.svg)](https://github.com/nearform-actions/optic-release-automation-action/actions/workflows/ci.yml)
 
 # optic-release-automation-action
 
@@ -83,7 +83,7 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-      - uses: nearform/optic-release-automation-action@v4
+      - uses: nearform-actions/optic-release-automation-action@v4
         with:
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
@@ -153,7 +153,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: nearform/optic-release-automation-action@v4
+      - uses: nearform-actions/optic-release-automation-action@v4
         with:
           npm-token: ${{ secrets[format('NPM_TOKEN_{0}', github.actor)] || secrets.NPM_TOKEN }}
           optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
@@ -171,7 +171,7 @@ The `build-command` option accepts a string that will be executed as a shell com
 It is important to be aware that you are responsible for:
 
 1. The context where the command is executed. <br /> The command will be executed using the current [GitHub runner](https://github.com/actions/runner#github-actions-runner) configuration (e.g. the one set on `runs-on`).
-You can customize it by executing additional steps before the `nearform/optic-release-automation-action` step execution as shown in the next example.
+You can customize it by executing additional steps before the `nearform-actions/optic-release-automation-action` step execution as shown in the next example.
 2. The command to build the project, starting from the installation to the cleanup if needed.<br /> You can set any automations like [git hooks](https://git-scm.com/book/it/v2/Customizing-Git-Git-Hooks) or [`pre/post` scripts](https://docs.npmjs.com/cli/v8/using-npm/scripts#pre--post-scripts) to execute within the `build-command` step.
 
 The build's output will be committed to the `release/${new semver version}` branch, unless the project's `.gitignore` blocks it.
@@ -190,7 +190,7 @@ jobs:
         with:
           node-version: 14 # setting a specific version of node as an example
 
-      - uses: nearform/optic-release-automation-action@v4
+      - uses: nearform-actions/optic-release-automation-action@v4
         with:
           npm-token: ${{ secrets.NPM_TOKEN }}
           optic-token: ${{ secrets.OPTIC_TOKEN }}
@@ -249,5 +249,5 @@ Although you can generate a Npm token that would let you bypass the OTP while pu
 
 ## Playground / Testing
 
-Please look at the [playground reposity](https://github.com/nearform/optic-release-automation-playground) for more informations (only accessible by users in the NearForm org).
+Please look at the [playground reposity](https://github.com/nearform/optic-release-automation-playground) for more information (only accessible by users in the NearForm org).
 
