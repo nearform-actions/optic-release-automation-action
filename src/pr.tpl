@@ -1,6 +1,6 @@
 ## Optic Release Automation
 
-This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).
+This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/-actions/optic-release-automation-action).
 
 A new **draft** GitHub release [${releaseMeta.version}](${draftRelease.html_url}) has been created.
 

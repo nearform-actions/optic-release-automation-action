@@ -67,7 +67,7 @@ function createCommentBody(
   * [GitHub release](${releaseUrl})
 
 
-  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  Your **[optic](https://github.com/nearform-actions/optic-release-automation-action)** bot 📦🚀`
   }
 
   return `🎉 This issue has been resolved in version ${packageVersion} 🎉
@@ -77,7 +77,7 @@ function createCommentBody(
   * [GitHub release](${releaseUrl})
 
 
-  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  Your **[optic](https://github.com/nearform-actions/optic-release-automation-action)** bot 📦🚀`
 }
 
 async function notifyIssues(
