@@ -28,7 +28,7 @@
     "lodash.uniqwith": "^4.5.0",
     "markdown-it": "^13.0.1",
     "node-fetch": "^2.6.6",
-    "p-map": "^4.0.0",
+    "p-map": "^5.5.0",
     "semver": "^7.3.8",
     "string-format": "^2.0.0"
   },
