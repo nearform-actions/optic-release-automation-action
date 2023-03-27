@@ -261,7 +261,7 @@ tap.test('should call the PR endpoint with a new version', async () => {
         body:
           '## Optic Release Automation\n' +
           '\n' +
-          'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
+          'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
           '\n' +
           `A new **draft** GitHub release [v${TEST_VERSION}]() has been created.\n` +
           '\n' +
@@ -316,7 +316,7 @@ tap.test(
           body:
             '## Optic Release Automation\n' +
             '\n' +
-            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
+            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
             '\n' +
             `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
             '\n' +
@@ -372,7 +372,7 @@ tap.test(
           body:
             '## Optic Release Automation\n' +
             '\n' +
-            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform/optic-release-automation-action).\n' +
+            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
             '\n' +
             `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
             '\n' +

@@ -160,7 +160,7 @@ tap.test(
   * [GitHub release](some_url)
 
 
-  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  Your **[optic](https://github.com/nearform-actions/optic-release-automation-action)** bot 📦🚀`
 
     sinon.assert.calledWith(createCommentStub, {
       owner: 'owner',
@@ -233,7 +233,7 @@ tap.test(
   * [GitHub release](some_url)
 
 
-  Your **[optic](https://github.com/nearform/optic-release-automation-action)** bot 📦🚀`
+  Your **[optic](https://github.com/nearform-actions/optic-release-automation-action)** bot 📦🚀`
 
     sinon.assert.calledWith(createCommentStub, {
       owner: 'owner',
