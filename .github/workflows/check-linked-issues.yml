@@ -1,9 +1,11 @@
 name: Check Linked Issues
-
-on:
+'on':
   pull_request_target:
-    types: [opened, edited, reopened, synchronize]
-
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
 jobs:
   check_pull_requests:
     runs-on: ubuntu-latest
@@ -12,4 +14,7 @@ jobs:
       - uses: nearform-actions/github-action-check-linked-issues@v1
         with:
           github-token: ${{ github.token }}
-          exclude-branches: 'release/**, dependabot/**'
+          exclude-branches: release/**, dependabot/**
+    permissions:
+      issues: read
+      pull-requests: write
