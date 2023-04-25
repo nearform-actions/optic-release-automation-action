@@ -80,8 +80,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
       contents: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: nearform-actions/optic-release-automation-action@v4
         with:
