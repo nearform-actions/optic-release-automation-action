@@ -95,9 +95,17 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
+    const provenance = inputs['provenance'] ?? true
 
     if (npmToken) {
-      await publishToNpm({ npmToken, opticToken, opticUrl, npmTag, version })
+      await publishToNpm({
+        npmToken,
+        opticToken,
+        opticUrl,
+        npmTag,
+        version,
+        provenance,
+      })
     } else {
       logWarning('missing npm-token')
     }

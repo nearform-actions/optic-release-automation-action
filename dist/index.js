@@ -79303,9 +79303,17 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
+    const provenance = inputs['provenance'] ?? true
 
     if (npmToken) {
-      await publishToNpm({ npmToken, opticToken, opticUrl, npmTag, version })
+      await publishToNpm({
+        npmToken,
+        opticToken,
+        opticUrl,
+        npmTag,
+        version,
+        provenance,
+      })
     } else {
       logWarning('missing npm-token')
     }
@@ -79558,16 +79566,14 @@ const { exec } = __nccwpck_require__(1514)
  * @param {{cwd?: string}} options
  * @returns Promise<string>
  */
-async function execWithOutput(cmd, args, { cwd } = {}) {
+async function execWithOutput(cmd, args, { cwd, ...options } = {}) {
   let output = ''
   let errorOutput = ''
 
   const stdoutDecoder = new StringDecoder('utf8')
   const stderrDecoder = new StringDecoder('utf8')
 
-  const options = {
-    silent: false,
-  }
+  options.silent = false
 
   /* istanbul ignore else */
   if (cwd !== '') {
@@ -79820,12 +79826,19 @@ async function publishToNpm({
   opticUrl,
   npmTag,
   version,
+  provenance,
 }) {
   await execWithOutput('npm', [
     'config',
     'set',
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
+
+  const options = {}
+  const flags = ['--tag', npmTag]
+  if (provenance) {
+    flags.push('--provenance')
+  }
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
@@ -79834,9 +79847,9 @@ async function publishToNpm({
         '-s',
         `${opticUrl}${opticToken}`,
       ])
-      await execWithOutput('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      await execWithOutput('npm', ['publish', '--otp', otp, ...flags], options)
     } else {
-      await execWithOutput('npm', ['publish', '--tag', npmTag])
+      await execWithOutput('npm', ['publish', ...flags], options)
     }
   }
 }

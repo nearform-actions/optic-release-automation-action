@@ -75,6 +75,11 @@ inputs:
   base-tag:
     description: 'This input allows you to specify a base release and will include all changes made in releases between the base release and the latest release'
     required: false
+  provenance:
+    description: 'If true, NPM >9.5 will display a "provenance" badge (https://github.blog/2023-04-19-introducing-npm-package-provenance/). The default setting is "true".'
+    required: false
+    type: boolean
+    default: 'true'
 
 runs:
   using: 'composite'
