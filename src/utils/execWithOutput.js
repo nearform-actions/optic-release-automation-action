@@ -11,16 +11,19 @@ const { exec } = require('@actions/exec')
  * @param {{cwd?: string}} options
  * @returns Promise<string>
  */
-async function execWithOutput(cmd, args, { cwd } = {}) {
+async function execWithOutput(
+  cmd,
+  args,
+  { cwd, env = getFilteredEnv(), ...options } = {}
+) {
   let output = ''
   let errorOutput = ''
 
   const stdoutDecoder = new StringDecoder('utf8')
   const stderrDecoder = new StringDecoder('utf8')
 
-  const options = {
-    silent: false,
-  }
+  options.silent = false
+  options.env = env
 
   /* istanbul ignore else */
   if (cwd !== '') {
@@ -63,6 +66,21 @@ async function execWithOutput(cmd, args, { cwd } = {}) {
     `${cmd} ${args.join(
       ' '
     )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
+  )
+}
+
+/**
+ * By default, `@actions/exec` 1.x's exec method copies all env vars to the child process,
+ * This includes `INPUT_*` vars that are specific to this action. This can leak repo secrets,
+ * such as the user's NPM_TOKEN and OPTIC_TOKEN. It's recommended to filter these.
+ * This may become the default behaviour in a future `@actions/exec` major release.
+ * @see https://github.com/actions/toolkit/issues/309
+ *
+ * @returns {Record<string, any>}
+ */
+function getFilteredEnv() {
+  return Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('INPUT_'))
   )
 }
 
