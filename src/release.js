@@ -96,7 +96,7 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
-    const provenance = inputs['provenance']
+    const provenance = /true/i.test(inputs['provenance'])
 
     // Fail fast if user wants provenance but their setup can't deliver
     if (provenance) await checkProvenanceViability()
