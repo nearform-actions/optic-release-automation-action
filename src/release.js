@@ -95,7 +95,7 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
-    const provenance = inputs['provenance'] ?? true
+    const provenance = inputs['provenance']
 
     if (npmToken) {
       await publishToNpm({
