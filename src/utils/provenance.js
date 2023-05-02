@@ -59,7 +59,7 @@ function checkProvenanceViability(npmVersion) {
  * Split out as its own export so it can be easily mocked in tests.
  */
 async function getNpmVersion() {
-  return await execWithOutput('npm', ['-v'])
+  return execWithOutput('npm', ['-v'])
 }
 
 module.exports = {
