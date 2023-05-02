@@ -84,14 +84,20 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      # optional: `id-token: write` permission is required if `provenance: true` is set below
+      id-token: write
     steps:
       - uses: nearform-actions/optic-release-automation-action@v4
         with:
-          npm-token: ${{ secrets.NPM_TOKEN }}
-          optic-token: ${{ secrets.OPTIC_TOKEN }}
           commit-message: ${{ github.event.inputs.commit-message }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
+          # optional: set this secret in your repo config for publishing to NPM
+          npm-token: ${{ secrets.NPM_TOKEN }}
+          # optional: set this secret in your repo config for 2FA with Optic
+          optic-token: ${{ secrets.OPTIC_TOKEN }}
+          # optional: NPM will generate provenance statement, or abort release if it can't 
+          provenance: true
 ```
 
 The above workflow (when manually triggered) will:
@@ -111,6 +117,7 @@ When you merge this PR:
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 - Leave a comment on each issues that are linked to the pull reqeuests of this release. This feature can be turned off by the `notify-on-the-issue` flag.
+- _(Optional)_ If `provenance: true` was set, NPM will add a [Provenance](#provenance) notice to the package's public NPM page.
 
 When you close the PR without merging it: nothing will happen.
 
@@ -220,17 +227,40 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 
 ## Provenance
 
-NPM will [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements) for your releases if the following conditions are met:
+If `provenance: true` is added to your `release.yml`'s **inputs**, NPM will [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements).
 
- - In the `.yml` file that configures your release action:
-   - Add `provenance: true` to your list of **inputs**
-   - Add `id-token: write` to your list of **permissions**
- - Ensure your CI runner uses NPM >= 9.5.0 (should be the default if Node >= 18)
- - Ensure your `package.json` is complete and correct. NPM will cancel the release with specific errors if it finds a problem. Requirements may change in future NPM releases but include things like a `"repository"` field with `"url"` property matching the format `"git+https://github.com/user/repo"`.
+NPM has some internal [requirements](https://docs.npmjs.com/generating-provenance-statements#prerequisites) for generating provenance. Unfortunately as of May 2023, not all are documented by NPM; some key requirements are:
 
-If `provenance: true` is in your YML inputs and any condition isn't met, the release will cancel with an error. 
+- `id-token: write` must be added to your `release.yml`'s **permissions**
+- NPM must on version 9.5.0 or greater (this will be met if our recommended `runs-on: ubuntu-latest` is used)
+- NPM has some undocumented internal requirements on `package.json` completeness. For example, the [repository field](https://docs.npmjs.com/cli/v9/configuring-npm/package-json#repository) is required, and some NPM versions may require its `"url"` property to match the format `"git+https://github.com/user/repo"`.
 
-If you run a release without `provenance: true` when a previous release had provenance, the provenance banner on your package's NPM landing page will be removed but the banner will remain on the subpage for the previous release.
+If any requirements are not met, the release will be aborted before publishing the new version, and an appropriate error will be shown in the actions report. The release commit can be reverted and the action re-tried after fixing the issue highlighted in the logged error.
+
+The above [example yml action](example) includes support for Provenance. To add provenance support to an existing action, add these two lines:
+
+```yml
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      # add this permission which is required for provenance
+      id-token: write
+    steps:
+      - uses: nearform-actions/optic-release-automation-action@v4
+        with:
+          npm-token: ${{ secrets.NPM_TOKEN }}
+          optic-token: ${{ secrets.OPTIC_TOKEN }}
+          commit-message: ${{ github.event.inputs.commit-message }}
+          semver: ${{ github.event.inputs.semver }}
+          npm-tag: ${{ github.event.inputs.tag }}
+          # add this to activate the action's provenance feature
+          provenance: true
+```
+
 
 ## Inputs
 
