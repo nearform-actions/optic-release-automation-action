@@ -56,7 +56,6 @@ async function publishToNpm({
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
 
-  const options = {}
   const flags = ['--tag', npmTag]
   if (provenance) {
     flags.push('--provenance')
@@ -69,9 +68,9 @@ async function publishToNpm({
         '-s',
         `${opticUrl}${opticToken}`,
       ])
-      await execWithOutput('npm', ['publish', '--otp', otp, ...flags], options)
+      await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
     } else {
-      await execWithOutput('npm', ['publish', ...flags], options)
+      await execWithOutput('npm', ['publish', ...flags])
     }
   }
 }
