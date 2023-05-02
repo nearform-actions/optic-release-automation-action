@@ -63,7 +63,17 @@ const DEFAULT_ACTION_DATA = {
   packageName: 'testPackageName',
 }
 
-function setup() {
+/**
+ * @param {{ npmVersion: string | undefined, env: Record<string, string> | undefined }} [options]
+ */
+function setup({ npmVersion, env } = {}) {
+  if (env) {
+    // Add any test-specific environment variables. They get cleaned up by tap.afterEach(sinon.restore).
+    Object.entries(env).forEach(([key, value]) => {
+      sinon.stub(process, 'env').value({ [key]: value })
+    })
+  }
+
   const logStub = sinon.stub(actionLog)
   const coreStub = sinon.stub(core)
   deleteReleaseStub.resetHistory()
@@ -86,14 +96,20 @@ function setup() {
     .stub(callApiAction, 'callApi')
     .resolves({ data: { body: 'test_body', html_url: 'test_url' } })
 
-  const release = proxyquire('../src/release', {
+  const proxyStubs = {
     './utils/execWithOutput': { execWithOutput: execWithOutputStub },
     './utils/tagVersion': tagVersionStub,
     './utils/revertCommit': revertCommitStub,
     './utils/publishToNpm': publishToNpmStub,
     './utils/notifyIssues': notifyIssuesStub,
     '@actions/core': coreStub,
-  })
+  }
+
+  if (npmVersion) {
+    proxyStubs['./utils/provenance'] = { getNpmVersion: () => npmVersion }
+  }
+
+  const release = proxyquire('../src/release', proxyStubs)
 
   return {
     release,
@@ -198,6 +214,73 @@ tap.test('Should publish to npm without optic', async () => {
     opticUrl: 'https://optic-test.run.app/api/generate/',
     npmTag: 'latest',
   })
+})
+
+tap.only(
+  'Should publish with provenance if flag set and conditions met',
+  async () => {
+    const { release, stubs } = setup({
+      npmVersion: '9.5.0', // valid
+      env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
+    })
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        provenance: 'true',
+      },
+    })
+
+    sinon.assert.notCalled(stubs.coreStub.setFailed)
+    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      provenance: true,
+    })
+  }
+)
+
+tap.only('Aborts publish with provenance if NPM version too old', async () => {
+  const { release, stubs } = setup({
+    npmVersion: '9.4.0', // too old (is before 9.5.0)
+    env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
+  })
+
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      'app-name': APP_NAME,
+      'npm-token': 'a-token',
+      provenance: 'true',
+    },
+  })
+
+  sinon.assert.calledWithMatch(
+    stubs.coreStub.setFailed,
+    'Provenance requires NPM >=9.5.0, but this action is using v9.4.0'
+  )
+})
+
+tap.only('Aborts publish with provenance if missing permission', async () => {
+  const { release, stubs } = setup({
+    npmVersion: '9.5.0', // valid, but before missing var is correctly handled on NPM's side (9.6.1)
+    // missing ACTIONS_ID_TOKEN_REQUEST_URL which is set from `id-token: write` permission.
+  })
+
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      'app-name': APP_NAME,
+      'npm-token': 'a-token',
+      provenance: 'true',
+    },
+  })
+  sinon.assert.calledWithMatch(
+    stubs.coreStub.setFailed,
+    'Provenance generation in GitHub Actions requires "write" access to the "id-token" permission'
+  )
 })
 
 tap.test('Should not publish to npm if there is no npm token', async () => {
