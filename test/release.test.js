@@ -216,7 +216,7 @@ tap.test('Should publish to npm without optic', async () => {
   })
 })
 
-tap.only(
+tap.test(
   'Should publish with provenance if flag set and conditions met',
   async () => {
     const { release, stubs } = setup({
@@ -242,7 +242,7 @@ tap.only(
   }
 )
 
-tap.only('Aborts publish with provenance if NPM version too old', async () => {
+tap.test('Aborts publish with provenance if NPM version too old', async () => {
   const { release, stubs } = setup({
     npmVersion: '9.4.0', // too old (is before 9.5.0)
     env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
@@ -263,7 +263,7 @@ tap.only('Aborts publish with provenance if NPM version too old', async () => {
   )
 })
 
-tap.only('Aborts publish with provenance if missing permission', async () => {
+tap.test('Aborts publish with provenance if missing permission', async () => {
   const { release, stubs } = setup({
     npmVersion: '9.5.0', // valid, but before missing var is correctly handled on NPM's side (9.6.1)
     // missing ACTIONS_ID_TOKEN_REQUEST_URL which is set from `id-token: write` permission.
