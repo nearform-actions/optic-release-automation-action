@@ -237,7 +237,7 @@ NPM has some internal [requirements](https://docs.npmjs.com/generating-provenanc
 
 If any requirements are not met, the release will be aborted before publishing the new version, and an appropriate error will be shown in the actions report. The release commit can be reverted and the action re-tried after fixing the issue highlighted in the logged error.
 
-The above [example yml action](example) includes support for Provenance. To add provenance support to an existing action, add these two lines:
+The above [example yml action](#example) includes support for Provenance. To add provenance support to an existing action, add these two lines:
 
 ```yml
 jobs:
