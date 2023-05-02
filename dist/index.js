@@ -79219,7 +79219,10 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 const { execWithOutput } = __nccwpck_require__(8632)
-const { checkProvenanceViability } = __nccwpck_require__(5560)
+const {
+  checkProvenanceViability,
+  getNpmVersion,
+} = __nccwpck_require__(3365)
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -79306,8 +79309,11 @@ module.exports = async function ({ github, context, inputs }) {
     const npmToken = inputs['npm-token']
     const provenance = /true/i.test(inputs['provenance'])
 
-    // Fail fast if user wants provenance but their setup can't deliver
-    if (provenance) await checkProvenanceViability()
+    // Fail fast with meaningful error if user wants provenance but their setup won't deliver
+    if (provenance) {
+      const npmVersion = await getNpmVersion()
+      checkProvenanceViability(npmVersion)
+    }
 
     if (npmToken) {
       await publishToNpm({
@@ -79776,6 +79782,81 @@ exports.notifyIssues = notifyIssues
 
 /***/ }),
 
+/***/ 3365:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const semver = __nccwpck_require__(1383)
+const { execWithOutput } = __nccwpck_require__(8632)
+
+/**
+ * Abort if the user specified they want NPM provenance, but their CI's NPM version doesn't support it.
+ * If we continued, the release will go ahead with no warnings, and no provenance will be generated.
+ */
+function checkIsSupported(npmVersion) {
+  const validNpmVersion = '>=9.5.0'
+
+  if (!semver.satisfies(npmVersion, validNpmVersion)) {
+    throw new Error(
+      `Provenance requires NPM ${validNpmVersion}, but this action is using v${npmVersion}.
+Either remove provenance from your release action's inputs, or update your release CI's NPM version.`
+    )
+  }
+}
+
+/**
+ * Abort with a meaningful error if the user will get a misleading error message from NPM.
+ * As of April 2023 this affects anyone whose CI is set to use Node 18 (defaults to NPM 9.5.1).
+ */
+function checkPermissions(npmVersion) {
+  const correctNpmErrorVersion = '>=9.6.1'
+
+  if (
+    !process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
+    // In NPM versions after https://github.com/npm/cli/pull/6226 landed, we can let NPM handle this itself.
+    !semver.satisfies(npmVersion, correctNpmErrorVersion)
+  ) {
+    throw new Error(
+      // Throw the same error message that updated versions of NPM will throw.
+      'Provenance generation in GitHub Actions requires "write" access to the "id-token" permission'
+    )
+  }
+}
+
+/**
+ * Fail fast and throw a meaningful error if NPM Provenance will fail silently or misleadingly.
+ *
+ * @see https://docs.npmjs.com/generating-provenance-statements
+ *
+ * @param {string} npmVersion
+ */
+function checkProvenanceViability(npmVersion) {
+  if (!npmVersion) throw new Error('Current npm version not provided')
+  checkIsSupported(npmVersion)
+  checkPermissions(npmVersion)
+  // There are various other provenance requirements, such as specific package.json properties, but these
+  // may change with future versions, and do fail with meaningful errors, so we can let NPM handle those.
+}
+
+/**
+ * Gets npm version via `npm -v` on the command line.
+ * Split out as its own export so it can be easily mocked in tests.
+ */
+async function getNpmVersion() {
+  return await execWithOutput('npm', ['-v'])
+}
+
+module.exports = {
+  checkProvenanceViability,
+  getNpmVersion,
+  checkIsSupported,
+  checkPermissions,
+}
+
+
+/***/ }),
+
 /***/ 1433:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -79832,6 +79913,15 @@ async function publishToNpm({
   version,
   provenance,
 }) {
+  console.log('>>>>> publishToNpm', {
+    npmToken,
+    opticToken,
+    opticUrl,
+    npmTag,
+    version,
+    provenance,
+  })
+
   await execWithOutput('npm', [
     'config',
     'set',
@@ -79959,9 +80049,7 @@ module.exports = {
 
 
 const github = __nccwpck_require__(5438)
-const semver = __nccwpck_require__(1383)
 const { logInfo, logError } = __nccwpck_require__(653)
-const { execWithOutput } = __nccwpck_require__(8632)
 
 async function fetchLatestRelease(token) {
   try {
@@ -80043,49 +80131,10 @@ async function fetchReleaseByTag(token, tag) {
   }
 }
 
-/**
- * Fail fast with a meaningful error if NPM Provenance will fail.
- *
- * @see https://docs.npmjs.com/generating-provenance-statements
- */
-async function checkProvenanceViability() {
-  const npmVersion = await execWithOutput('npm', ['-v'])
-
-  const validNpmVersion = '>=9.5.0'
-  const correctNpmErrorVersion = '>=9.6.1'
-
-  // Abort if the user specified they want NPM provenance, but their CI's NPM version doesn't support it.
-  // If we continued, the release will go ahead with no warnings, and no provenance will be generated.
-  if (!semver.satisfies(npmVersion, validNpmVersion)) {
-    throw new Error(
-      `Provenance requires NPM ${validNpmVersion}, but this action is using v${npmVersion}.
-Either remove provenance from your release action's inputs, or update your release CI's NPM version.`
-    )
-  }
-
-  // Abort with a meaningful error if the user will get a misleading error message from NPM.
-  // As of April 2023 this affects anyone whose CI is set to use Node 18 (defaults to NPM 9.5.1).
-  if (
-    !process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
-    // In NPM versions after https://github.com/npm/cli/pull/6226 landed, we can let NPM handle it.
-    !semver.satisfies(correctNpmErrorVersion)
-  ) {
-    throw new Error(
-      // Throw the same error message that updated versions of NPM will throw.
-      `Provenance generation in GitHub Actions requires "write" access to the "id-token" permission`
-    )
-  }
-
-  // There are various other provenance requirements, such as specific package.json properties, but these
-  // may change with future versions, and do fail with meaningful errors, so we can let NPM handle those.
-  return true
-}
-
 module.exports = {
   fetchLatestRelease,
   generateReleaseNotes,
   fetchReleaseByTag,
-  checkProvenanceViability,
 }
 
 
