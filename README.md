@@ -16,6 +16,7 @@ This action allows you to automate the release process of your npm modules, apps
   - [Example](#example-1)
 - [How to add a build step to your workflow](#how-to-add-a-build-step-to-your-workflow)
 - [Prerelease support](#prerelease-support)
+- [Provenance](#provenance)
 - [Inputs](#inputs)
 - [Motivation](#motivation)
 - [Playground / Testing](#playground--testing)
@@ -217,6 +218,20 @@ Generally, if you want to release a prerelease of a repository, and it is an NPM
 
 Please note that in case of a prerelease the `sync-semver-tags` input will be treated as `false`, even if it's set to `true`. This because we don't want to update the main version tags to the latest prerelease commit but only to the latest official release.
 
+## Provenance
+
+NPM will [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements) for your releases if the following conditions are met:
+
+ - In the `.yml` file that configures your release action:
+   - Add `provenance: true` to your list of **inputs**
+   - Add `id-token: write` to your list of **permissions**
+ - Ensure your CI runner uses NPM >= 9.5.0 (should be the default if Node >= 18)
+ - Ensure your `package.json` is complete and correct. will cancel the release with specific errors if it finds a problem. Requirements may change in future NPM releases but include things like a `"repository"` field with `"url"` property matching the format `"git+https://github.com/user/repo"`.
+
+If `provenance: true` is in your YML inputs and any condition isn't met, the release will cancel with an error. 
+
+If you run a release without `provenance: true` when a previous release had provenance, the provenance banner on your package's NPM landing page will be removed but the banner will remain on the subpage for the previous release.
+
 ## Inputs
 
 | Input          | Required | Description                                                                                                                                                                                |
@@ -239,6 +254,8 @@ Please note that in case of a prerelease the `sync-semver-tags` input will be tr
 | `version-prefix`       | No       | A prefix to apply to the version number, which reflects in the tag and GitHub release names. <br /> (_Default: 'v'_)                                                                                                                                                                                                                                         |
 | `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 | `base-tag`       | No       | Choose a specific tag release for your release notes. This input allows you to specify a base release (for example, v1.0.0) and will include all changes made in releases between the base release and the latest release. This input is only used for generating release notes and has no functional implications on the rest of the workflow.                                                                                                                                                                                                                                         |
+| `provenance`| No    | Set as true to have NPM [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements). See [Provenance section above](#Provenance) for requirements. Also <br /> (_Default: `false`_)                                                                  |
+
 
 ## Motivation
 
