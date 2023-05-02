@@ -79806,19 +79806,22 @@ Either remove provenance from your release action's inputs, or update your relea
 }
 
 /**
- * Abort with a meaningful error if the user will get a misleading error message from NPM.
- * As of April 2023 this affects anyone whose CI is set to use Node 18 (defaults to NPM 9.5.1).
+ * Abort with a meaningful error if the user would get a misleading error message from NPM
+ * due to an NPM bug that existed between 9.5.0 and 9.6.1.
+ * As of April 2023, this would affect anyone whose CI is set to Node 18 (which defaults to NPM 9.5.1).
  */
 function checkPermissions(npmVersion) {
+  // Bug was fixed in this NPM version - see https://github.com/npm/cli/pull/6226
   const correctNpmErrorVersion = '>=9.6.1'
 
   if (
+    // Same test condition as in fixed versions of NPM
     !process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
-    // In NPM versions after https://github.com/npm/cli/pull/6226 landed, we can let NPM handle this itself.
+    // Let NPM handle this itself after their bug was fixed, so we're not brittle against future changes
     !semver.satisfies(npmVersion, correctNpmErrorVersion)
   ) {
     throw new Error(
-      // Throw the same error message that updated versions of NPM will throw.
+      // Same error message as in fixed versions of NPM
       'Provenance generation in GitHub Actions requires "write" access to the "id-token" permission'
     )
   }
@@ -79836,7 +79839,7 @@ function checkProvenanceViability(npmVersion) {
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
   // There are various other provenance requirements, such as specific package.json properties, but these
-  // may change with future versions, and do fail with meaningful errors, so we can let NPM handle those.
+  // may change in future NPM versions, and do fail with meaningful errors, so we let NPM handle those.
 }
 
 /**
@@ -79913,15 +79916,6 @@ async function publishToNpm({
   version,
   provenance,
 }) {
-  console.log('>>>>> publishToNpm', {
-    npmToken,
-    opticToken,
-    opticUrl,
-    npmTag,
-    version,
-    provenance,
-  })
-
   await execWithOutput('npm', [
     'config',
     'set',
