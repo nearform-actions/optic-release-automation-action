@@ -232,7 +232,7 @@ If `provenance: true` is added to your `release.yml`'s **inputs**, NPM will [gen
 NPM has some internal [requirements](https://docs.npmjs.com/generating-provenance-statements#prerequisites) for generating provenance. Unfortunately as of May 2023, not all are documented by NPM; some key requirements are:
 
 - `id-token: write` must be added to your `release.yml`'s **permissions**
-- NPM must on version 9.5.0 or greater (this will be met if our recommended `runs-on: ubuntu-latest` is used)
+- NPM must be on version 9.5.0 or greater (this will be met if our recommended `runs-on: ubuntu-latest` is used)
 - NPM has some undocumented internal requirements on `package.json` completeness. For example, the [repository field](https://docs.npmjs.com/cli/v9/configuring-npm/package-json#repository) is required, and some NPM versions may require its `"url"` property to match the format `"git+https://github.com/user/repo"`.
 
 If any requirements are not met, the release will be aborted before publishing the new version, and an appropriate error will be shown in the actions report. The release commit can be reverted and the action re-tried after fixing the issue highlighted in the logged error.
