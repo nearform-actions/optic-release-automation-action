@@ -14,7 +14,7 @@ const { exec } = require('@actions/exec')
 async function execWithOutput(
   cmd,
   args,
-  { cwd, env = getFilteredEnv(), ...options } = {}
+  { cwd, silent = false, env = getFilteredEnv(), ...options } = {}
 ) {
   let output = ''
   let errorOutput = ''
@@ -22,7 +22,7 @@ async function execWithOutput(
   const stdoutDecoder = new StringDecoder('utf8')
   const stderrDecoder = new StringDecoder('utf8')
 
-  options.silent = false
+  options.silent = silent
   options.env = env
 
   /* istanbul ignore else */
