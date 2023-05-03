@@ -72,7 +72,7 @@ tap.test('rejects if exit code is not 0', async t => {
   execStub.calledWith('command')
 })
 
-tap.only('passes env vars excluding `INPUT_*` env vars', async t => {
+tap.test('passes env vars excluding `INPUT_*` env vars', async t => {
   const INPUT_NPM_TOKEN = 'some-secret-value'
   const INPUT_OPTIC_TOKEN = 'another-secret-value'
   const ACTIONS_ID_TOKEN_REQUEST_URL = 'https://example.com'
