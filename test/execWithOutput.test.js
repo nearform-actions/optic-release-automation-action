@@ -4,13 +4,18 @@ const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
 
-const execStub = sinon.stub()
-
-const execWithOutputModule = proxyquire('../src/utils/execWithOutput', {
-  '@actions/exec': {
-    exec: execStub,
-  },
-})
+const setup = () => {
+  const execStubInner = sinon.stub()
+  return {
+    execStub: execStubInner,
+    execWithOutputModule: proxyquire('../src/utils/execWithOutput', {
+      '@actions/exec': {
+        exec: execStubInner,
+      },
+    }),
+  }
+}
+const { execStub, execWithOutputModule } = setup()
 
 tap.afterEach(() => {
   sinon.restore()
@@ -86,10 +91,13 @@ tap.test('passes env vars excluding `INPUT_*` env vars', async t => {
     GITHUB_EVENT_NAME,
   })
 
-  execStub.resolves(0)
-  execWithOutputModule.execWithOutput('command', [])
+  // Redo setup so it gets the new env vars
+  const withEnv = setup()
 
-  const envInExec = execStub.firstCall.lastArg.env
+  withEnv.execStub.resolves(0)
+  withEnv.execWithOutputModule.execWithOutput('command', [])
+
+  const envInExec = withEnv.execStub.firstCall.lastArg.env
 
   // Check custom env vars are preserved
   t.has(envInExec, { ACTIONS_ID_TOKEN_REQUEST_URL })
