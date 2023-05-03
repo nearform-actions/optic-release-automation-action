@@ -11,16 +11,18 @@ const { exec } = require('@actions/exec')
  * @param {{cwd?: string}} options
  * @returns Promise<string>
  */
-async function execWithOutput(cmd, args, { cwd } = {}) {
+async function execWithOutput(
+  cmd,
+  args,
+  { cwd, silent = false, ...options } = {}
+) {
   let output = ''
   let errorOutput = ''
 
   const stdoutDecoder = new StringDecoder('utf8')
   const stderrDecoder = new StringDecoder('utf8')
 
-  const options = {
-    silent: false,
-  }
+  options.silent = silent
 
   /* istanbul ignore else */
   if (cwd !== '') {
