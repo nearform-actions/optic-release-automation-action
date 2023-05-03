@@ -48,12 +48,18 @@ async function publishToNpm({
   opticUrl,
   npmTag,
   version,
+  provenance,
 }) {
   await execWithOutput('npm', [
     'config',
     'set',
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
+
+  const flags = ['--tag', npmTag]
+  if (provenance) {
+    flags.push('--provenance')
+  }
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
@@ -62,9 +68,9 @@ async function publishToNpm({
         '-s',
         `${opticUrl}${opticToken}`,
       ])
-      await execWithOutput('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
     } else {
-      await execWithOutput('npm', ['publish', '--tag', npmTag])
+      await execWithOutput('npm', ['publish', ...flags])
     }
   }
 }

@@ -79219,6 +79219,10 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 const { execWithOutput } = __nccwpck_require__(8632)
+const {
+  checkProvenanceViability,
+  getNpmVersion,
+} = __nccwpck_require__(3365)
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -79303,9 +79307,23 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
+    const provenance = /true/i.test(inputs['provenance'])
+
+    // Fail fast with meaningful error if user wants provenance but their setup won't deliver
+    if (provenance) {
+      const npmVersion = await getNpmVersion()
+      checkProvenanceViability(npmVersion)
+    }
 
     if (npmToken) {
-      await publishToNpm({ npmToken, opticToken, opticUrl, npmTag, version })
+      await publishToNpm({
+        npmToken,
+        opticToken,
+        opticUrl,
+        npmTag,
+        version,
+        provenance,
+      })
     } else {
       logWarning('missing npm-token')
     }
@@ -79784,6 +79802,84 @@ exports.notifyIssues = notifyIssues
 
 /***/ }),
 
+/***/ 3365:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const semver = __nccwpck_require__(1383)
+const { execWithOutput } = __nccwpck_require__(8632)
+
+/**
+ * Abort if the user specified they want NPM provenance, but their CI's NPM version doesn't support it.
+ * If we continued, the release will go ahead with no warnings, and no provenance will be generated.
+ */
+function checkIsSupported(npmVersion) {
+  const validNpmVersion = '>=9.5.0'
+
+  if (!semver.satisfies(npmVersion, validNpmVersion)) {
+    throw new Error(
+      `Provenance requires NPM ${validNpmVersion}, but this action is using v${npmVersion}.
+Either remove provenance from your release action's inputs, or update your release CI's NPM version.`
+    )
+  }
+}
+
+/**
+ * Abort with a meaningful error if the user would get a misleading error message from NPM
+ * due to an NPM bug that existed between 9.5.0 and 9.6.1.
+ * As of April 2023, this would affect anyone whose CI is set to Node 18 (which defaults to NPM 9.5.1).
+ */
+function checkPermissions(npmVersion) {
+  // Bug was fixed in this NPM version - see https://github.com/npm/cli/pull/6226
+  const correctNpmErrorVersion = '>=9.6.1'
+
+  if (
+    // Same test condition as in fixed versions of NPM
+    !process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
+    // Let NPM handle this itself after their bug was fixed, so we're not brittle against future changes
+    !semver.satisfies(npmVersion, correctNpmErrorVersion)
+  ) {
+    throw new Error(
+      // Same error message as in fixed versions of NPM
+      'Provenance generation in GitHub Actions requires "write" access to the "id-token" permission'
+    )
+  }
+}
+
+/**
+ * Fail fast and throw a meaningful error if NPM Provenance will fail silently or misleadingly.
+ *
+ * @see https://docs.npmjs.com/generating-provenance-statements
+ *
+ * @param {string} npmVersion
+ */
+function checkProvenanceViability(npmVersion) {
+  if (!npmVersion) throw new Error('Current npm version not provided')
+  checkIsSupported(npmVersion)
+  checkPermissions(npmVersion)
+  // There are various other provenance requirements, such as specific package.json properties, but these
+  // may change in future NPM versions, and do fail with meaningful errors, so we let NPM handle those.
+}
+
+/**
+ * Gets npm version via `npm -v` on the command line.
+ * Split out as its own export so it can be easily mocked in tests.
+ */
+async function getNpmVersion() {
+  return execWithOutput('npm', ['-v'])
+}
+
+module.exports = {
+  checkProvenanceViability,
+  getNpmVersion,
+  checkIsSupported,
+  checkPermissions,
+}
+
+
+/***/ }),
+
 /***/ 1433:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -79838,12 +79934,18 @@ async function publishToNpm({
   opticUrl,
   npmTag,
   version,
+  provenance,
 }) {
   await execWithOutput('npm', [
     'config',
     'set',
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
+
+  const flags = ['--tag', npmTag]
+  if (provenance) {
+    flags.push('--provenance')
+  }
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
@@ -79852,9 +79954,9 @@ async function publishToNpm({
         '-s',
         `${opticUrl}${opticToken}`,
       ])
-      await execWithOutput('npm', ['publish', '--otp', otp, '--tag', npmTag])
+      await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
     } else {
-      await execWithOutput('npm', ['publish', '--tag', npmTag])
+      await execWithOutput('npm', ['publish', ...flags])
     }
   }
 }
