@@ -63,7 +63,7 @@ async function execWithOutput(
   }
 
   throw new Error(
-    `${cmd} ${args.join(
+    `${cmd} ${args?.join(
       ' '
     )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
   )
