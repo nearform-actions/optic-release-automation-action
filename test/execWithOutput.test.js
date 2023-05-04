@@ -4,13 +4,18 @@ const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
 
-const execStub = sinon.stub()
-
-const execWithOutputModule = proxyquire('../src/utils/execWithOutput', {
-  '@actions/exec': {
-    exec: execStub,
-  },
-})
+const setup = () => {
+  const execStubInner = sinon.stub()
+  return {
+    execStub: execStubInner,
+    execWithOutputModule: proxyquire('../src/utils/execWithOutput', {
+      '@actions/exec': {
+        exec: execStubInner,
+      },
+    }),
+  }
+}
+const { execStub, execWithOutputModule } = setup()
 
 tap.afterEach(() => {
   sinon.restore()
@@ -70,4 +75,39 @@ tap.test('rejects if exit code is not 0', async t => {
 
   t.rejects(execWithOutputModule.execWithOutput('command'))
   execStub.calledWith('command')
+})
+
+tap.test('passes env vars excluding `INPUT_*` env vars', async t => {
+  const INPUT_NPM_TOKEN = 'some-secret-value'
+  const INPUT_OPTIC_TOKEN = 'another-secret-value'
+  const ACTIONS_ID_TOKEN_REQUEST_URL = 'https://example.com'
+  const GITHUB_EVENT_NAME = 'someEvent'
+
+  sinon.stub(process, 'env').value({
+    ...process.env,
+    INPUT_NPM_TOKEN,
+    INPUT_OPTIC_TOKEN,
+    ACTIONS_ID_TOKEN_REQUEST_URL,
+    GITHUB_EVENT_NAME,
+  })
+
+  // Redo setup so it gets the new env vars
+  const withEnv = setup()
+
+  withEnv.execStub.resolves(0)
+  withEnv.execWithOutputModule.execWithOutput('command', [])
+
+  const envInExec = withEnv.execStub.firstCall.lastArg.env
+
+  // Check custom env vars are preserved
+  t.has(envInExec, { ACTIONS_ID_TOKEN_REQUEST_URL })
+  t.has(envInExec, { GITHUB_EVENT_NAME })
+
+  // Check INPUT_* env vars are removed
+  t.notHas(envInExec, { INPUT_NPM_TOKEN })
+  t.notHas(envInExec, { INPUT_OPTIC_TOKEN })
+
+  // Check "real" env vars are preserved.
+  // Its value will vary by test runner, so just check it is present.
+  t.hasProp(envInExec, 'NODE')
 })
