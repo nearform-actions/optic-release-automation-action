@@ -60,7 +60,7 @@ async function publishToNpm({
   npmTag,
   version,
   provenance,
-  hasAccess
+  hasAccess,
 }) {
   await execWithOutput('npm', [
     'config',
@@ -77,7 +77,7 @@ async function publishToNpm({
       throw error
     }
   }
-  
+
   const flags = ['--tag', npmTag]
   // new packages and private packages disable provenance, they need to be public
   if (!packageName && hasAccess && provenance) {

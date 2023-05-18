@@ -89,7 +89,7 @@ tap.test(
   async t => {
     t.throws(
       () => checkAccessViability(),
-      'Can\'t generate provenance for new or private package, you must set access to public'
+      "Can't generate provenance for new or private package, you must set access to public"
     )
   }
 )
