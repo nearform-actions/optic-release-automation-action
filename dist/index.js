@@ -73459,7 +73459,7 @@ class SemVer {
         version = version.version
       }
     } else if (typeof version !== 'string') {
-      throw new TypeError(`Invalid Version: ${(__nccwpck_require__(3837).inspect)(version)}`)
+      throw new TypeError(`Invalid version. Must be a string. Got type "${typeof version}".`)
     }
 
     if (version.length > MAX_LENGTH) {
@@ -79308,11 +79308,12 @@ module.exports = async function ({ github, context, inputs }) {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
     const provenance = /true/i.test(inputs['provenance'])
+    const hasAccess = /'public'/i.test(inputs['access'])
 
     // Fail fast with meaningful error if user wants provenance but their setup won't deliver
     if (provenance) {
       const npmVersion = await getNpmVersion()
-      checkProvenanceViability(npmVersion)
+      checkProvenanceViability(npmVersion, hasAccess)
     }
 
     if (npmToken) {
@@ -79323,6 +79324,7 @@ module.exports = async function ({ github, context, inputs }) {
         npmTag,
         version,
         provenance,
+        hasAccess
       })
     } else {
       logWarning('missing npm-token')
@@ -79853,13 +79855,29 @@ function checkPermissions(npmVersion) {
  * @see https://docs.npmjs.com/generating-provenance-statements
  *
  * @param {string} npmVersion
+ * @param {boolean} hasAccess optional, defaults to false for private default access
  */
-function checkProvenanceViability(npmVersion) {
+function checkProvenanceViability(npmVersion, hasAccess) {
   if (!npmVersion) throw new Error('Current npm version not provided')
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
+  checkAccessViability(hasAccess)
   // There are various other provenance requirements, such as specific package.json properties, but these
   // may change in future NPM versions, and do fail with meaningful errors, so we let NPM handle those.
+}
+
+/**
+ * Fail fast and throw a meaningful error if Access doesn't allow Provenance
+ * @see https://docs.npmjs.com/generating-provenance-statements
+ *
+ * @param {boolean} hasAccess optional, defaults to false for private default access
+ */
+function checkAccessViability(hasAccess) {
+  if (!hasAccess) {
+    throw new Error(
+      "Can't generate provenance for new or private package, you must set access to public"
+    )
+  }
 }
 
 /**
@@ -79872,6 +79890,7 @@ async function getNpmVersion() {
 
 module.exports = {
   checkProvenanceViability,
+  checkAccessViability,
   getNpmVersion,
   checkIsSupported,
   checkPermissions,
@@ -79927,7 +79946,18 @@ async function allowNpmPublish(version) {
 
   return !packageVersionInfo
 }
-
+/**
+ * 
+ * @param {
+ *  npmToken,
+    opticToken,
+    opticUrl,
+    npmTag,
+    version,
+    provenance: boolean
+    hasAccess: boolean
+ * }  
+ */
 async function publishToNpm({
   npmToken,
   opticToken,
@@ -79935,6 +79965,7 @@ async function publishToNpm({
   npmTag,
   version,
   provenance,
+  hasAccess,
 }) {
   await execWithOutput('npm', [
     'config',
@@ -79942,9 +79973,20 @@ async function publishToNpm({
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
 
+  let packageName = null
+  try {
+    const packageInfo = await execWithOutput('npm', ['view', '--json'])
+    packageName = packageInfo ? JSON.parse(packageInfo).name : null
+  } catch (error) {
+    if (!error?.message?.match(/code E404/)) {
+      throw error
+    }
+  }
+
   const flags = ['--tag', npmTag]
-  if (provenance) {
-    flags.push('--provenance')
+  // new packages and private packages disable provenance, they need to be public
+  if (!packageName && hasAccess && provenance) {
+    flags.push('--provenance --access public')
   }
 
   if (await allowNpmPublish(version)) {
