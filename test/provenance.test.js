@@ -7,6 +7,7 @@ const {
   checkIsSupported,
   checkPermissions,
   checkProvenanceViability,
+  checkAccessViability,
   getNpmVersion,
 } = require('../src/utils/provenance')
 
@@ -79,6 +80,16 @@ tap.test(
     t.throws(
       () => checkProvenanceViability(),
       'Current npm version not provided'
+    )
+  }
+)
+
+tap.test(
+  'checkProvenanceViability fails fast if NPM package access is private',
+  async t => {
+    t.throws(
+      () => checkAccessViability(),
+      'Can\'t generate provenance for new or private package, you must set access to public'
     )
   }
 )

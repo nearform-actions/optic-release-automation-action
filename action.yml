@@ -80,6 +80,10 @@ inputs:
     required: false
     type: boolean
     default: 'false'
+  access:
+    description: 'If public any existing packages with provenance set to true will display provenance See https://docs.npmjs.com/generating-provenance-statements'
+    required: false
+    default: 'private'
 
 runs:
   using: 'composite'

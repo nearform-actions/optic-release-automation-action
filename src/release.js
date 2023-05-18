@@ -100,11 +100,12 @@ module.exports = async function ({ github, context, inputs }) {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
     const provenance = /true/i.test(inputs['provenance'])
+    const hasAccess = /'public'/i.test(inputs['access'])
 
     // Fail fast with meaningful error if user wants provenance but their setup won't deliver
     if (provenance) {
       const npmVersion = await getNpmVersion()
-      checkProvenanceViability(npmVersion)
+      checkProvenanceViability(npmVersion, hasAccess)
     }
 
     if (npmToken) {
@@ -115,6 +116,7 @@ module.exports = async function ({ github, context, inputs }) {
         npmTag,
         version,
         provenance,
+        hasAccess
       })
     } else {
       logWarning('missing npm-token')

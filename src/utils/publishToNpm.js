@@ -41,7 +41,18 @@ async function allowNpmPublish(version) {
 
   return !packageVersionInfo
 }
-
+/**
+ * 
+ * @param {
+ *  npmToken,
+    opticToken,
+    opticUrl,
+    npmTag,
+    version,
+    provenance: boolean
+    hasAccess: boolean
+ * }  
+ */
 async function publishToNpm({
   npmToken,
   opticToken,
@@ -49,6 +60,7 @@ async function publishToNpm({
   npmTag,
   version,
   provenance,
+  hasAccess
 }) {
   await execWithOutput('npm', [
     'config',
@@ -56,9 +68,20 @@ async function publishToNpm({
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
 
+  let packageName = null
+  try {
+    const packageInfo = await execWithOutput('npm', ['view', '--json'])
+    packageName = packageInfo ? JSON.parse(packageInfo).name : null
+  } catch (error) {
+    if (!error?.message?.match(/code E404/)) {
+      throw error
+    }
+  }
+  
   const flags = ['--tag', npmTag]
-  if (provenance) {
-    flags.push('--provenance')
+  // new packages and private packages disable provenance, they need to be public
+  if (!packageName && hasAccess && provenance) {
+    flags.push('--provenance --access public')
   }
 
   if (await allowNpmPublish(version)) {
