@@ -79906,11 +79906,7 @@ module.exports = {
 
 
 const { execWithOutput } = __nccwpck_require__(8632)
-
-async function allowNpmPublish(version) {
-  // We need to check if the package was already published. This can happen if
-  // the action was already executed before, but it failed in its last step
-  // (GH release).
+async function getPackageName() {
   let packageName = null
   try {
     const packageInfo = await execWithOutput('npm', ['view', '--json'])
@@ -79921,6 +79917,14 @@ async function allowNpmPublish(version) {
     }
   }
 
+  return packageName
+}
+async function allowNpmPublish(version) {
+  // We need to check if the package was already published. This can happen if
+  // the action was already executed before, but it failed in its last step
+  // (GH release).
+
+  const packageName = getPackageName()
   // Package has not been published before
   if (!packageName) {
     return true
@@ -79973,15 +79977,7 @@ async function publishToNpm({
     `//registry.npmjs.org/:_authToken=${npmToken}`,
   ])
 
-  let packageName = null
-  try {
-    const packageInfo = await execWithOutput('npm', ['view', '--json'])
-    packageName = packageInfo ? JSON.parse(packageInfo).name : null
-  } catch (error) {
-    if (!error?.message?.match(/code E404/)) {
-      throw error
-    }
-  }
+  const packageName = getPackageName()
 
   const flags = ['--tag', npmTag]
   // new packages and private packages disable provenance, they need to be public
