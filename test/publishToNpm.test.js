@@ -301,3 +301,22 @@ tap.test('Adds --provenance flag when provenance option provided', async () => {
     '--provenance',
   ])
 })
+
+tap.test('Adds --access flag if provided as an input', async () => {
+  const { publishToNpmProxy, execWithOutputStub } = setup()
+  await publishToNpmProxy.publishToNpm({
+    npmToken: 'a-token',
+    opticUrl: 'https://optic-test.run.app/api/generate/',
+    npmTag: 'latest',
+    version: 'v5.1.3',
+    access: 'public',
+  })
+
+  sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+    '--access',
+    'public',
+  ])
+})

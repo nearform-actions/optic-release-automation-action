@@ -45,29 +45,13 @@ function checkPermissions(npmVersion) {
  * @see https://docs.npmjs.com/generating-provenance-statements
  *
  * @param {string} npmVersion
- * @param {boolean} hasAccess optional, defaults to false for private default access
  */
-function checkProvenanceViability(npmVersion, hasAccess) {
+function checkProvenanceViability(npmVersion) {
   if (!npmVersion) throw new Error('Current npm version not provided')
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
-  checkAccessViability(hasAccess)
   // There are various other provenance requirements, such as specific package.json properties, but these
   // may change in future NPM versions, and do fail with meaningful errors, so we let NPM handle those.
-}
-
-/**
- * Fail fast and throw a meaningful error if Access doesn't allow Provenance
- * @see https://docs.npmjs.com/generating-provenance-statements
- *
- * @param {boolean} hasAccess optional, defaults to false for private default access
- */
-function checkAccessViability(hasAccess) {
-  if (!hasAccess) {
-    throw new Error(
-      "Can't generate provenance for new or private package, you must set access to public"
-    )
-  }
 }
 
 /**
@@ -80,7 +64,6 @@ async function getNpmVersion() {
 
 module.exports = {
   checkProvenanceViability,
-  checkAccessViability,
   getNpmVersion,
   checkIsSupported,
   checkPermissions,

@@ -283,6 +283,75 @@ tap.test('Aborts publish with provenance if missing permission', async () => {
   )
 })
 
+tap.test(
+  'Should publish with --access public if flag set',
+  async () => {
+    const { release, stubs } = setup()
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        access: 'public',
+      },
+    })
+
+    sinon.assert.notCalled(stubs.coreStub.setFailed)
+    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      access: 'public',
+    })
+  }
+)
+
+tap.test(
+  'Should publish with --access restricted if flag set',
+  async () => {
+    const { release, stubs } = setup()
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        access: 'restricted',
+      },
+    })
+
+    sinon.assert.notCalled(stubs.coreStub.setFailed)
+    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      access: 'restricted',
+    })
+  }
+)
+
+tap.test(
+  'Should disallow unsupported --access flag',
+  async () => {
+    const { release, stubs } = setup()
+
+    const invalidString = 'public; node -e "throw new Error(`arbitrary command executed`)"'
+
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'npm-token': 'a-token',
+        access: invalidString,
+      },
+    })
+
+    sinon.assert.calledWithMatch(
+      stubs.coreStub.setFailed,
+      `Invalid "access" option provided ("${invalidString}"), should be one of "public", "restricted"`
+    )
+  }
+)
+
 tap.test('Should not publish to npm if there is no npm token', async () => {
   const { release, stubs } = setup()
   stubs.callApiStub.throws()
