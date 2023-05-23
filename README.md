@@ -286,7 +286,7 @@ jobs:
 | `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 | `base-tag`       | No       | Choose a specific tag release for your release notes. This input allows you to specify a base release (for example, v1.0.0) and will include all changes made in releases between the base release and the latest release. This input is only used for generating release notes and has no functional implications on the rest of the workflow.                                                                                                                                                                                                                                         |
 | `provenance`| No    | Set as true to have NPM [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements). See [Provenance section above](#provenance) for requirements.<br /> (_Default: `false`_)      
-| `access`| No    | Set as `public` or `restricted` to change an NPM package's access status when next published. (_Default: `false`_)
+| `access`| No    | Set as `public` or `restricted` to change an NPM package's access status when next published.
 
 
 ## Motivation
