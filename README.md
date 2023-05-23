@@ -98,9 +98,6 @@ jobs:
           optic-token: ${{ secrets.OPTIC_TOKEN }}
           # optional: NPM will generate provenance statement, or abort release if it can't 
           provenance: true
-           # optional: requires to be public in order to enable provenance
-           # caution: this will make your npm package public
-          access: "public"
 ```
 
 The above workflow (when manually triggered) will:
