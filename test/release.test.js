@@ -367,7 +367,12 @@ tap.test('Should disallow unsupported --access flag', async t => {
 tap.test(
   'Should publish with --access public and provenance if unscoped and unpublished',
   async t => {
-    const { release, stubs } = setup({ isScoped: false, isPublished: false })
+    const { release, stubs } = setup({
+      isScoped: false,
+      isPublished: false,
+      npmVersion: '9.5.0', // valid
+      env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
+    })
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
@@ -394,7 +399,13 @@ tap.test(
 tap.test(
   'Should not override access restricted with provenance while unscoped and unpublished',
   async t => {
-    const { release, stubs } = setup({ isScoped: false, isPublished: false })
+    const { release, stubs } = setup({
+      isScoped: false,
+      isPublished: false,
+      npmVersion: '9.5.0', // valid
+      env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
+    })
+
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
@@ -422,7 +433,12 @@ tap.test(
 tap.test(
   'Should publish with provenance and not add access when scoped and unpublished',
   async t => {
-    const { release, stubs } = setup({ isScoped: true, isPublished: false })
+    const { release, stubs } = setup({
+      isScoped: true,
+      isPublished: false,
+      npmVersion: '9.5.0', // valid
+      env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
+    })
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
@@ -448,7 +464,12 @@ tap.test(
 tap.test(
   'Should publish with provenance and not add access when unscoped and published',
   async t => {
-    const { release, stubs } = setup({ isScoped: false, isPublished: true })
+    const { release, stubs } = setup({
+      isScoped: false,
+      isPublished: true,
+      npmVersion: '9.5.0', // valid
+      env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' }, // valid
+    })
     await release({
       ...DEFAULT_ACTION_DATA,
       inputs: {
