@@ -103,9 +103,13 @@ module.exports = async function ({ github, context, inputs }) {
     const access = inputs['access']
 
     // Can't limit custom action inputs to fixed options like "choice" type in a manual action
-    const validAccessOptions = ['public', 'restricted'] 
+    const validAccessOptions = ['public', 'restricted']
     if (access && !validAccessOptions.includes(access)) {
-      core.setFailed(`Invalid "access" option provided ("${access}"), should be one of "${validAccessOptions.join('", "')}"`)
+      core.setFailed(
+        `Invalid "access" option provided ("${access}"), should be one of "${validAccessOptions.join(
+          '", "'
+        )}"`
+      )
       return
     }
 
@@ -116,14 +120,17 @@ module.exports = async function ({ github, context, inputs }) {
       npmTag,
       version,
       provenance,
-      access
+      access,
     }
 
     if (provenance) {
       // Fail fast with meaningful error if user wants provenance but their setup won't deliver,
       // and apply any necessary options tweaks.
       const npmVersion = await getNpmVersion()
-      publishOptions = await ensureProvenanceViability(npmVersion, publishOptions)
+      publishOptions = await ensureProvenanceViability(
+        npmVersion,
+        publishOptions
+      )
     }
 
     if (npmToken) {

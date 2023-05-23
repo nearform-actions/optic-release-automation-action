@@ -1,7 +1,7 @@
 'use strict'
 const semver = require('semver')
 const { execWithOutput } = require('./execWithOutput')
-const { getLocalInfo, getPublishedInfo, isPackageNameScoped } = require('./packageInfo')
+const { getLocalInfo, getPublishedInfo } = require('./packageInfo')
 
 /**
  * Abort if the user specified they want NPM provenance, but their CI's NPM version doesn't support it.
@@ -85,7 +85,7 @@ async function ensureProvenanceViability(npmVersion, publishOptions) {
 
   const value = {
     ...publishOptions,
-    ...await getAccessAdjustment(publishOptions),
+    ...(await getAccessAdjustment(publishOptions)),
   }
   return value
 }

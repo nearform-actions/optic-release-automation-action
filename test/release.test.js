@@ -96,8 +96,9 @@ function setup({ npmVersion, env, isPublished = true, isScoped = true } = {}) {
   const provenanceProxy = proxyquire('../src/utils/provenance', {
     './packageInfo': {
       getLocalInfo: () => ({ name: packageName }),
-      getPublishedInfo: async () => isPublished ? { name: packageName } : null
-    }
+      getPublishedInfo: async () =>
+        isPublished ? { name: packageName } : null,
+    },
   })
   if (npmVersion) provenanceProxy.getNpmVersion = () => npmVersion
 
@@ -295,81 +296,73 @@ tap.test('Aborts publish with provenance if missing permission', async t => {
   t.pass('did set failed')
 })
 
-tap.test(
-  'Should publish with --access public if flag set',
-  async t => {
-    const { release, stubs } = setup()
-    await release({
-      ...DEFAULT_ACTION_DATA,
-      inputs: {
-        'app-name': APP_NAME,
-        'npm-token': 'a-token',
-        access: 'public',
-      },
-    })
-
-    sinon.assert.notCalled(stubs.coreStub.setFailed)
-    t.pass('did not set failed')
-
-    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
-      npmToken: 'a-token',
-      opticUrl: 'https://optic-test.run.app/api/generate/',
-      npmTag: 'latest',
+tap.test('Should publish with --access public if flag set', async t => {
+  const { release, stubs } = setup()
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      'app-name': APP_NAME,
+      'npm-token': 'a-token',
       access: 'public',
-    })
-    t.pass('called publishToNpm')
-  }
-)
+    },
+  })
 
-tap.test(
-  'Should publish with --access restricted if flag set',
-  async t => {
-    const { release, stubs } = setup()
-    await release({
-      ...DEFAULT_ACTION_DATA,
-      inputs: {
-        'app-name': APP_NAME,
-        'npm-token': 'a-token',
-        access: 'restricted',
-      },
-    })
+  sinon.assert.notCalled(stubs.coreStub.setFailed)
+  t.pass('did not set failed')
 
-    sinon.assert.notCalled(stubs.coreStub.setFailed)
-    t.pass('did not set failed')
+  sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+    npmToken: 'a-token',
+    opticUrl: 'https://optic-test.run.app/api/generate/',
+    npmTag: 'latest',
+    access: 'public',
+  })
+  t.pass('called publishToNpm')
+})
 
-    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
-      npmToken: 'a-token',
-      opticUrl: 'https://optic-test.run.app/api/generate/',
-      npmTag: 'latest',
+tap.test('Should publish with --access restricted if flag set', async t => {
+  const { release, stubs } = setup()
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      'app-name': APP_NAME,
+      'npm-token': 'a-token',
       access: 'restricted',
-    })
-    t.pass('called publishToNpm')
-  }
-)
+    },
+  })
 
-tap.test(
-  'Should disallow unsupported --access flag',
-  async t => {
-    const { release, stubs } = setup()
+  sinon.assert.notCalled(stubs.coreStub.setFailed)
+  t.pass('did not set failed')
 
-    const invalidString = 'public; node -e "throw new Error(`arbitrary command executed`)"'
+  sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+    npmToken: 'a-token',
+    opticUrl: 'https://optic-test.run.app/api/generate/',
+    npmTag: 'latest',
+    access: 'restricted',
+  })
+  t.pass('called publishToNpm')
+})
 
-    await release({
-      ...DEFAULT_ACTION_DATA,
-      inputs: {
-        'app-name': APP_NAME,
-        'npm-token': 'a-token',
-        access: invalidString,
-      },
-    })
+tap.test('Should disallow unsupported --access flag', async t => {
+  const { release, stubs } = setup()
 
-    sinon.assert.calledWithMatch(
-      stubs.coreStub.setFailed,
-      `Invalid "access" option provided ("${invalidString}"), should be one of "public", "restricted"`
-    )
-    t.pass('did set failed')
-  }
-)
+  const invalidString =
+    'public; node -e "throw new Error(`arbitrary command executed`)"'
+
+  await release({
+    ...DEFAULT_ACTION_DATA,
+    inputs: {
+      'app-name': APP_NAME,
+      'npm-token': 'a-token',
+      access: invalidString,
+    },
+  })
+
+  sinon.assert.calledWithMatch(
+    stubs.coreStub.setFailed,
+    `Invalid "access" option provided ("${invalidString}"), should be one of "public", "restricted"`
+  )
+  t.pass('did set failed')
+})
 
 tap.test(
   'Should publish with --access public and provenance if unscoped and unpublished',

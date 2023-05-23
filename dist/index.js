@@ -79311,9 +79311,13 @@ module.exports = async function ({ github, context, inputs }) {
     const access = inputs['access']
 
     // Can't limit custom action inputs to fixed options like "choice" type in a manual action
-    const validAccessOptions = ['public', 'restricted'] 
+    const validAccessOptions = ['public', 'restricted']
     if (access && !validAccessOptions.includes(access)) {
-      core.setFailed(`Invalid "access" option provided ("${access}"), should be one of "${validAccessOptions.join('", "')}"`)
+      core.setFailed(
+        `Invalid "access" option provided ("${access}"), should be one of "${validAccessOptions.join(
+          '", "'
+        )}"`
+      )
       return
     }
 
@@ -79324,14 +79328,17 @@ module.exports = async function ({ github, context, inputs }) {
       npmTag,
       version,
       provenance,
-      access
+      access,
     }
 
     if (provenance) {
       // Fail fast with meaningful error if user wants provenance but their setup won't deliver,
       // and apply any necessary options tweaks.
       const npmVersion = await getNpmVersion()
-      publishOptions = await ensureProvenanceViability(npmVersion, publishOptions)
+      publishOptions = await ensureProvenanceViability(
+        npmVersion,
+        publishOptions
+      )
     }
 
     if (npmToken) {
@@ -79823,7 +79830,7 @@ const { execWithOutput } = __nccwpck_require__(8632)
 
 /**
  * Get info from the registry about a package that is already published.
- * 
+ *
  * Returns null if package is not published to NPM.
  */
 async function getPublishedInfo() {
@@ -79840,9 +79847,9 @@ async function getPublishedInfo() {
 
 /**
  * Get info from the local package.json file.
- * 
+ *
  * This might need to become a bit more sophisticated if support for monorepos is added,
- * @see https://github.com/nearform-actions/optic-release-automation-action/issues/177 
+ * @see https://github.com/nearform-actions/optic-release-automation-action/issues/177
  */
 function getLocalInfo() {
   const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
@@ -79866,7 +79873,7 @@ module.exports = {
 
 const semver = __nccwpck_require__(1383)
 const { execWithOutput } = __nccwpck_require__(8632)
-const { getLocalInfo, getPublishedInfo, isPackageNameScoped } = __nccwpck_require__(4349)
+const { getLocalInfo, getPublishedInfo } = __nccwpck_require__(4349)
 
 /**
  * Abort if the user specified they want NPM provenance, but their CI's NPM version doesn't support it.
@@ -79950,7 +79957,7 @@ async function ensureProvenanceViability(npmVersion, publishOptions) {
 
   const value = {
     ...publishOptions,
-    ...await getAccessAdjustment(publishOptions),
+    ...(await getAccessAdjustment(publishOptions)),
   }
   return value
 }

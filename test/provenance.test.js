@@ -80,49 +80,64 @@ const setupAccessAdjustment = ({ local, published }) => {
     './packageInfo': {
       getPublishedInfo: async () => published,
       getLocalInfo: () => local,
-    }
+    },
   })
   return getAccessAdjustment
 }
 const unscopedPackageName = 'unscoped-fake-package'
 const scopedPackageName = '@scoped/fake-package'
 
-tap.test('getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option', async t => {
-  const getAccessAdjustment = setupAccessAdjustment({
-    local: { name: unscopedPackageName },
-    published: null
-  })
-  t.match(await getAccessAdjustment(), { access: 'public' })
-})
+tap.test(
+  'getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: unscopedPackageName },
+      published: null,
+    })
+    t.match(await getAccessAdjustment(), { access: 'public' })
+  }
+)
 
-tap.test('getAccessAdjustment does nothing if passed defined access option', async t => {
-  const getAccessAdjustment = setupAccessAdjustment({
-    local: { name: unscopedPackageName },
-    published: null
-  })
-  t.notOk(await getAccessAdjustment({ access: 'public' }))
-})
+tap.test(
+  'getAccessAdjustment does nothing if passed defined access option',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: unscopedPackageName },
+      published: null,
+    })
+    t.notOk(await getAccessAdjustment({ access: 'public' }))
+  }
+)
 
-tap.test('getAccessAdjustment does nothing if package.json defines access', async t => {
-  const getAccessAdjustment = setupAccessAdjustment({
-    local: { name: unscopedPackageName, publishConfig: { access: 'public '} },
-    published: null
-  })
-  t.notOk(await getAccessAdjustment())
-})
+tap.test(
+  'getAccessAdjustment does nothing if package.json defines access',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: {
+        name: unscopedPackageName,
+        publishConfig: { access: 'public ' },
+      },
+      published: null,
+    })
+    t.notOk(await getAccessAdjustment())
+  }
+)
 
-tap.test('getAccessAdjustment does nothing if package.json name is scoped', async t => {
-  const getAccessAdjustment = setupAccessAdjustment({
-    local: { name: scopedPackageName },
-    published: null
-  })
-  t.notOk(await getAccessAdjustment())
-})
+tap.test(
+  'getAccessAdjustment does nothing if package.json name is scoped',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: scopedPackageName },
+      published: null,
+    })
+    t.notOk(await getAccessAdjustment())
+  }
+)
 
 tap.test('getAccessAdjustment does nothing if package is on npm', async t => {
   const getAccessAdjustment = setupAccessAdjustment({
     local: { name: unscopedPackageName },
-    published: { name: unscopedPackageName }
+    published: { name: unscopedPackageName },
   })
   t.notOk(await getAccessAdjustment())
 })

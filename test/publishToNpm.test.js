@@ -4,7 +4,11 @@ const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
 
-const setup = ({ packageName =  'fakeTestPkg', published = true, mockPackageInfo } = {}) => {
+const setup = ({
+  packageName = 'fakeTestPkg',
+  published = true,
+  mockPackageInfo,
+} = {}) => {
   const execWithOutputStub = sinon.stub()
   execWithOutputStub
     .withArgs('curl', [
@@ -14,17 +18,22 @@ const setup = ({ packageName =  'fakeTestPkg', published = true, mockPackageInfo
     .returns('otp123')
 
   // npm behavior < v8.13.0
-  execWithOutputStub.withArgs('npm', ['view', `${packageName}@v5.1.3`]).returns('')
+  execWithOutputStub
+    .withArgs('npm', ['view', `${packageName}@v5.1.3`])
+    .returns('')
 
   const getLocalInfo = () => ({ name: packageName })
-  const getPublishedInfo = async () => published ? { name: packageName } : null
+  const getPublishedInfo = async () =>
+    published ? { name: packageName } : null
 
   const publishToNpmProxy = proxyquire('../src/utils/publishToNpm', {
     './execWithOutput': { execWithOutput: execWithOutputStub },
-    './packageInfo': mockPackageInfo ? mockPackageInfo({ execWithOutputStub, getLocalInfo, getPublishedInfo}) : {
-      getLocalInfo,
-      getPublishedInfo,
-    }
+    './packageInfo': mockPackageInfo
+      ? mockPackageInfo({ execWithOutputStub, getLocalInfo, getPublishedInfo })
+      : {
+          getLocalInfo,
+          getPublishedInfo,
+        },
   })
 
   return { execWithOutputStub, publishToNpmProxy }
@@ -76,7 +85,9 @@ tap.test('Should publish to npm with optic', async t => {
 tap.test(
   "Should publish to npm when package hasn't been published before",
   async t => {
-    const { publishToNpmProxy, execWithOutputStub } = setup({ published: false })
+    const { publishToNpmProxy, execWithOutputStub } = setup({
+      published: false,
+    })
 
     await publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
@@ -164,9 +175,9 @@ tap.test('Should stop action if package info retrieval fails', async t => {
     mockPackageInfo: ({ getLocalInfo, execWithOutputStub }) => ({
       getLocalInfo,
       getPublishedInfo: proxyquire('../src/utils/packageInfo', {
-        './execWithOutput': { execWithOutput: execWithOutputStub }
-      }).getPublishedInfo
-    })
+        './execWithOutput': { execWithOutput: execWithOutputStub },
+      }).getPublishedInfo,
+    }),
   })
   execWithOutputStub
     .withArgs('npm', ['view', '--json'])
@@ -182,7 +193,7 @@ tap.test('Should stop action if package info retrieval fails', async t => {
   } catch (e) {
     t.equal(e.message, 'Network Error')
   }
-  
+
   sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
     'publish',
     '--otp',
@@ -247,9 +258,9 @@ tap.test(
       mockPackageInfo: ({ getLocalInfo, execWithOutputStub }) => ({
         getLocalInfo,
         getPublishedInfo: proxyquire('../src/utils/packageInfo', {
-          './execWithOutput': { execWithOutput: execWithOutputStub }
-        }).getPublishedInfo
-      })
+          './execWithOutput': { execWithOutput: execWithOutputStub },
+        }).getPublishedInfo,
+      }),
     })
 
     execWithOutputStub
@@ -323,8 +334,8 @@ tap.test('Adds --provenance flag when provenance option provided', async t => {
     provenance: true,
   })
 
-  t.doesNotThrow(
-    () => sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+  t.doesNotThrow(() =>
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
       'publish',
       '--tag',
       'latest',
@@ -343,8 +354,8 @@ tap.test('Adds --access flag if provided as an input', async t => {
     access: 'public',
   })
 
-  t.doesNotThrow(
-    () => sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+  t.doesNotThrow(() =>
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
       'publish',
       '--tag',
       'latest',
