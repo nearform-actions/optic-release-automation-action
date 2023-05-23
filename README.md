@@ -120,7 +120,7 @@ When you merge this PR:
 - Upon successful retrieval of the OTP, it will publish the package to Npm.
 - Create a Github release with change logs (You can customize release notes using [release.yml](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#example-configuration))
 - Leave a comment on each issues that are linked to the pull reqeuests of this release. This feature can be turned off by the `notify-on-the-issue` flag.
-- _(Optional)_ If `provenance: true` and npm package access is public, NPM will add a [Provenance](#provenance) notice to the package's public NPM page. *New packages will disable provenance.*
+- _(Optional)_ If `provenance: true`, NPM will add a [Provenance](#provenance) notice to the package's public NPM page.
 
 When you close the PR without merging it: nothing will happen.
 
@@ -235,7 +235,7 @@ If `provenance: true` is added to your `release.yml`'s **inputs**, NPM will [gen
 NPM has some internal [requirements](https://docs.npmjs.com/generating-provenance-statements#prerequisites) for generating provenance. Unfortunately as of May 2023, not all are documented by NPM; some key requirements are:
 
 - `id-token: write` must be added to your `release.yml`'s **permissions**
-- `access: 'public'` must be added to your `release.yml`'s **inputs** :warning: **This will make your npm package public**
+- The package must have public access.
 - NPM must be on version 9.5.0 or greater (this will be met if our recommended `runs-on: ubuntu-latest` is used)
 - NPM has some undocumented internal requirements on `package.json` completeness. For example, the [repository field](https://docs.npmjs.com/cli/v9/configuring-npm/package-json#repository) is required, and some NPM versions may require its `"url"` property to match the format `"git+https://github.com/user/repo"`.
 
@@ -263,9 +263,6 @@ jobs:
           npm-tag: ${{ github.event.inputs.tag }}
           # add this to activate the action's provenance feature
           provenance: true
-          # set this to true which is required for provenance
-          # caution: this will make your npm package public
-          access: 'public'
 ```
 
 
@@ -292,8 +289,7 @@ jobs:
 | `prerelease-prefix`       | No       | A prefix to apply to the prerelease version number.                                                                                                                                                                                                                                         |
 | `base-tag`       | No       | Choose a specific tag release for your release notes. This input allows you to specify a base release (for example, v1.0.0) and will include all changes made in releases between the base release and the latest release. This input is only used for generating release notes and has no functional implications on the rest of the workflow.                                                                                                                                                                                                                                         |
 | `provenance`| No    | Set as true to have NPM [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements). See [Provenance section above](#provenance) for requirements.<br /> (_Default: `false`_)      
-                                                                                                                   |
-| `provenance`| No    | Set as `public` to allow [generate a provenance statement](https://docs.npmjs.com/generating-provenance-statements). See [Provenance section above](#provenance) for requirements.<br /> (_Default: `private`_)                                                                  |
+| `access`| No    | Set as `public` or `restricted` to change an NPM package's access status when next published. (_Default: `false`_)
 
 
 ## Motivation
