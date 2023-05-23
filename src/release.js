@@ -12,7 +12,7 @@ const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 const { execWithOutput } = require('./utils/execWithOutput')
 const {
-  checkProvenanceViability,
+  ensureProvenanceViability,
   getNpmVersion,
 } = require('./utils/provenance')
 
@@ -109,22 +109,25 @@ module.exports = async function ({ github, context, inputs }) {
       return
     }
 
-    // Fail fast with meaningful error if user wants provenance but their setup won't deliver
+    let publishOptions = {
+      npmToken,
+      opticToken,
+      opticUrl,
+      npmTag,
+      version,
+      provenance,
+      access
+    }
+
     if (provenance) {
+      // Fail fast with meaningful error if user wants provenance but their setup won't deliver,
+      // and apply any necessary options tweaks.
       const npmVersion = await getNpmVersion()
-      checkProvenanceViability(npmVersion)
+      publishOptions = await ensureProvenanceViability(npmVersion, publishOptions)
     }
 
     if (npmToken) {
-      await publishToNpm({
-        npmToken,
-        opticToken,
-        opticUrl,
-        npmTag,
-        version,
-        provenance,
-        access
-      })
+      await publishToNpm(publishOptions)
     } else {
       logWarning('missing npm-token')
     }
