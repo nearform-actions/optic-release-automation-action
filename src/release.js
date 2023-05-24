@@ -113,7 +113,7 @@ module.exports = async function ({ github, context, inputs }) {
       return
     }
 
-    let publishOptions = {
+    const publishOptions = {
       npmToken,
       opticToken,
       opticUrl,
@@ -127,9 +127,10 @@ module.exports = async function ({ github, context, inputs }) {
       // Fail fast with meaningful error if user wants provenance but their setup won't deliver,
       // and apply any necessary options tweaks.
       const npmVersion = await getNpmVersion()
-      publishOptions = await ensureProvenanceViability(
-        npmVersion,
-        publishOptions
+
+      Object.assign(
+        publishOptions,
+        await ensureProvenanceViability(npmVersion, publishOptions)
       )
     }
 

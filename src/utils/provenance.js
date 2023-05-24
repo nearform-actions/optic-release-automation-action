@@ -83,11 +83,9 @@ async function ensureProvenanceViability(npmVersion, publishOptions) {
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
 
-  const value = {
-    ...publishOptions,
-    ...(await getAccessAdjustment(publishOptions)),
+  return {
+    ...getAccessAdjustment(publishOptions),
   }
-  return value
 }
 
 /**
