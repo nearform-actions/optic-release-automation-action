@@ -74,7 +74,7 @@ async function getAccessAdjustment({ access } = {}) {
 
 /**
  * Fail fast and throw a meaningful error if NPM Provenance will fail silently or misleadingly,
- * and where necessary, tweak publish options without overriding user preferences or expectations.
+ * and where necessary, provide new publish options without overriding user preferences or expectations.
  *
  * @see https://docs.npmjs.com/generating-provenance-statements
  */
@@ -83,9 +83,9 @@ async function ensureProvenanceViability(npmVersion, publishOptions) {
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
 
-  return {
-    ...getAccessAdjustment(publishOptions),
-  }
+  const optionAdjustments = await getAccessAdjustment(publishOptions)
+
+  return optionAdjustments ?? {}
 }
 
 /**
