@@ -3,7 +3,7 @@
 const core = require('@actions/core')
 const semver = require('semver')
 
-const { PR_TITLE_PREFIX } = require('./const')
+const { ACCESS_OPTIONS, PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { revertCommit } = require('./utils/revertCommit')
@@ -103,10 +103,9 @@ module.exports = async function ({ github, context, inputs }) {
     const access = inputs['access']
 
     // Can't limit custom action inputs to fixed options like "choice" type in a manual action
-    const validAccessOptions = ['public', 'restricted']
-    if (access && !validAccessOptions.includes(access)) {
+    if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(
-        `Invalid "access" option provided ("${access}"), should be one of "${validAccessOptions.join(
+        `Invalid "access" option provided ("${access}"), should be one of "${ACCESS_OPTIONS.join(
           '", "'
         )}"`
       )

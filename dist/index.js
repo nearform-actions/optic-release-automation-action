@@ -78934,6 +78934,7 @@ module.exports = {
   ZIP_EXTENSION: '.zip',
   APP_NAME: 'optic-release-automation[bot]',
   AUTO_INPUT: 'auto',
+  ACCESS_OPTIONS: ['public', 'restricted'],
 }
 
 
@@ -79211,7 +79212,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 const core = __nccwpck_require__(2186)
 const semver = __nccwpck_require__(1383)
 
-const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
+const { ACCESS_OPTIONS, PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { revertCommit } = __nccwpck_require__(5765)
@@ -79311,10 +79312,9 @@ module.exports = async function ({ github, context, inputs }) {
     const access = inputs['access']
 
     // Can't limit custom action inputs to fixed options like "choice" type in a manual action
-    const validAccessOptions = ['public', 'restricted']
-    if (access && !validAccessOptions.includes(access)) {
+    if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(
-        `Invalid "access" option provided ("${access}"), should be one of "${validAccessOptions.join(
+        `Invalid "access" option provided ("${access}"), should be one of "${ACCESS_OPTIONS.join(
           '", "'
         )}"`
       )
