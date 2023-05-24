@@ -324,7 +324,7 @@ tap.test(
   }
 )
 
-tap.test('Adds --provenance flag when provenance option provided', async t => {
+tap.test('Adds --provenance flag when provenance option provided', async () => {
   const { publishToNpmProxy, execWithOutputStub } = setup()
   await publishToNpmProxy.publishToNpm({
     npmToken: 'a-token',
@@ -334,17 +334,15 @@ tap.test('Adds --provenance flag when provenance option provided', async t => {
     provenance: true,
   })
 
-  t.doesNotThrow(() =>
-    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-      'publish',
-      '--tag',
-      'latest',
-      '--provenance',
-    ])
-  )
+  sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+    '--provenance',
+  ])
 })
 
-tap.test('Adds --access flag if provided as an input', async t => {
+tap.test('Adds --access flag if provided as an input', async () => {
   const { publishToNpmProxy, execWithOutputStub } = setup()
   await publishToNpmProxy.publishToNpm({
     npmToken: 'a-token',
@@ -354,13 +352,11 @@ tap.test('Adds --access flag if provided as an input', async t => {
     access: 'public',
   })
 
-  t.doesNotThrow(() =>
-    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-      'publish',
-      '--tag',
-      'latest',
-      '--access',
-      'public',
-    ])
-  )
+  sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+    'publish',
+    '--tag',
+    'latest',
+    '--access',
+    'public',
+  ])
 })
