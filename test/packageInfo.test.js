@@ -76,7 +76,7 @@ tap.test(
       value: "[{ 'this:' is not ] valid}j.s.o.n()",
     })
 
-    t.rejects(mocks.getPublishedInfo, /JSON/)
+    await t.rejects(mocks.getPublishedInfo, /JSON/)
   }
 )
 
@@ -97,7 +97,7 @@ tap.test('getPublishedInfo throws if it hits a non-404 error', async t => {
     error: new Error('code E418 - unexpected teapot'),
   })
 
-  t.rejects(mocks.getPublishedInfo, /teapot/)
+  await t.rejects(mocks.getPublishedInfo, /teapot/)
 })
 
 tap.test(
