@@ -78,14 +78,14 @@ async function getAccessAdjustment({ access } = {}) {
  *
  * @see https://docs.npmjs.com/generating-provenance-statements
  */
-async function ensureProvenanceViability(npmVersion, publishOptions) {
+async function getProvenanceOptions(npmVersion, publishOptions) {
   if (!npmVersion) throw new Error('Current npm version not provided')
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
 
-  const optionAdjustments = await getAccessAdjustment(publishOptions)
+  const extraOptions = await getAccessAdjustment(publishOptions)
 
-  return optionAdjustments ?? {}
+  return extraOptions
 }
 
 /**
@@ -97,7 +97,7 @@ async function getNpmVersion() {
 }
 
 module.exports = {
-  ensureProvenanceViability,
+  getProvenanceOptions,
   getNpmVersion,
   getAccessAdjustment,
   checkIsSupported,

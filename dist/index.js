@@ -79328,13 +79328,13 @@ module.exports = async function ({ github, context, inputs }) {
     }
 
     if (provenance) {
-      // Fail fast with meaningful errors if user wants provenance but their setup won't deliver,
-      // and apply any necessary options tweaks.
-      const npmVersion = await getNpmVersion()
-      Object.assign(
-        publishOptions,
-        await getProvenanceOptions(npmVersion, publishOptions)
+      const extraOptions = await getProvenanceOptions(
+        await getNpmVersion(),
+        publishOptions
       )
+      if (extraOptions) {
+        Object.assign(publishOptions, extraOptions)
+      }
     }
 
     if (npmToken) {

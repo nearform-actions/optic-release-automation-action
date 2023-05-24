@@ -5,9 +5,9 @@ const semver = require('semver')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
 const {
+  getProvenanceOptions,
   checkIsSupported,
   checkPermissions,
-  ensureProvenanceViability,
   getNpmVersion,
   // getAccessAdjustment needs proxyquire to mock internal package.json getter results
 } = require('../src/utils/provenance')
@@ -143,7 +143,6 @@ tap.test('getAccessAdjustment does nothing if package is on npm', async t => {
 })
 
 tap.test(
-  'ensureProvenanceViability fails fast if NPM version unavailable',
-  async t =>
-    t.rejects(ensureProvenanceViability, 'Current npm version not provided')
+  'getProvenanceOptions fails fast if NPM version unavailable',
+  async t => t.rejects(getProvenanceOptions, 'Current npm version not provided')
 )

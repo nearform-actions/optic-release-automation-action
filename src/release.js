@@ -11,10 +11,7 @@ const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 const { execWithOutput } = require('./utils/execWithOutput')
-const {
-  ensureProvenanceViability,
-  getNpmVersion,
-} = require('./utils/provenance')
+const { getProvenanceOptions, getNpmVersion } = require('./utils/provenance')
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -122,14 +119,13 @@ module.exports = async function ({ github, context, inputs }) {
     }
 
     if (provenance) {
-      // Fail fast with meaningful error if user wants provenance but their setup won't deliver,
-      // and apply any necessary options tweaks.
-      const npmVersion = await getNpmVersion()
-
-      Object.assign(
-        publishOptions,
-        await ensureProvenanceViability(npmVersion, publishOptions)
+      const extraOptions = await getProvenanceOptions(
+        await getNpmVersion(),
+        publishOptions
       )
+      if (extraOptions) {
+        Object.assign(publishOptions, extraOptions)
+      }
     }
 
     if (npmToken) {
