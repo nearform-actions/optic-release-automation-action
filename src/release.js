@@ -102,7 +102,6 @@ module.exports = async function ({ github, context, inputs }) {
     const provenance = /true/i.test(inputs['provenance'])
     const access = inputs['access']
 
-    // Can't limit custom action inputs to fixed options like "choice" type in a manual action
     if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(
         `Invalid "access" option provided ("${access}"), should be one of "${ACCESS_OPTIONS.join(

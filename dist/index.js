@@ -79220,10 +79220,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 const { execWithOutput } = __nccwpck_require__(8632)
-const {
-  ensureProvenanceViability,
-  getNpmVersion,
-} = __nccwpck_require__(3365)
+const { getProvenanceOptions, getNpmVersion } = __nccwpck_require__(3365)
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -79311,7 +79308,6 @@ module.exports = async function ({ github, context, inputs }) {
     const provenance = /true/i.test(inputs['provenance'])
     const access = inputs['access']
 
-    // Can't limit custom action inputs to fixed options like "choice" type in a manual action
     if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(
         `Invalid "access" option provided ("${access}"), should be one of "${ACCESS_OPTIONS.join(
@@ -79332,13 +79328,12 @@ module.exports = async function ({ github, context, inputs }) {
     }
 
     if (provenance) {
-      // Fail fast with meaningful error if user wants provenance but their setup won't deliver,
+      // Fail fast with meaningful errors if user wants provenance but their setup won't deliver,
       // and apply any necessary options tweaks.
       const npmVersion = await getNpmVersion()
-
       Object.assign(
         publishOptions,
-        await ensureProvenanceViability(npmVersion, publishOptions)
+        await getProvenanceOptions(npmVersion, publishOptions)
       )
     }
 
@@ -79951,14 +79946,14 @@ async function getAccessAdjustment({ access } = {}) {
  *
  * @see https://docs.npmjs.com/generating-provenance-statements
  */
-async function ensureProvenanceViability(npmVersion, publishOptions) {
+async function getProvenanceOptions(npmVersion, publishOptions) {
   if (!npmVersion) throw new Error('Current npm version not provided')
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
 
-  const optionAdjustments = await getAccessAdjustment(publishOptions)
+  const extraOptions = await getAccessAdjustment(publishOptions)
 
-  return optionAdjustments ?? {}
+  return extraOptions
 }
 
 /**
@@ -79970,7 +79965,7 @@ async function getNpmVersion() {
 }
 
 module.exports = {
-  ensureProvenanceViability,
+  getProvenanceOptions,
   getNpmVersion,
   getAccessAdjustment,
   checkIsSupported,
@@ -79995,9 +79990,8 @@ async function allowNpmPublish(version) {
   // (GH release).
 
   const packageInfo = await getPublishedInfo()
-  const packageName = packageInfo?.name
   // Package has not been published before
-  if (!packageName) {
+  if (!packageInfo?.name) {
     return true
   }
 
@@ -80011,7 +80005,7 @@ async function allowNpmPublish(version) {
     // We handle both and consider them as package version not existing
     packageVersionInfo = await execWithOutput('npm', [
       'view',
-      `${packageName}@${version}`,
+      `${packageInfo.name}@${version}`,
     ])
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
