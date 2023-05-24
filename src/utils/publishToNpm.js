@@ -9,9 +9,8 @@ async function allowNpmPublish(version) {
   // (GH release).
 
   const packageInfo = await getPublishedInfo()
-  const packageName = packageInfo?.name
   // Package has not been published before
-  if (!packageName) {
+  if (!packageInfo?.name) {
     return true
   }
 
@@ -25,7 +24,7 @@ async function allowNpmPublish(version) {
     // We handle both and consider them as package version not existing
     packageVersionInfo = await execWithOutput('npm', [
       'view',
-      `${packageName}@${version}`,
+      `${packageInfo.name}@${version}`,
     ])
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
