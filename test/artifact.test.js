@@ -54,7 +54,9 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    t.resolves(attachArtifactModule.attach(artifactPath, releaseId, token))
+    await t.resolves(
+      attachArtifactModule.attach(artifactPath, releaseId, token)
+    )
   }
 )
 
@@ -65,7 +67,7 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    t.resolves(
+    await t.resolves(
       attachArtifactModule.attach(
         artifactPath + ZIP_EXTENSION,
         releaseId,
@@ -88,7 +90,7 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    t.rejects(artifactModule.attach(artifactPath, releaseId, token))
+    await t.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
@@ -99,7 +101,7 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    t.rejects(attachArtifactModule.attach(artifactPath, releaseId, token))
+    await t.rejects(attachArtifactModule.attach(artifactPath, releaseId, token))
   }
 )
 
@@ -137,6 +139,6 @@ tap.test(
 
     const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    t.rejects(artifactModule.attach(artifactPath, releaseId, token))
+    await t.rejects(artifactModule.attach(artifactPath, releaseId, token))
   }
 )

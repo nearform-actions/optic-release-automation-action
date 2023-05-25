@@ -32,8 +32,8 @@ tap.test(
       return Promise.resolve(0)
     })
 
-    t.resolves(execWithOutputModule.execWithOutput('ls', ['-al']), output)
-    execStub.calledWith('ls', ['-al'])
+    await t.resolves(execWithOutputModule.execWithOutput('ls', ['-al']), output)
+    sinon.assert.calledWithExactly(execStub, 'ls', ['-al'], sinon.match({}))
   }
 )
 
@@ -47,12 +47,12 @@ tap.test(
       return Promise.reject(new Error())
     })
 
-    t.rejects(
+    await t.rejects(
       () => execWithOutputModule.execWithOutput('ls', ['-al']),
       'Error: ls -al returned code 1  \nSTDOUT:  \nSTDERR: ${output}'
     )
 
-    execStub.calledWith('ls', ['-al'])
+    sinon.assert.calledWithExactly(execStub, 'ls', ['-al'], sinon.match({}))
   }
 )
 
@@ -60,8 +60,8 @@ tap.test('provides cwd to exec function', async () => {
   const cwd = './'
 
   execStub.resolves(0)
-  execWithOutputModule.execWithOutput('command', [], cwd)
-  execStub.calledWith('command', [], { cwd })
+  await execWithOutputModule.execWithOutput('command', [], { cwd })
+  sinon.assert.calledWithExactly(execStub, 'command', [], sinon.match({ cwd }))
 })
 
 tap.test('rejects if exit code is not 0', async t => {
@@ -73,8 +73,8 @@ tap.test('rejects if exit code is not 0', async t => {
     return Promise.resolve(1)
   })
 
-  t.rejects(execWithOutputModule.execWithOutput('command'))
-  execStub.calledWith('command')
+  await t.rejects(execWithOutputModule.execWithOutput('command'))
+  sinon.assert.calledWithExactly(execStub, 'command', [], sinon.match({}))
 })
 
 tap.test('passes env vars excluding `INPUT_*` env vars', async t => {

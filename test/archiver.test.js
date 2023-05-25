@@ -36,13 +36,13 @@ tap.test('throws an error if path not found', async t => {
     },
   })
 
-  t.rejects(archiverModule.archiveItem('path', 'out.zip'))
+  await t.rejects(archiverModule.archiveItem('path', 'out.zip'))
 })
 
 tap.test('does not throw any errors if directory', async t => {
   const { archiverModule } = setup({ isDirectory: true })
 
-  t.resolves(archiverModule.archiveItem('path', 'out.zip'))
+  await t.resolves(archiverModule.archiveItem('path', 'out.zip'))
 })
 
 tap.test('throws if writing to zip file fails', async t => {
@@ -65,7 +65,7 @@ tap.test('throws if writing to zip file fails', async t => {
     },
   })
 
-  t.rejects(archiverModule.archiveItem('path', 'out.zip'))
+  await t.rejects(archiverModule.archiveItem('path', 'out.zip'))
 })
 
 tap.test('resolves if a path is not a directory', async t => {
@@ -88,11 +88,11 @@ tap.test('resolves if a path is not a directory', async t => {
     },
   })
 
-  t.resolves(archiverModule.archiveItem('path', 'out.zip'))
+  await t.resolves(archiverModule.archiveItem('path', 'out.zip'))
 })
 
 tap.test('does not throw any errors if file', async t => {
   const { archiverModule } = setup({ isDirectory: false })
 
-  t.resolves(archiverModule.archiveItem('file.js', 'out.zip'))
+  await t.resolves(archiverModule.archiveItem('file.js', 'out.zip'))
 })
