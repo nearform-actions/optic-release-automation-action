@@ -74,7 +74,7 @@ tap.test('rejects if exit code is not 0', async t => {
   })
 
   await t.rejects(execWithOutputModule.execWithOutput('command'))
-  sinon.assert.calledWith(execStub, 'command', [], sinon.match({}))
+  sinon.assert.calledWithExactly(execStub, 'command', [], sinon.match({}))
 })
 
 tap.test('passes env vars excluding `INPUT_*` env vars', async t => {
