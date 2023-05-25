@@ -911,7 +911,7 @@ tap.test('Should not reject when notifyIssues fails', async t => {
 
   stubs.notifyIssuesStub.rejects()
 
-  t.resolves(
+  await t.resolves(
     release({
       ...DEFAULT_ACTION_DATA,
       inputs: {

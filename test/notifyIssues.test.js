@@ -293,7 +293,7 @@ tap.test("Shouldn't fail if createComment on an issue fails", async t => {
 
   createCommentStub.rejects()
 
-  t.resolves(
+  await t.resolves(
     notifyIssues(
       { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
       true,
