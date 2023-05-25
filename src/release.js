@@ -3,7 +3,7 @@
 const core = require('@actions/core')
 const semver = require('semver')
 
-const { PR_TITLE_PREFIX } = require('./const')
+const { ACCESS_OPTIONS, PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const { tagVersionInGit } = require('./utils/tagVersion')
 const { revertCommit } = require('./utils/revertCommit')
@@ -11,10 +11,7 @@ const { publishToNpm } = require('./utils/publishToNpm')
 const { notifyIssues } = require('./utils/notifyIssues')
 const { logError, logInfo, logWarning } = require('./log')
 const { execWithOutput } = require('./utils/execWithOutput')
-const {
-  checkProvenanceViability,
-  getNpmVersion,
-} = require('./utils/provenance')
+const { getProvenanceOptions, getNpmVersion } = require('./utils/provenance')
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -100,22 +97,39 @@ module.exports = async function ({ github, context, inputs }) {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
     const provenance = /true/i.test(inputs['provenance'])
+    const access = inputs['access']
 
-    // Fail fast with meaningful error if user wants provenance but their setup won't deliver
+    if (access && !ACCESS_OPTIONS.includes(access)) {
+      core.setFailed(
+        `Invalid "access" option provided ("${access}"), should be one of "${ACCESS_OPTIONS.join(
+          '", "'
+        )}"`
+      )
+      return
+    }
+
+    const publishOptions = {
+      npmToken,
+      opticToken,
+      opticUrl,
+      npmTag,
+      version,
+      provenance,
+      access,
+    }
+
     if (provenance) {
-      const npmVersion = await getNpmVersion()
-      checkProvenanceViability(npmVersion)
+      const extraOptions = await getProvenanceOptions(
+        await getNpmVersion(),
+        publishOptions
+      )
+      if (extraOptions) {
+        Object.assign(publishOptions, extraOptions)
+      }
     }
 
     if (npmToken) {
-      await publishToNpm({
-        npmToken,
-        opticToken,
-        opticUrl,
-        npmTag,
-        version,
-        provenance,
-      })
+      await publishToNpm(publishOptions)
     } else {
       logWarning('missing npm-token')
     }

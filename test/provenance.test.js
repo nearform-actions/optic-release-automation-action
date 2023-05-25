@@ -3,11 +3,13 @@
 const tap = require('tap')
 const semver = require('semver')
 const sinon = require('sinon')
+const proxyquire = require('proxyquire')
 const {
+  getProvenanceOptions,
   checkIsSupported,
   checkPermissions,
-  checkProvenanceViability,
   getNpmVersion,
+  // getAccessAdjustment needs proxyquire to mock internal package.json getter results
 } = require('../src/utils/provenance')
 
 const MINIMUM_VERSION = '9.5.0'
@@ -73,12 +75,74 @@ tap.test('checkPermissions passes on minimum version with env', async t => {
   t.doesNotThrow(() => checkIsSupported(MINIMUM_VERSION))
 })
 
+const setupAccessAdjustment = ({ local, published }) => {
+  const { getAccessAdjustment } = proxyquire('../src/utils/provenance', {
+    './packageInfo': {
+      getPublishedInfo: async () => published,
+      getLocalInfo: () => local,
+    },
+  })
+  return getAccessAdjustment
+}
+const unscopedPackageName = 'unscoped-fake-package'
+const scopedPackageName = '@scoped/fake-package'
+
 tap.test(
-  'checkProvenanceViability fails fast if NPM version unavailable',
+  'getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option',
   async t => {
-    t.throws(
-      () => checkProvenanceViability(),
-      'Current npm version not provided'
-    )
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: unscopedPackageName },
+      published: null,
+    })
+    t.match(await getAccessAdjustment(), { access: 'public' })
   }
+)
+
+tap.test(
+  'getAccessAdjustment does nothing if passed defined access option',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: unscopedPackageName },
+      published: null,
+    })
+    t.notOk(await getAccessAdjustment({ access: 'public' }))
+  }
+)
+
+tap.test(
+  'getAccessAdjustment does nothing if package.json defines access',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: {
+        name: unscopedPackageName,
+        publishConfig: { access: 'public ' },
+      },
+      published: null,
+    })
+    t.notOk(await getAccessAdjustment())
+  }
+)
+
+tap.test(
+  'getAccessAdjustment does nothing if package.json name is scoped',
+  async t => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: scopedPackageName },
+      published: null,
+    })
+    t.notOk(await getAccessAdjustment())
+  }
+)
+
+tap.test('getAccessAdjustment does nothing if package is on npm', async t => {
+  const getAccessAdjustment = setupAccessAdjustment({
+    local: { name: unscopedPackageName },
+    published: { name: unscopedPackageName },
+  })
+  t.notOk(await getAccessAdjustment())
+})
+
+tap.test(
+  'getProvenanceOptions fails fast if NPM version unavailable',
+  async t => t.rejects(getProvenanceOptions, 'Current npm version not provided')
 )

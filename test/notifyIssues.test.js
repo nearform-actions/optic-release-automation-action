@@ -29,7 +29,9 @@ function setup() {
     .returns('{ "name": "packageName", "version": "1.0.0"}')
 
   const { notifyIssues } = proxyquire('../src/utils/notifyIssues', {
-    fs: { readFileSync: readFileSyncStub },
+    './packageInfo': proxyquire('../src/utils/packageInfo', {
+      fs: { readFileSync: readFileSyncStub },
+    }),
   })
 
   return { notifyIssues }

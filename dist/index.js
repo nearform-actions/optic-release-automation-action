@@ -78934,6 +78934,7 @@ module.exports = {
   ZIP_EXTENSION: '.zip',
   APP_NAME: 'optic-release-automation[bot]',
   AUTO_INPUT: 'auto',
+  ACCESS_OPTIONS: ['public', 'restricted'],
 }
 
 
@@ -79211,7 +79212,7 @@ module.exports = async function ({ context, inputs, packageVersion }) {
 const core = __nccwpck_require__(2186)
 const semver = __nccwpck_require__(1383)
 
-const { PR_TITLE_PREFIX } = __nccwpck_require__(6818)
+const { ACCESS_OPTIONS, PR_TITLE_PREFIX } = __nccwpck_require__(6818)
 const { callApi } = __nccwpck_require__(4235)
 const { tagVersionInGit } = __nccwpck_require__(9143)
 const { revertCommit } = __nccwpck_require__(5765)
@@ -79219,10 +79220,7 @@ const { publishToNpm } = __nccwpck_require__(1433)
 const { notifyIssues } = __nccwpck_require__(8361)
 const { logError, logInfo, logWarning } = __nccwpck_require__(653)
 const { execWithOutput } = __nccwpck_require__(8632)
-const {
-  checkProvenanceViability,
-  getNpmVersion,
-} = __nccwpck_require__(3365)
+const { getProvenanceOptions, getNpmVersion } = __nccwpck_require__(3365)
 
 module.exports = async function ({ github, context, inputs }) {
   logInfo('** Starting Release **')
@@ -79308,22 +79306,39 @@ module.exports = async function ({ github, context, inputs }) {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
     const provenance = /true/i.test(inputs['provenance'])
+    const access = inputs['access']
 
-    // Fail fast with meaningful error if user wants provenance but their setup won't deliver
+    if (access && !ACCESS_OPTIONS.includes(access)) {
+      core.setFailed(
+        `Invalid "access" option provided ("${access}"), should be one of "${ACCESS_OPTIONS.join(
+          '", "'
+        )}"`
+      )
+      return
+    }
+
+    const publishOptions = {
+      npmToken,
+      opticToken,
+      opticUrl,
+      npmTag,
+      version,
+      provenance,
+      access,
+    }
+
     if (provenance) {
-      const npmVersion = await getNpmVersion()
-      checkProvenanceViability(npmVersion)
+      const extraOptions = await getProvenanceOptions(
+        await getNpmVersion(),
+        publishOptions
+      )
+      if (extraOptions) {
+        Object.assign(publishOptions, extraOptions)
+      }
     }
 
     if (npmToken) {
-      await publishToNpm({
-        npmToken,
-        opticToken,
-        opticUrl,
-        npmTag,
-        version,
-        provenance,
-      })
+      await publishToNpm(publishOptions)
     } else {
       logWarning('missing npm-token')
     }
@@ -79660,11 +79675,11 @@ exports.execWithOutput = execWithOutput
 "use strict";
 
 
-const fs = __nccwpck_require__(7147)
 const pMap = __nccwpck_require__(1855)
 const { logWarning } = __nccwpck_require__(653)
 
 const { getPrNumbersFromReleaseNotes } = __nccwpck_require__(4098)
+const { getLocalInfo } = __nccwpck_require__(4349)
 
 async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   const data = await github.graphql(
@@ -79747,8 +79762,7 @@ async function notifyIssues(
   repo,
   release
 ) {
-  const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-  const packageJson = JSON.parse(packageJsonFile)
+  const packageJson = getLocalInfo()
 
   const { name: packageName, version: packageVersion } = packageJson
   const { body: releaseNotes, html_url: releaseUrl } = release
@@ -79802,6 +79816,52 @@ exports.notifyIssues = notifyIssues
 
 /***/ }),
 
+/***/ 4349:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const fs = __nccwpck_require__(7147)
+const { execWithOutput } = __nccwpck_require__(8632)
+
+/**
+ * Get info from the registry about a package that is already published.
+ *
+ * Returns null if package is not published to NPM.
+ */
+async function getPublishedInfo() {
+  try {
+    const packageInfo = await execWithOutput('npm', ['view', '--json'])
+    return packageInfo ? JSON.parse(packageInfo) : null
+  } catch (error) {
+    if (!error?.message?.match(/code E404/)) {
+      throw error
+    }
+    return null
+  }
+}
+
+/**
+ * Get info from the local package.json file.
+ *
+ * This might need to become a bit more sophisticated if support for monorepos is added,
+ * @see https://github.com/nearform-actions/optic-release-automation-action/issues/177
+ */
+function getLocalInfo() {
+  const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
+  const packageInfo = JSON.parse(packageJsonFile)
+
+  return packageInfo
+}
+
+module.exports = {
+  getLocalInfo,
+  getPublishedInfo,
+}
+
+
+/***/ }),
+
 /***/ 3365:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -79809,6 +79869,7 @@ exports.notifyIssues = notifyIssues
 
 const semver = __nccwpck_require__(1383)
 const { execWithOutput } = __nccwpck_require__(8632)
+const { getLocalInfo, getPublishedInfo } = __nccwpck_require__(4349)
 
 /**
  * Abort if the user specified they want NPM provenance, but their CI's NPM version doesn't support it.
@@ -79848,18 +79909,51 @@ function checkPermissions(npmVersion) {
 }
 
 /**
- * Fail fast and throw a meaningful error if NPM Provenance will fail silently or misleadingly.
+ * NPM does an internal check on access that fails unnecessarily for first-time publication
+ * of unscoped packages to NPM. Unscoped packages are always public, but NPM's provenance generation
+ * doesn't realise this unless it sees the status in a previous release or in explicit options.
+ */
+async function getAccessAdjustment({ access } = {}) {
+  // Don't overrule any user-set access preference.
+  if (access) return
+
+  const { name: packageName, publishConfig } = getLocalInfo()
+
+  // Don't do anything for scoped packages - those require being made public explicitly.
+  // Let NPM's own validation handle it if a user tries to get provenance on a private package.
+  // `.startsWith('@')` is what a lot of NPM internal code use to detect scoped packages,
+  // they don't export any more sophisticated scoped name detector any more.
+  if (packageName.startsWith('@')) return
+
+  // Don't do anything if the user has set any access control in package.json publishConfig.
+  // https://docs.npmjs.com/cli/v9/configuring-npm/package-json#publishconfig
+  // Let NPM deal with that internally when `npm publish` reads the local package.json file.
+  if (publishConfig?.access) return
+
+  // Don't do anything if package is already published.
+  const publishedInfo = await getPublishedInfo()
+  if (publishedInfo) return
+
+  // Set explicit public access **only** if it's unscoped (inherently public), a first publish
+  // (so we know NPM will fail to realise that this is inherently public), and the user
+  // has not attempted to explicitly set access themselves anywhere.
+  return { access: 'public' }
+}
+
+/**
+ * Fail fast and throw a meaningful error if NPM Provenance will fail silently or misleadingly,
+ * and where necessary, provide new publish options without overriding user preferences or expectations.
  *
  * @see https://docs.npmjs.com/generating-provenance-statements
- *
- * @param {string} npmVersion
  */
-function checkProvenanceViability(npmVersion) {
+async function getProvenanceOptions(npmVersion, publishOptions) {
   if (!npmVersion) throw new Error('Current npm version not provided')
   checkIsSupported(npmVersion)
   checkPermissions(npmVersion)
-  // There are various other provenance requirements, such as specific package.json properties, but these
-  // may change in future NPM versions, and do fail with meaningful errors, so we let NPM handle those.
+
+  const extraOptions = await getAccessAdjustment(publishOptions)
+
+  return extraOptions
 }
 
 /**
@@ -79871,8 +79965,9 @@ async function getNpmVersion() {
 }
 
 module.exports = {
-  checkProvenanceViability,
+  getProvenanceOptions,
   getNpmVersion,
+  getAccessAdjustment,
   checkIsSupported,
   checkPermissions,
 }
@@ -79887,23 +79982,16 @@ module.exports = {
 
 
 const { execWithOutput } = __nccwpck_require__(8632)
+const { getPublishedInfo } = __nccwpck_require__(4349)
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
   // the action was already executed before, but it failed in its last step
   // (GH release).
-  let packageName = null
-  try {
-    const packageInfo = await execWithOutput('npm', ['view', '--json'])
-    packageName = packageInfo ? JSON.parse(packageInfo).name : null
-  } catch (error) {
-    if (!error?.message?.match(/code E404/)) {
-      throw error
-    }
-  }
 
+  const packageInfo = await getPublishedInfo()
   // Package has not been published before
-  if (!packageName) {
+  if (!packageInfo?.name) {
     return true
   }
 
@@ -79917,7 +80005,7 @@ async function allowNpmPublish(version) {
     // We handle both and consider them as package version not existing
     packageVersionInfo = await execWithOutput('npm', [
       'view',
-      `${packageName}@${version}`,
+      `${packageInfo.name}@${version}`,
     ])
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
@@ -79935,6 +80023,7 @@ async function publishToNpm({
   npmTag,
   version,
   provenance,
+  access,
 }) {
   await execWithOutput('npm', [
     'config',
@@ -79943,6 +80032,11 @@ async function publishToNpm({
   ])
 
   const flags = ['--tag', npmTag]
+
+  if (access) {
+    flags.push('--access', access)
+  }
+
   if (provenance) {
     flags.push('--provenance')
   }

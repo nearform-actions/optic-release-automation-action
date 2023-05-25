@@ -1,10 +1,10 @@
 'use strict'
 
-const fs = require('fs')
 const pMap = require('p-map')
 const { logWarning } = require('../log')
 
 const { getPrNumbersFromReleaseNotes } = require('./releaseNotes')
+const { getLocalInfo } = require('../utils/packageInfo')
 
 async function getLinkedIssueNumbers(github, prNumber, repoOwner, repoName) {
   const data = await github.graphql(
@@ -87,8 +87,7 @@ async function notifyIssues(
   repo,
   release
 ) {
-  const packageJsonFile = fs.readFileSync('./package.json', 'utf8')
-  const packageJson = JSON.parse(packageJsonFile)
+  const packageJson = getLocalInfo()
 
   const { name: packageName, version: packageVersion } = packageJson
   const { body: releaseNotes, html_url: releaseUrl } = release

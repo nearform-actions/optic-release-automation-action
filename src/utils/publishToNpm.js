@@ -1,23 +1,16 @@
 'use strict'
 
 const { execWithOutput } = require('./execWithOutput')
+const { getPublishedInfo } = require('./packageInfo')
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
   // the action was already executed before, but it failed in its last step
   // (GH release).
-  let packageName = null
-  try {
-    const packageInfo = await execWithOutput('npm', ['view', '--json'])
-    packageName = packageInfo ? JSON.parse(packageInfo).name : null
-  } catch (error) {
-    if (!error?.message?.match(/code E404/)) {
-      throw error
-    }
-  }
 
+  const packageInfo = await getPublishedInfo()
   // Package has not been published before
-  if (!packageName) {
+  if (!packageInfo?.name) {
     return true
   }
 
@@ -31,7 +24,7 @@ async function allowNpmPublish(version) {
     // We handle both and consider them as package version not existing
     packageVersionInfo = await execWithOutput('npm', [
       'view',
-      `${packageName}@${version}`,
+      `${packageInfo.name}@${version}`,
     ])
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
@@ -49,6 +42,7 @@ async function publishToNpm({
   npmTag,
   version,
   provenance,
+  access,
 }) {
   await execWithOutput('npm', [
     'config',
@@ -57,6 +51,11 @@ async function publishToNpm({
   ])
 
   const flags = ['--tag', npmTag]
+
+  if (access) {
+    flags.push('--access', access)
+  }
+
   if (provenance) {
     flags.push('--provenance')
   }

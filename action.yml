@@ -80,6 +80,9 @@ inputs:
     required: false
     type: boolean
     default: 'false'
+  access:
+    description: 'If defined, sets package to public or restricted via `--access` flag on `npm publish`. Supported values are "restricted" or "public".'
+    required: false
 
 runs:
   using: 'composite'
