@@ -13,6 +13,14 @@ const setup = ({
   execWithOutputStub
     .withArgs('curl', [
       '-s',
+      '-d',
+      JSON.stringify({
+        packageInfo: { version: 'v5.1.3', name: 'fakeTestPkg' },
+      }),
+      '-H',
+      'Content-Type: application/json',
+      '-X',
+      'POST',
       'https://optic-test.run.app/api/generate/optic-token',
     ])
     .returns('otp123')
@@ -68,6 +76,12 @@ tap.test('Should publish to npm with optic', async t => {
 
   sinon.assert.calledWithExactly(execWithOutputStub, 'curl', [
     '-s',
+    '-d',
+    JSON.stringify({ packageInfo: { version: 'v5.1.3', name: 'fakeTestPkg' } }),
+    '-H',
+    'Content-Type: application/json',
+    '-X',
+    'POST',
     'https://optic-test.run.app/api/generate/optic-token',
   ])
   t.pass('curl called')

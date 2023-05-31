@@ -68,7 +68,7 @@ async function publishToNpm({
       const otp = await execWithOutput('curl', [
         '-s',
         '-d',
-        JSON.string({ packageInfo: { version , name: packageInfo?.name } }),
+        JSON.stringify({ packageInfo: { version , name: packageInfo?.name } }),
         '-H',
         "Content-Type: application/json" ,
         '-X',
