@@ -62,9 +62,17 @@ async function publishToNpm({
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
+
     if (opticToken) {
+      const packageInfo = await getPublishedInfo()
       const otp = await execWithOutput('curl', [
         '-s',
+        '-d',
+        JSON.string({ packageInfo: { version , name: packageInfo?.name } }),
+        '-H',
+        "Content-Type: application/json" ,
+        '-X',
+        'POST',
         `${opticUrl}${opticToken}`,
       ])
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
