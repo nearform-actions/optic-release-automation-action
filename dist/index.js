@@ -47078,6 +47078,7 @@ async function publishToNpm({
 
     if (opticToken) {
       const packageInfo = await getPublishedInfo()
+      console.log("Test")
       const otp = await execWithOutput('curl', [
         '-s',
         '-d',
