@@ -1,7 +1,7 @@
 'use strict'
 
 const { execWithOutput } = require('./execWithOutput')
-const { getPublishedInfo } = require('./packageInfo')
+const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -62,9 +62,17 @@ async function publishToNpm({
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
+
     if (opticToken) {
+      const packageInfo = await getLocalInfo()
       const otp = await execWithOutput('curl', [
         '-s',
+        '-d',
+        JSON.stringify({ packageInfo: { version, name: packageInfo?.name } }),
+        '-H',
+        'Content-Type: application/json',
+        '-X',
+        'POST',
         `${opticUrl}${opticToken}`,
       ])
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
