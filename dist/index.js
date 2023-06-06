@@ -80066,7 +80066,7 @@ module.exports = {
 
 
 const { execWithOutput } = __nccwpck_require__(8632)
-const { getPublishedInfo } = __nccwpck_require__(4349)
+const { getPublishedInfo, getLocalInfo } = __nccwpck_require__(4349)
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -80129,7 +80129,7 @@ async function publishToNpm({
     await execWithOutput('npm', ['pack', '--dry-run'])
 
     if (opticToken) {
-      const packageInfo = await getPublishedInfo()
+      const packageInfo = await getLocalInfo()
       const otp = await execWithOutput('curl', [
         '-s',
         '-d',
