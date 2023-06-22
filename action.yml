@@ -39,7 +39,7 @@ inputs:
   api-url:
     description: 'Url of the API where the application is running'
     required: false
-    default: 'https://optic-release-automation-ocrlhra4va-ue.a.run.app/'
+    default: 'https://optic-release-automation-cvjkbhssyq-ue.a.run.app'
   app-name:
     description: 'Name of the github app that authors optic PRs in the following format: `app-name[bot]`'
     required: false
