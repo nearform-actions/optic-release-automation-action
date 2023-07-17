@@ -8,7 +8,11 @@ const GITHUB_APP_URL = 'https://github.com/apps/optic-release-automation'
 // Github does not allow a new workflow run to be triggered as a result of an action using the same `GITHUB_TOKEN`.
 // Hence all write ops are being done via an external GitHub app.
 const callApi = async ({ method, endpoint, body }, inputs) => {
-  const response = await fetch(`${inputs['api-url']}${endpoint}`, {
+  const apiUrl = inputs['api-url'].endsWith('/')
+    ? inputs['api-url']
+    : `${inputs['api-url']}/`
+
+  const response = await fetch(`${apiUrl}${endpoint}`, {
     method,
     headers: {
       authorization: `token ${inputs['github-token']}`,
