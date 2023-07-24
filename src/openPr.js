@@ -8,7 +8,7 @@ const core = require('@actions/core')
 const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
-const { logError, logInfo, logWarning } = require('./log')
+const { logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
 const { execWithOutput } = require('./utils/execWithOutput')
@@ -95,14 +95,23 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
-  try {
-    await execWithOutput('git', ['checkout', '-b', branchName])
-  } catch (error) {
-    core.setFailed(`${error.message}`)
-    const message = `${error.message}.  Please delete any branch with this name that may already exist and try again.`
-    logError(message)
-    throw new Error(message)
+
+  // first, call ls-remote to see if the branch already exists. if it gives us anything
+  // back (i.e. the matching branch), we should bail out and instruct user to clean up
+  // the remote or use a different version, otherwise proceed
+  const branches = await execWithOutput('git', [
+    'ls-remote',
+    '--heads',
+    'origin',
+    branchName,
+  ])
+  if (branches.length !== 0) {
+    throw new Error(
+      `Release branch ${branchName} already exists on the remote.  Please either delete it and run again, or select a different version`
+    )
   }
+
+  await execWithOutput('git', ['checkout', '-b', branchName])
   await execWithOutput('git', ['add', '-A'])
   await execWithOutput('git', [
     'commit',
