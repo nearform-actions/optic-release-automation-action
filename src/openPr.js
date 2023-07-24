@@ -8,7 +8,7 @@ const core = require('@actions/core')
 const { PR_TITLE_PREFIX } = require('./const')
 const { callApi } = require('./utils/callApi')
 const transformCommitMessage = require('./utils/commitMessage')
-const { logInfo, logWarning } = require('./log')
+const { logError, logInfo, logWarning } = require('./log')
 const { attach } = require('./utils/artifact')
 const { getPRBody } = require('./utils/releaseNotes')
 const { execWithOutput } = require('./utils/execWithOutput')
@@ -95,7 +95,14 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
-  await execWithOutput('git', ['checkout', '-b', branchName])
+  try {
+    await execWithOutput('git', ['checkout', '-b', branchName])
+  } catch (error) {
+    core.setFailed(`${error.message}`)
+    const message = `${error.message}.  Please delete any branch with this name that may already exist and try again.`
+    logError(message)
+    throw new Error(message)
+  }
   await execWithOutput('git', ['add', '-A'])
   await execWithOutput('git', [
     'commit',

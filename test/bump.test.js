@@ -139,6 +139,38 @@ tap.test('should create a new git branch', async () => {
   ])
 })
 
+tap.test(
+  'should throw an error if a release branch with the same name already exists',
+  async t => {
+    const { openPr, stubs } = setup()
+
+    const actionData = {
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: '1.2.3',
+    }
+
+    stubs.execWithOutputStub
+      .withArgs('git', ['checkout', '-b', 'release/v1.2.3'])
+      .rejects(
+        new Error("fatal: a branch named 'release/v1.2.3' already exists")
+      )
+
+    try {
+      await openPr(actionData)
+      t.fail('Should have thrown an error')
+    } catch (error) {
+      sinon.assert.calledOnceWithExactly(
+        stubs.coreStub.setFailed,
+        "fatal: a branch named 'release/v1.2.3' already exists"
+      )
+      sinon.assert.match(
+        error.message,
+        `fatal: a branch named 'release/v1.2.3' already exists.  Please delete any branch with this name that may already exist and try again.`
+      )
+    }
+  }
+)
+
 tap.test('should handle custom commit messages', async () => {
   const { openPr, stubs } = setup()
   const data = clone(DEFAULT_ACTION_DATA)
