@@ -139,15 +139,10 @@ tap.test('it triggers an error if the branch already exists', async t => {
     .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v1.2.3'])
     .resolves('somehashhere          refs/heads/release/v1.2.3')
 
-  try {
-    await openPr(actionData)
-    t.fail('Should have thrown an error')
-  } catch (error) {
-    sinon.assert.match(
-      error.message,
-      'Release branch release/v1.2.3 already exists on the remote.  Please either delete it and run again, or select a different version'
-    )
-  }
+  await t.rejects(
+    openPr(actionData),
+    'Release branch release/v1.2.3 already exists on the remote.  Please either delete it and run again, or select a different version'
+  )
 })
 
 tap.test('should create a new git branch', async () => {
