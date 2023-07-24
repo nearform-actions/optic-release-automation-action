@@ -22,6 +22,18 @@ execWithOutputStub.resolves(TEST_VERSION)
 execWithOutputStub
   .withArgs('git', ['rev-parse', 'HEAD'])
   .resolves(TEST_COMMIT_HASH)
+execWithOutputStub
+  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v3.1.1'])
+  .resolves('')
+execWithOutputStub
+  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/3.1.1'])
+  .resolves('')
+execWithOutputStub
+  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v2.0.0'])
+  .resolves('')
+execWithOutputStub
+  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v0.0.5'])
+  .resolves('')
 
 function setup() {
   const coreStub = sinon.stub(core)
@@ -115,6 +127,29 @@ tap.test('it triggers an error when the packageVersion is missing', async t => {
   }
 })
 
+tap.test('it triggers an error if the branch already exists', async t => {
+  const { openPr, stubs } = setup()
+
+  const actionData = {
+    ...DEFAULT_ACTION_DATA,
+    packageVersion: '1.2.3',
+  }
+
+  stubs.execWithOutputStub
+    .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v1.2.3'])
+    .resolves('somehashhere          refs/heads/release/v1.2.3')
+
+  try {
+    await openPr(actionData)
+    t.fail('Should have thrown an error')
+  } catch (error) {
+    sinon.assert.match(
+      error.message,
+      'Release branch release/v1.2.3 already exists on the remote.  Please either delete it and run again, or select a different version'
+    )
+  }
+})
+
 tap.test('should create a new git branch', async () => {
   const { openPr, stubs } = setup()
   await openPr(DEFAULT_ACTION_DATA)
@@ -138,38 +173,6 @@ tap.test('should create a new git branch', async () => {
     branchName,
   ])
 })
-
-tap.test(
-  'should throw an error if a release branch with the same name already exists',
-  async t => {
-    const { openPr, stubs } = setup()
-
-    const actionData = {
-      ...DEFAULT_ACTION_DATA,
-      packageVersion: '1.2.3',
-    }
-
-    stubs.execWithOutputStub
-      .withArgs('git', ['checkout', '-b', 'release/v1.2.3'])
-      .rejects(
-        new Error("fatal: a branch named 'release/v1.2.3' already exists")
-      )
-
-    try {
-      await openPr(actionData)
-      t.fail('Should have thrown an error')
-    } catch (error) {
-      sinon.assert.calledOnceWithExactly(
-        stubs.coreStub.setFailed,
-        "fatal: a branch named 'release/v1.2.3' already exists"
-      )
-      sinon.assert.match(
-        error.message,
-        `fatal: a branch named 'release/v1.2.3' already exists.  Please delete any branch with this name that may already exist and try again.`
-      )
-    }
-  }
-)
 
 tap.test('should handle custom commit messages', async () => {
   const { openPr, stubs } = setup()
@@ -214,6 +217,12 @@ tap.test('should work with a custom version-prefix', async () => {
 
   // git
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
+    'ls-remote',
+    '--heads',
+    'origin',
+    branchName,
+  ])
+  sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'checkout',
     '-b',
     branchName,
@@ -222,7 +231,7 @@ tap.test('should work with a custom version-prefix', async () => {
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'commit',
     '-m',
-    `Release v${TEST_VERSION}`,
+    `Release ${TEST_VERSION}`,
   ])
   sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
     'push',
