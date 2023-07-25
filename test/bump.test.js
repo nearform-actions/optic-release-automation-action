@@ -9,6 +9,7 @@ const clone = require('lodash.clonedeep')
 const callApiAction = require('../src/utils/callApi')
 const artifactAction = require('../src/utils/artifact')
 const releasesAction = require('../src/utils/releases')
+const execWithOutput = require('../src/utils/execWithOutput')
 const { PR_TITLE_PREFIX } = require('../src/const')
 
 const TEST_RELEASE_NOTES = 'Release Notes'
@@ -16,47 +17,53 @@ const TEST_BASE_TAG_VERSION = 'v1.0.0'
 const TEST_LATEST_VERSION = '3.1.0'
 const TEST_VERSION = '3.1.1'
 const TEST_COMMIT_HASH = 'c86b0a35014a7036b245f81ff9de9bd738a5fe95'
-const execWithOutputStub = sinon.stub()
-
-execWithOutputStub.resolves(TEST_VERSION)
-execWithOutputStub
-  .withArgs('git', ['rev-parse', 'HEAD'])
-  .resolves(TEST_COMMIT_HASH)
-execWithOutputStub
-  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v3.1.1'])
-  .resolves('')
-execWithOutputStub
-  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/3.1.1'])
-  .resolves('')
-execWithOutputStub
-  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v2.0.0'])
-  .resolves('')
-execWithOutputStub
-  .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v0.0.5'])
-  .resolves('')
 
 function setup() {
-  const coreStub = sinon.stub(core)
-  const callApiStub = sinon
-    .stub(callApiAction, 'callApi')
-    .resolves({ data: {} })
-  const attachArtifactStub = sinon.stub(artifactAction, 'attach').returns({
+  const attachArtifactStub = sinon.stub(artifactAction, 'attach').resolves({
     artifact: {
       isPresent: true,
       url: 'https://example.com',
       label: 'label',
     },
   })
-  const releasesFetchReleaseByTagStub = sinon
-    .stub(releasesAction, 'fetchReleaseByTag')
-    .returns({
-      tag_name: TEST_BASE_TAG_VERSION,
-    })
+
+  const callApiStub = sinon
+    .stub(callApiAction, 'callApi')
+    .resolves({ data: {} })
+
+  const coreStub = sinon.stub(core)
+
+  const execWithOutputStub = sinon
+    .stub(execWithOutput, 'execWithOutput')
+    .resolves(TEST_VERSION)
+  execWithOutputStub
+    .withArgs('git', ['rev-parse', 'HEAD'])
+    .resolves(TEST_COMMIT_HASH)
+  execWithOutputStub
+    .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v3.1.1'])
+    .resolves('')
+  execWithOutputStub
+    .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/3.1.1'])
+    .resolves('')
+  execWithOutputStub
+    .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v2.0.0'])
+    .resolves('')
+  execWithOutputStub
+    .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v0.0.5'])
+    .resolves('')
+
   const releasesFetchLatestReleaseStub = sinon
     .stub(releasesAction, 'fetchLatestRelease')
     .returns({
       tag_name: TEST_LATEST_VERSION,
     })
+
+  const releasesFetchReleaseByTagStub = sinon
+    .stub(releasesAction, 'fetchReleaseByTag')
+    .returns({
+      tag_name: TEST_BASE_TAG_VERSION,
+    })
+
   const releasesGenerateReleaseNotesStub = sinon
     .stub(releasesAction, 'generateReleaseNotes')
     .returns({
@@ -112,22 +119,22 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-tap.test('it triggers an error when the packageVersion is missing', async t => {
-  const { openPr } = setup()
+tap.test(
+  'should trigger an error when the packageVersion is missing',
+  async t => {
+    const { openPr } = setup()
 
-  try {
-    await openPr({
-      ...DEFAULT_ACTION_DATA,
-      packageVersion: undefined,
-    })
-    t.fail('should have thrown an error')
-  } catch (error) {
-    t.ok(error)
-    t.match(error.message, 'packageVersion is missing')
+    await t.rejects(
+      openPr({
+        ...DEFAULT_ACTION_DATA,
+        packageVersion: undefined,
+      }),
+      'packageVersion is missing'
+    )
   }
-})
+)
 
-tap.test('it triggers an error if the branch already exists', async t => {
+tap.test('should trigger an error if the branch already exists', async t => {
   const { openPr, stubs } = setup()
 
   const actionData = {
@@ -334,7 +341,9 @@ tap.test(
   async () => {
     const localVersion = '2.0.0'
     const { openPr, stubs } = setup()
-    execWithOutputStub.returns(localVersion)
+
+    stubs.execWithOutputStub.returns(localVersion)
+
     await openPr({
       ...DEFAULT_ACTION_DATA,
       packageVersion: localVersion,
@@ -390,7 +399,9 @@ tap.test(
   async () => {
     const localVersion = '0.0.5'
     const { openPr, stubs } = setup()
-    execWithOutputStub.returns(localVersion)
+
+    stubs.execWithOutputStub.returns(localVersion)
+
     await openPr({
       ...DEFAULT_ACTION_DATA,
       packageVersion: localVersion,
@@ -445,7 +456,9 @@ tap.test('should delete branch in case of pr failure', async t => {
   const localVersion = '0.0.5'
   const { openPr, stubs } = setup()
   const { context, inputs } = DEFAULT_ACTION_DATA
+
   stubs.callApiStub.onCall(1).rejects()
+
   await openPr({ context, inputs, packageVersion: localVersion })
 
   const branchName = `release/v${localVersion}`
@@ -489,17 +502,12 @@ tap.test(
 
 tap.test('should not open Pr if create release draft fails', async t => {
   const { openPr, stubs } = setup()
-  stubs.callApiStub = stubs.callApiStub.throws({ message: 'error message' })
+  stubs.callApiStub.throws({ message: 'error message' })
 
-  try {
-    await openPr({
-      ...DEFAULT_ACTION_DATA,
-    })
-    t.fail('should have thrown an error')
-  } catch (error) {
-    t.ok(error)
-    t.match(error.message, 'Unable to create draft release: error message')
-  }
+  await t.rejects(
+    openPr(DEFAULT_ACTION_DATA),
+    'Unable to create draft release: error message'
+  )
 })
 
 tap.test(
