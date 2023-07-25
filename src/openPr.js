@@ -95,6 +95,22 @@ module.exports = async function ({ context, inputs, packageVersion }) {
   const branchName = `release/${newVersion}`
 
   const messageTemplate = inputs['commit-message']
+
+  // first, call ls-remote to see if the branch already exists. if it gives us anything
+  // back (i.e. the matching branch), we should bail out and instruct user to clean up
+  // the remote or use a different version, otherwise proceed
+  const branches = await execWithOutput('git', [
+    'ls-remote',
+    '--heads',
+    'origin',
+    branchName,
+  ])
+  if (branches.length !== 0) {
+    throw new Error(
+      `Release branch ${branchName} already exists on the remote.  Please either delete it and run again, or select a different version`
+    )
+  }
+
   await execWithOutput('git', ['checkout', '-b', branchName])
   await execWithOutput('git', ['add', '-A'])
   await execWithOutput('git', [
