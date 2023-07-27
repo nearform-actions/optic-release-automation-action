@@ -29,7 +29,7 @@ function setup() {
 
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
-    .resolves({ data: {} })
+    .resolves({ data: { id: 'foo' } })
 
   const coreStub = sinon.stub(core)
 
@@ -286,6 +286,20 @@ tap.test('should call the release endpoint with a new version', async () => {
   )
 })
 
+tap.test(
+  'should trigger an error if the release endpoint responds with an invalid draft release',
+  async t => {
+    const { openPr, stubs } = setup()
+
+    stubs.callApiStub.resolves({})
+
+    await t.rejects(
+      openPr(DEFAULT_ACTION_DATA),
+      'Unable to create draft release: API responded with a 200 status but no draft release returned.  Please clean up any artifacts (draft release, release branch, etc.) and try again'
+    )
+  }
+)
+
 tap.test('should call the PR endpoint with a new version', async () => {
   const { openPr, stubs } = setup()
   await openPr(DEFAULT_ACTION_DATA)
@@ -328,7 +342,7 @@ tap.test('should call the PR endpoint with a new version', async () => {
           '\n' +
           '\n' +
           '<!--\n' +
-          `<release-meta>{"version":"v${TEST_VERSION}"}</release-meta>\n` +
+          `<release-meta>{"id":"foo","version":"v${TEST_VERSION}"}</release-meta>\n` +
           '-->\n',
       },
     },
@@ -385,7 +399,7 @@ tap.test(
             '\n' +
             '\n' +
             '<!--\n' +
-            `<release-meta>{"version":"v${localVersion}"}</release-meta>\n` +
+            `<release-meta>{"id":"foo","version":"v${localVersion}"}</release-meta>\n` +
             '-->\n',
         },
       },
@@ -443,7 +457,7 @@ tap.test(
             '\n' +
             '\n' +
             '<!--\n' +
-            `<release-meta>{"version":"v${localVersion}"}</release-meta>\n` +
+            `<release-meta>{"id":"foo","version":"v${localVersion}"}</release-meta>\n` +
             '-->\n',
         },
       },
