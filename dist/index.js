@@ -79301,6 +79301,12 @@ const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
       inputs
     )
 
+    if (!draftRelease?.id) {
+      throw new Error(
+        'API responded with a 200 status but no draft release returned.  Please clean up any artifacts (draft release, release branch, etc.) and try again'
+      )
+    }
+
     logInfo(`Draft release created successfully`)
 
     return draftRelease
