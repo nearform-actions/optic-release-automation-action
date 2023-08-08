@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [optic-release-automation-action](#optic-release-automation-action)
+  - [Documentation](#documentation)
+  - [Playground / Testing](#playground--testing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [![ci](https://github.com/nearform-actions/optic-release-automation-action/actions/workflows/ci.yml/badge.svg)](https://github.com/nearform-actions/optic-release-automation-action/actions/workflows/ci.yml)
 
 # optic-release-automation-action
