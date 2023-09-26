@@ -1,7 +1,0 @@
-TAP version 14
-# Subtest: Revert commit
-    ok 1 - should be equal
-    1..1
-ok 1 - Revert commit # time=14.307ms
-
-1..1
