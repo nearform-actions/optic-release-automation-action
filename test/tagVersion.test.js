@@ -33,6 +33,6 @@ tap.test('Tag version in git', async t => {
     'push',
     'origin',
     '-f',
-    `--tags`,
+    `v3.0.0`,
   ])
 })
