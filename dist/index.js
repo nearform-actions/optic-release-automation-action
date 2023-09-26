@@ -83634,9 +83634,8 @@ exports.revertCommit = revertCommit
 const { execWithOutput } = __nccwpck_require__(8632)
 
 async function tagVersionInGit(version) {
-  // await execWithOutput('git', ['push', 'origin', `:refs/tags/${version}`])
   await execWithOutput('git', ['tag', '-f', `${version}`])
-  await execWithOutput('git', ['push', 'origin', `--tags`])
+  await execWithOutput('git', ['push', 'origin', `-f`, `--tags`])
 }
 
 exports.tagVersionInGit = tagVersionInGit
