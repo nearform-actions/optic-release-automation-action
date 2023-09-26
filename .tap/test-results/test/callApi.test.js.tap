@@ -1,0 +1,18 @@
+TAP version 14
+# Subtest: Call api warns if code is not 200
+    1..0
+ok 1 - Call api warns if code is not 200 # time=60.269ms
+
+# Subtest: Call api does not warn if code is  200
+    1..0
+ok 2 - Call api does not warn if code is  200 # time=17.745ms
+
+# Subtest: Call api does not append slash to api url if present
+    1..0
+ok 3 - Call api does not append slash to api url if present # time=4.192ms
+
+# Subtest: Call api appends slash to api url if not present
+    1..0
+ok 4 - Call api appends slash to api url if not present # time=2.91ms
+
+1..4

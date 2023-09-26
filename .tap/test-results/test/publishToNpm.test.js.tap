@@ -1,0 +1,62 @@
+TAP version 14
+# Subtest: Should publish to npm with optic
+    ok 1 - npm config
+    ok 2 - npm pack called
+    ok 3 - curl called
+    ok 4 - npm publish called
+    1..4
+ok 1 - Should publish to npm with optic # time=60.298ms
+
+# Subtest: Should publish to npm when package hasn't been published before
+    ok 1 - npm pack called
+    ok 2 - npm publish called
+    1..2
+ok 2 - Should publish to npm when package hasn't been published before # time=2.916ms
+
+# Subtest: Should publish to npm without optic
+    ok 1 - npm pack called
+    ok 2 - npm publish called
+    1..2
+ok 3 - Should publish to npm without optic # time=2.051ms
+
+# Subtest: Should skip npm package publication when it was already published
+    ok 1 - publish never called with otp
+    ok 2 - publish never called
+    1..2
+ok 4 - Should skip npm package publication when it was already published # time=1.626ms
+
+# Subtest: Should stop action if package info retrieval fails
+    1..3
+    ok 1 - should be equal
+    ok 2 - package is not published with otp code
+    ok 3 - package is not published without otp code
+ok 5 - Should stop action if package info retrieval fails # time=4.286ms
+
+# Subtest: Should stop action if package version info retrieval fails
+    1..3
+    ok 1 - should be equal
+    ok 2 - package is not published with otp code
+    ok 3 - package is not published without otp code
+ok 6 - Should stop action if package version info retrieval fails # time=2.921ms
+
+# Subtest: Should continue action if package info returns not found
+    ok 1 - npm pack called
+    ok 2 - npm publish called
+    1..2
+ok 7 - Should continue action if package info returns not found # time=4.056ms
+
+# Subtest: Should continue action if package version info returns not found
+    ok 1 - npm pack called
+    ok 2 - npm publish called
+    1..2
+ok 8 - Should continue action if package version info returns not found # time=2.413ms
+
+# Subtest: Adds --provenance flag when provenance option provided
+    1..0
+ok 9 - Adds --provenance flag when provenance option provided # time=2.991ms
+
+# Subtest: Adds --access flag if provided as an input
+    1..0
+ok 10 - Adds --access flag if provided as an input # time=2.149ms
+
+1..10

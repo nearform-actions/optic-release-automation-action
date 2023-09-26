@@ -1,0 +1,17 @@
+TAP version 14
+# Subtest: Handles normal commit messages
+    ok 1 - should be equal
+    1..1
+ok 1 - Handles normal commit messages # time=8.762ms
+
+# Subtest: Handles customized messages
+    ok 1 - should be equal
+    1..1
+ok 2 - Handles customized messages # time=0.254ms
+
+# Subtest: Handles messages with quotes
+    ok 1 - should be equal
+    1..1
+ok 3 - Handles messages with quotes # time=0.134ms
+
+1..3

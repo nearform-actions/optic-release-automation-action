@@ -1,0 +1,31 @@
+{
+  "date": "2023-09-26T13:13:01.519Z",
+  "argv": [
+    "/Users/william/.nvm/versions/node/v18.18.0/bin/node",
+    "/Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/test/packageInfo.test.js"
+  ],
+  "execArgv": [
+    "--loader=file:///Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/node_modules/ts-node/esm.mjs",
+    "--loader=file:///Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/node_modules/@tapjs/mock/dist/esm/legacy-loader.mjs",
+    "--no-warnings",
+    "--enable-source-maps",
+    "--loader=file:///Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/node_modules/@tapjs/processinfo/dist/mjs/loader-legacy.mjs"
+  ],
+  "NODE_OPTIONS": "\"--loader=file:///Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/node_modules/@tapjs/processinfo/dist/mjs/loader-legacy.mjs\" \"--no-warnings\"",
+  "cwd": "/Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action",
+  "pid": 32055,
+  "ppid": 32043,
+  "parent": null,
+  "uuid": "aaee497f-ef96-4627-b49c-2d48b4387818",
+  "files": [
+    "/Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/test/packageInfo.test.js",
+    "/Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/src/utils/packageInfo.js",
+    "/Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/src/utils/execWithOutput.js"
+  ],
+  "sources": {},
+  "root": "aaee497f-ef96-4627-b49c-2d48b4387818",
+  "externalID": "test/packageInfo.test.js",
+  "code": 0,
+  "signal": null,
+  "runtime": 1745.577667
+}

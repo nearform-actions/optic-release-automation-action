@@ -22,13 +22,8 @@ tap.test('Tag version in git', async t => {
   const version = 'v3.0.0'
   await tagVersionProxy.tagVersionInGit(version)
 
-  t.ok(execWithOutputStub.callCount === 3)
+  t.ok(execWithOutputStub.callCount === 2)
 
-  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
-    'push',
-    'origin',
-    `:refs/tags/${version}`,
-  ])
   sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'tag',
     '-f',
@@ -37,6 +32,7 @@ tap.test('Tag version in git', async t => {
   sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
     'push',
     'origin',
+    '-f',
     `--tags`,
   ])
 })

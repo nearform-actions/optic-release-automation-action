@@ -1,0 +1,27 @@
+TAP version 14
+# Subtest: attach artifact does not throw errors with proper inputs
+    ok 1 - expected to resolve
+    1..1
+ok 1 - attach artifact does not throw errors with proper inputs # time=60.055ms
+
+# Subtest: attach artifact does not throw errors with path ending with .zip
+    ok 1 - expected to resolve
+    1..1
+ok 2 - attach artifact does not throw errors with path ending with .zip # time=26.266ms
+
+# Subtest: attach artifact throws an error if build folder not found
+    ok 1 - expected to reject
+    1..1
+ok 3 - attach artifact throws an error if build folder not found # time=74.703ms
+
+# Subtest: attach artifact throws an error if an error occurres during the asset upload
+    ok 1 - expected to reject
+    1..1
+ok 4 - attach artifact throws an error if an error occurres during the asset upload # time=36.614ms
+
+# Subtest: attach artifact throws an error if the upload asset state is not uploaded
+    ok 1 - expected to reject
+    1..1
+ok 5 - attach artifact throws an error if the upload asset state is not uploaded # time=33.355ms
+
+1..5

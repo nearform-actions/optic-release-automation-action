@@ -1,0 +1,80 @@
+TAP version 14
+[command]/Users/william/.nvm/versions/node/v18.18.0/bin/npm -v
+9.8.1
+# Subtest: getNpmVersion can get a real NPM version number
+    ok 1 - type is string
+    ok 2 - should be equal
+    1..2
+ok 1 - getNpmVersion can get a real NPM version number # time=443.356ms
+
+# Subtest: checkIsSupported passes on minimum NPM version
+    ok 1 - expect to not throw
+    1..1
+ok 2 - checkIsSupported passes on minimum NPM version # time=0.768ms
+
+# Subtest: checkIsSupported passes on major version after minimum
+    ok 1 - expect to not throw
+    1..1
+ok 3 - checkIsSupported passes on major version after minimum # time=0.177ms
+
+# Subtest: checkIsSupported fails on minor version before minimum
+    ok 1 - Provenance requires NPM 9.5.0
+    1..1
+ok 4 - checkIsSupported fails on minor version before minimum # time=0.226ms
+
+# Subtest: checkIsSupported fails on major version before minimum
+    ok 1 - Provenance requires NPM 9.5.0
+    1..1
+ok 5 - checkIsSupported fails on major version before minimum # time=0.344ms
+
+# Subtest: checkPermissions always passes on NPM 9.6.1
+    ok 1 - expect to not throw
+    1..1
+ok 6 - checkPermissions always passes on NPM 9.6.1 # time=0.156ms
+
+# Subtest: checkPermissions always passes on next major NPM version
+    ok 1 - expect to not throw
+    1..1
+ok 7 - checkPermissions always passes on next major NPM version # time=0.13ms
+
+# Subtest: checkPermissions fails on minimum version without env
+    ok 1 - Provenance generation in GitHub Actions requires "write" access to the "id-token" permission
+    1..1
+ok 8 - checkPermissions fails on minimum version without env # time=0.184ms
+
+# Subtest: checkPermissions passes on minimum version with env
+    ok 1 - expect to not throw
+    1..1
+ok 9 - checkPermissions passes on minimum version with env # time=0.978ms
+
+# Subtest: getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option
+    ok 1 - should match pattern
+    1..1
+ok 10 - getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option # time=3.259ms
+
+# Subtest: getAccessAdjustment does nothing if passed defined access option
+    ok 1 - should be equal
+    1..1
+ok 11 - getAccessAdjustment does nothing if passed defined access option # time=1.892ms
+
+# Subtest: getAccessAdjustment does nothing if package.json defines access
+    ok 1 - should be equal
+    1..1
+ok 12 - getAccessAdjustment does nothing if package.json defines access # time=1.579ms
+
+# Subtest: getAccessAdjustment does nothing if package.json name is scoped
+    ok 1 - should be equal
+    1..1
+ok 13 - getAccessAdjustment does nothing if package.json name is scoped # time=1.496ms
+
+# Subtest: getAccessAdjustment does nothing if package is on npm
+    ok 1 - should be equal
+    1..1
+ok 14 - getAccessAdjustment does nothing if package is on npm # time=1.099ms
+
+# Subtest: getProvenanceOptions fails fast if NPM version unavailable
+    ok 1 - Current npm version not provided
+    1..1
+ok 15 - getProvenanceOptions fails fast if NPM version unavailable # time=6.722ms
+
+1..15

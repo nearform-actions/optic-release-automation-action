@@ -1,0 +1,30 @@
+{
+  "date": "2023-09-26T13:13:01.999Z",
+  "argv": [
+    "/Users/william/.nvm/versions/node/v18.18.0/bin/node",
+    "/Users/william/.nvm/versions/node/v18.18.0/bin/npm",
+    "view",
+    "--json"
+  ],
+  "execArgv": [],
+  "NODE_OPTIONS": "\"--loader=file:///Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action/node_modules/@tapjs/processinfo/dist/mjs/loader-legacy.mjs\" \"--no-warnings\"",
+  "cwd": "/Users/william/NearForm/Projects/GitHub-Actions/optic-release-automation-action/optic-release-automation-action",
+  "pid": 32062,
+  "ppid": 32055,
+  "parent": "aaee497f-ef96-4627-b49c-2d48b4387818",
+  "uuid": "6f17b399-ccd7-4c7a-b62b-9f51216ca044",
+  "files": [
+    "/Users/william/.nvm/versions/node/v18.18.0/bin/npm",
+    "/Users/william/.nvm/versions/node/v18.18.0/lib/node_modules/npm/bin/npm-cli.js",
+    "/Users/william/.nvm/versions/node/v18.18.0/lib/node_modules/npm/node_modules/chalk/source/index.js",
+    "/Users/william/.nvm/versions/node/v18.18.0/lib/node_modules/npm/node_modules/supports-color/index.js",
+    "/Users/william/.nvm/versions/node/v18.18.0/lib/node_modules/npm/node_modules/chalk/source/vendor/ansi-styles/index.js",
+    "/Users/william/.nvm/versions/node/v18.18.0/lib/node_modules/npm/node_modules/chalk/source/utilities.js",
+    "/Users/william/.nvm/versions/node/v18.18.0/lib/node_modules/npm/node_modules/chalk/source/vendor/supports-color/index.js"
+  ],
+  "sources": {},
+  "root": "aaee497f-ef96-4627-b49c-2d48b4387818",
+  "code": 1,
+  "signal": null,
+  "runtime": 1206.208292
+}

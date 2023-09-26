@@ -1,0 +1,27 @@
+TAP version 14
+# Subtest: throws an error if path not found
+    ok 1 - expected to reject
+    1..1
+ok 1 - throws an error if path not found # time=70.421ms
+
+# Subtest: does not throw any errors if directory
+    ok 1 - expected to resolve
+    1..1
+ok 2 - does not throw any errors if directory # time=27.691ms
+
+# Subtest: throws if writing to zip file fails
+    ok 1 - expected to reject
+    1..1
+ok 3 - throws if writing to zip file fails # time=30.225ms
+
+# Subtest: resolves if a path is not a directory
+    ok 1 - expected to resolve
+    1..1
+ok 4 - resolves if a path is not a directory # time=42.006ms
+
+# Subtest: does not throw any errors if file
+    ok 1 - expected to resolve
+    1..1
+ok 5 - does not throw any errors if file # time=48.926ms
+
+1..5

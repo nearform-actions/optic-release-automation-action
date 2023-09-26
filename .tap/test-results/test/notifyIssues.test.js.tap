@@ -1,0 +1,26 @@
+TAP version 14
+# Subtest: Should not call createComment if no linked issues
+    1..0
+ok 1 - Should not call createComment if no linked issues # time=161.973ms
+
+::warning::Skipping external issue-13, repoOwner-ext-owner , repo-ext-repo
+# Subtest: Should not call createComment if linked issue belongs to external repo
+    1..0
+ok 2 - Should not call createComment if linked issue belongs to external repo # time=3.846ms
+
+# Subtest: Should call createComment with correct arguments for linked issues with npm link
+    1..0
+ok 3 - Should call createComment with correct arguments for linked issues with npm link # time=4.385ms
+
+# Subtest: Should call createComment with correct arguments for linked issues without npm link
+    1..0
+ok 4 - Should call createComment with correct arguments for linked issues without npm link # time=5.154ms
+
+# Subtest: Shouldn't fail if createComment on an issue fails
+::warning::Failed to create comment for issue-10, repo-repo. Error-Error
+::warning::Failed to create comment for issue-15, repo-repo. Error-Error
+    ok 1 - expected to resolve
+    1..1
+ok 5 - Shouldn't fail if createComment on an issue fails # time=16.916ms
+
+1..5

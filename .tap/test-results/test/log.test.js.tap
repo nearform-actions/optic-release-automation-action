@@ -1,0 +1,22 @@
+TAP version 14
+# Subtest: calling log with an array will stringify it
+    1..0
+ok 1 - calling log with an array will stringify it # time=30.186ms
+
+# Subtest: logDebug calls @actions/core/debug
+    1..0
+ok 2 - logDebug calls @actions/core/debug # time=8.635ms
+
+# Subtest: logError calls @actions/core/error
+    1..0
+ok 3 - logError calls @actions/core/error # time=31.405ms
+
+# Subtest: logInfo calls @actions/core/info
+    1..0
+ok 4 - logInfo calls @actions/core/info # time=2.55ms
+
+# Subtest: logWarning calls @actions/core/warning
+    1..0
+ok 5 - logWarning calls @actions/core/warning # time=2.875ms
+
+1..5
