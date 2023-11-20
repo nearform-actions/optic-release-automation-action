@@ -97,7 +97,7 @@ runs:
       shell: 'bash'
 
     - name: Version bump
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       id: version-bump
       if: ${{ github.event_name == 'workflow_dispatch' }}
       with:
@@ -116,7 +116,7 @@ runs:
       shell: 'bash'
 
     - name: Commit and open PR
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       if: ${{ github.event_name == 'workflow_dispatch' }}
       with:
         github-token: ${{ inputs.github-token }}
@@ -125,7 +125,7 @@ runs:
           await runAction({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: ${{ steps.version-bump.outputs.result }} })
 
     - name: Release the package
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       if: ${{ github.event_name == 'pull_request' }}
       with:
         github-token: ${{ inputs.github-token }}
