@@ -3,6 +3,28 @@
 const { StringDecoder } = require('node:string_decoder')
 
 const { exec } = require('@actions/exec')
+const { CONFIDENTIAL_KEYWORDS_FOR_REDACTION } = require('../const')
+
+/**
+ * 
+ * @param {string[]} args 
+ * @returns Redacted Array or Blank Array if null/undefined
+ */
+function removeConfidentialArguments(args) {
+  let skipItem = false
+
+  return (args ?? []).filter(arg => {
+      if (skipItem) {
+          skipItem = false
+          
+          return false;
+      }
+
+      skipItem = CONFIDENTIAL_KEYWORDS_FOR_REDACTION.includes(arg?.toString().toLocaleUpperCase())
+
+      return !skipItem
+  })
+}
 
 /**
  *
@@ -63,8 +85,8 @@ async function execWithOutput(
   }
 
   throw new Error(
-    `${cmd} ${args?.join(
-      ' '
+    `${cmd} ${removeConfidentialArguments(args).join(
+        ' '
     )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
   )
 }
@@ -85,3 +107,4 @@ function getFilteredEnv() {
 }
 
 exports.execWithOutput = execWithOutput
+exports.removeConfidentialArguments = removeConfidentialArguments

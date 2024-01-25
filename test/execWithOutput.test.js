@@ -3,6 +3,7 @@
 const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
+const { removeConfidentialArguments } = require('../src/utils/execWithOutput')
 
 const setup = () => {
   const execStubInner = sinon.stub()
@@ -110,4 +111,44 @@ tap.test('passes env vars excluding `INPUT_*` env vars', async t => {
   // Check "real" env vars are preserved.
   // Its value will vary by test runner, so just check it is present.
   t.hasProp(envInExec, 'NODE')
+})
+
+tap.test('Invalid arguments inputs should not fail', async t => {
+  const redactedBlankArray = removeConfidentialArguments([]);
+  const redactedUndefinedArray = removeConfidentialArguments(undefined);
+  const redactedNullArray = removeConfidentialArguments(null);
+
+  t.equal(Array.isArray(redactedBlankArray), true)
+  t.equal(Array.isArray(redactedUndefinedArray), true)
+  t.equal(Array.isArray(redactedNullArray), true)
+
+  t.equal(redactedBlankArray?.length, 0)
+  t.equal(redactedUndefinedArray?.length, 0)
+  t.equal(redactedNullArray?.length, 0)
+
+})
+
+tap.test('Otp should be redacted from args in case of an error', async t => {
+  const args = [
+    'publish',
+    '--tag',
+    'latest',
+    '--access',
+    'public',
+  ]
+
+  const arrayWithOTP = [...args.slice(0,2), '--OtP', '11211', ...args.slice(2)]
+  const arrayWithOTPInStart = ['--otp', 112111, ...args]
+  const arrayWithOTPAtEnd = [...args, '--otp', 112111]
+
+  const errorMessage1 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTP));
+  const errorMessage2 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTPInStart));
+  const errorMessage3 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTPAtEnd));
+  const errorMessage4 = await t.rejects(execWithOutputModule.execWithOutput('ls', args));
+  
+  t.ok(errorMessage1.message.indexOf('--otp') === -1 && errorMessage1.message.indexOf('publish') > -1)
+  t.ok(errorMessage2.message.indexOf('--otp') === -1 && errorMessage2.message.indexOf('publish') > -1)
+  t.ok(errorMessage3.message.indexOf('--otp') === -1 && errorMessage3.message.indexOf('publish') > -1)
+  t.ok(errorMessage4.message.indexOf('publish') > -1)
+
 })
