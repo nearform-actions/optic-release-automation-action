@@ -6,5 +6,10 @@ module.exports = {
   APP_NAME: 'optic-release-automation[bot]',
   AUTO_INPUT: 'auto',
   ACCESS_OPTIONS: ['public', 'restricted'],
-  CONFIDENTIAL_KEYWORDS_FOR_REDACTION: ['--OTP'],
+  REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS: {
+    '--OTP': {
+        redactCurrentArg: true,
+        redactNextArg: true,
+    }
+  },
 }

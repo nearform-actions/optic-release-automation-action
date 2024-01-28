@@ -3,28 +3,22 @@
 const { StringDecoder } = require('node:string_decoder')
 
 const { exec } = require('@actions/exec')
-const { CONFIDENTIAL_KEYWORDS_FOR_REDACTION } = require('../const')
+const { REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS } = require('../const')
 
 /**
  * 
  * @param {string[]} args 
- * @returns Redacted Array or Blank Array if null/undefined
+ * @returns string[] Redacted Array or Blank Array if null/undefined
  */
-function removeConfidentialArguments(args) {
-  let skipItem = false
+function redactConfidentialArguments(args) {
+  return (args ?? []).filter((_, index) => {
+      const currentArg = args[index]?.toString().trim().toLocaleUpperCase()
+      const previousArg = args[index - 1]?.toString().trim().toLocaleUpperCase()
 
-  return (args ?? []).filter(arg => {
-      if (skipItem) {
-          skipItem = false
-          
-          return false;
-      }
-
-      skipItem = CONFIDENTIAL_KEYWORDS_FOR_REDACTION.includes(arg?.toString().toLocaleUpperCase())
-
-      return !skipItem
-  })
+      return !(REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS[currentArg]?.redactCurrentArg || REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS[previousArg]?.redactNextArg)
+  });
 }
+
 
 /**
  *
@@ -85,7 +79,7 @@ async function execWithOutput(
   }
 
   throw new Error(
-    `${cmd} ${removeConfidentialArguments(args).join(
+    `${cmd} ${redactConfidentialArguments(args).join(
         ' '
     )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
   )
@@ -107,4 +101,4 @@ function getFilteredEnv() {
 }
 
 exports.execWithOutput = execWithOutput
-exports.removeConfidentialArguments = removeConfidentialArguments
+exports.redactConfidentialArguments = redactConfidentialArguments

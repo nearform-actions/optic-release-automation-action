@@ -3,7 +3,7 @@
 const tap = require('tap')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
-const { removeConfidentialArguments } = require('../src/utils/execWithOutput')
+const { redactConfidentialArguments } = require('../src/utils/execWithOutput')
 
 const setup = () => {
   const execStubInner = sinon.stub()
@@ -114,17 +114,57 @@ tap.test('passes env vars excluding `INPUT_*` env vars', async t => {
 })
 
 tap.test('Invalid arguments inputs should not fail', async t => {
-  const redactedBlankArray = removeConfidentialArguments([]);
-  const redactedUndefinedArray = removeConfidentialArguments(undefined);
-  const redactedNullArray = removeConfidentialArguments(null);
+  const redactedBlankArray = redactConfidentialArguments([]);
+  const redactedUndefinedArray = redactConfidentialArguments(undefined);
+  const redactedNullArray = redactConfidentialArguments(null);
 
   t.equal(Array.isArray(redactedBlankArray), true)
   t.equal(Array.isArray(redactedUndefinedArray), true)
   t.equal(Array.isArray(redactedNullArray), true)
 
-  t.equal(redactedBlankArray?.length, 0)
-  t.equal(redactedUndefinedArray?.length, 0)
-  t.equal(redactedNullArray?.length, 0)
+  t.equal(redactedBlankArray.length, 0)
+  t.equal(redactedUndefinedArray.length, 0)
+  t.equal(redactedNullArray.length, 0)
+
+})
+
+tap.test('Valid arguments inputs should pass', async t => {
+  const args = [
+    'publish',
+    '--tag',
+    'latest',
+    '--access',
+    'public',
+  ]
+
+  const otp = '1827Sdys7';
+
+  const arrayWithOTP = [...args.slice(0,2), '--otp', otp, ...args.slice(2)]
+  const arrayWithOTPInStart = ['--otp', otp, ...args]
+  const arrayWithOTPAtEnd = [...args, '--otp', otp]
+
+  const redactedArray1 = redactConfidentialArguments(arrayWithOTP);
+  const redactedArray2 = redactConfidentialArguments(arrayWithOTPInStart);
+  const redactedArray3 = redactConfidentialArguments(arrayWithOTPAtEnd);
+  const redactedArray4 = redactConfidentialArguments(args);
+
+  t.equal(Array.isArray(redactedArray1), true, "Failed - [Array with OTP] - Output Not An Array")
+  t.equal(redactedArray1.length, arrayWithOTP.length - 2, "Failed - [Array with OTP] - Output Array Length not matching>>")
+  t.equal(redactedArray1.includes('--otp'), false, "Failed - [Array with OTP] - OTP Keyword is found in Output Array")
+  t.equal(redactedArray1.includes(otp), false, "Failed - [Array with OTP] - OTP Value is found in Output Array")
+
+  t.equal(Array.isArray(redactedArray2), true, "Failed - [Array with OTP in start] - Output Not An Array")
+  t.equal(redactedArray2.length, arrayWithOTPInStart.length - 2, "Failed - [Array with OTP in start] - Output Array Length not matching")
+  t.equal(redactedArray2.includes('--otp'), false, "Failed - [Array with OTP in start] - OTP Keyword is found in Output Array")
+  t.equal(redactedArray2.includes(otp), false, "Failed - [Array with OTP in start] - OTP Value is found in Output Array")
+
+  t.equal(Array.isArray(redactedArray3), true, "Failed - [Array with OTP in end] - Output Not An Array")
+  t.equal(redactedArray3.length, arrayWithOTPAtEnd.length - 2, "Failed - [Array with OTP in end] - Output Array Length not matching")
+  t.equal(redactedArray3.includes('--otp'), false, "Failed - [Array with OTP in end] - OTP Keyword is found in Output Array")
+  t.equal(redactedArray3.includes(otp), false, "Failed - [Array with OTP in end] - OTP Value is found in Output Array")
+
+  t.equal(Array.isArray(redactedArray4), true, "Failed - [Array with no OTP] - Output Not An Array")
+  t.equal(redactedArray4.length, args.length, "Failed - [Array with no OTP] - Output Array Length not matching")
 
 })
 
@@ -137,18 +177,26 @@ tap.test('Otp should be redacted from args in case of an error', async t => {
     'public',
   ]
 
-  const arrayWithOTP = [...args.slice(0,2), '--OtP', '11211', ...args.slice(2)]
-  const arrayWithOTPInStart = ['--otp', 112111, ...args]
-  const arrayWithOTPAtEnd = [...args, '--otp', 112111]
+  const otp = '872333';
 
-  const errorMessage1 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTP));
-  const errorMessage2 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTPInStart));
-  const errorMessage3 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTPAtEnd));
-  const errorMessage4 = await t.rejects(execWithOutputModule.execWithOutput('ls', args));
+  const arrayWithOTP = [...args.slice(0,2), '--otp', otp, ...args.slice(2)]
+  const arrayWithOTPInStart = ['--otp', otp, ...args]
+  const arrayWithOTPAtEnd = [...args, '--otp', otp]
+
+  const errorObject1 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTP));
+  const errorObject2 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTPInStart));
+  const errorObject3 = await t.rejects(execWithOutputModule.execWithOutput('ls', arrayWithOTPAtEnd));
+  const errorObject4 = await t.rejects(execWithOutputModule.execWithOutput('ls', args));
   
-  t.ok(errorMessage1.message.indexOf('--otp') === -1 && errorMessage1.message.indexOf('publish') > -1)
-  t.ok(errorMessage2.message.indexOf('--otp') === -1 && errorMessage2.message.indexOf('publish') > -1)
-  t.ok(errorMessage3.message.indexOf('--otp') === -1 && errorMessage3.message.indexOf('publish') > -1)
-  t.ok(errorMessage4.message.indexOf('publish') > -1)
+  t.equal(errorObject1.message.indexOf('--otp'), -1, "Failed - [Array with OTP] - OTP Keyword is found in Error Output")
+  t.equal(errorObject1.message.indexOf(otp), -1, "Failed - [Array with OTP] - OTP Value is found in Error Output")
 
+  t.equal(errorObject2.message.indexOf('--otp'), -1, "Failed - [Array with OTP in start] - OTP Keyword is found in Error Output")
+  t.equal(errorObject2.message.indexOf(otp), -1, "Failed - [Array with OTP in start] - OTP Value is found in Error Output")
+
+  t.equal(errorObject3.message.indexOf('--otp'), -1, "Failed - [Array with OTP in end] - OTP Keyword is found in Error Output")
+  t.equal(errorObject3.message.indexOf(otp), -1, "Failed - [Array with OTP in end] - OTP Value is found in Error Output")
+
+  t.equal(errorObject4.message.indexOf('--tag') > -1, true, "Failed - [Array without OTP] - Expected Keyword is not found in Error Output")
+  t.equal(errorObject4.message.indexOf('latest') > -1, true, "Failed - [Array without OTP] - Expected Value is not found in Error Output")
 })
