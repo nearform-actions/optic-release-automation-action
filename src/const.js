@@ -8,8 +8,8 @@ module.exports = {
   ACCESS_OPTIONS: ['public', 'restricted'],
   REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS: {
     '--OTP': {
-        redactCurrentArg: true,
-        redactNextArg: true,
-    }
+      redactCurrentArg: true,
+      redactNextArg: true,
+    },
   },
 }

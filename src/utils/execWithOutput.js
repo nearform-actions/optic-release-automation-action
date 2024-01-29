@@ -6,19 +6,21 @@ const { exec } = require('@actions/exec')
 const { REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS } = require('../const')
 
 /**
- * 
- * @param {string[]} args 
+ *
+ * @param {string[]} args
  * @returns string[] Redacted Array or Blank Array if null/undefined
  */
 function redactConfidentialArguments(args) {
   return (args ?? []).filter((_, index) => {
-      const currentArg = args[index]?.toString().trim().toLocaleUpperCase()
-      const previousArg = args[index - 1]?.toString().trim().toLocaleUpperCase()
+    const currentArg = args[index]?.toString().trim().toLocaleUpperCase()
+    const previousArg = args[index - 1]?.toString().trim().toLocaleUpperCase()
 
-      return !(REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS[currentArg]?.redactCurrentArg || REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS[previousArg]?.redactNextArg)
-  });
+    return !(
+      REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS[currentArg]?.redactCurrentArg ||
+      REDACTION_META_INFO_FOR_CONFIDENTIAL_ARGS[previousArg]?.redactNextArg
+    )
+  })
 }
-
 
 /**
  *
@@ -80,7 +82,7 @@ async function execWithOutput(
 
   throw new Error(
     `${cmd} ${redactConfidentialArguments(args).join(
-        ' '
+      ' '
     )} returned code ${code} \nSTDOUT: ${output}\nSTDERR: ${errorOutput}`
   )
 }
