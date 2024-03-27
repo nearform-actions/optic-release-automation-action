@@ -7,7 +7,7 @@
     "lint": "eslint .",
     "test": "tap",
     "build": "ncc build src/index.js",
-    "prepare": "husky install",
+    "prepare": "husky",
     "update-readme-TOC": "doctoc README.md"
   },
   "keywords": [],
