@@ -2,6 +2,7 @@
 
 const { execWithOutput } = require('./execWithOutput')
 const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
+const { collectOtp } = require('./otpCollector') // Import the new module
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -62,19 +63,24 @@ async function publishToNpm({
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
-
-    if (opticToken) {
-      const packageInfo = await getLocalInfo()
-      const otp = await execWithOutput('curl', [
-        '-s',
-        '-d',
-        JSON.stringify({ packageInfo: { version, name: packageInfo?.name } }),
-        '-H',
-        'Content-Type: application/json',
-        '-X',
-        'POST',
-        `${opticUrl}${opticToken}`,
-      ])
+    let otp
+    const useURL = true
+    if (opticToken || useURL) {
+      if (opticToken) {
+        const packageInfo = await getLocalInfo()
+        otp = await execWithOutput('curl', [
+          '-s',
+          '-d',
+          JSON.stringify({ packageInfo: { version, name: packageInfo?.name } }),
+          '-H',
+          'Content-Type: application/json',
+          '-X',
+          'POST',
+          `${opticUrl}${opticToken}`,
+        ])
+      } else if (useURL) {
+        otp = await collectOtp() // Use the modularized OTP collection
+      }
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
     } else {
       await execWithOutput('npm', ['publish', ...flags])
