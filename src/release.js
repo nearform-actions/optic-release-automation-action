@@ -40,7 +40,7 @@ module.exports = async function ({ github, context, inputs }) {
   } catch (err) {
     return logError(err)
   }
-  logInfo(`_________ --> releaseMeta:', ${releaseMeta}`)
+  logInfo(`_________ --> releaseMeta:', ${JSON.stringify(releaseMeta)}`)
 
   const { opticUrl, npmTag, version, id } = releaseMeta
 
