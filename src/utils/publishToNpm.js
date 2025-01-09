@@ -2,7 +2,7 @@
 
 const { execWithOutput } = require('./execWithOutput')
 const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
-const { collectOtp } = require('./otpCollector') // Import the new module
+const collectOtp = require('./otpCollector') // Import the new module
 const logPublicIP = require('./logPublicIP')
 
 async function allowNpmPublish(version) {

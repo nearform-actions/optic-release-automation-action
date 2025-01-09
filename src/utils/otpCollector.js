@@ -1,12 +1,15 @@
 'use strict'
 
+const fs = require('fs')
 const fastify = require('fastify')
 const localtunnel = require('localtunnel')
 const { logInfo } = require('../log')
 
+const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
+
 async function collectOtp() {
   const app = fastify()
-  app.register(require('@fastify/formbody')) // Parse POST data
+  app.register(require('@fastify/formbody'))
 
   let otpPromiseResolve
   const otpPromise = new Promise(resolve => {
@@ -18,13 +21,27 @@ async function collectOtp() {
     console.error('OTP submission timed out.')
   }, 300000) // 5 minutes timeout
 
-  app.get('/', (req, reply) => {
-    reply.type('text/html').send(`
-      <form action="/otp" method="POST">
-        <input type="text" name="otp" required />
-        <button type="submit">Submit OTP</button>
-      </form>
-    `)
+  // app.get('/', (req, reply) => {
+  //   reply.type('text/html').send(`
+  //     <form action="/otp" method="POST">
+  //       <input type="text" name="otp" required />
+  //       <button type="submit">Submit OTP</button>
+  //     </form>
+  //   `)
+  // })
+
+  // Serve static HTML file
+  // app.get('/', (req, reply) => {
+  //   reply.sendFile('otp.html') // Serve 'public/otp.html'
+  // })
+
+  app.get('/', async (req, reply) => {
+    try {
+      reply.type('text/html').send(otpHtml)
+    } catch (err) {
+      reply.code(500).send('Error loading HTML page')
+      console.error('Failed to load HTML file:', err)
+    }
   })
 
   app.post('/otp', async (req, reply) => {
@@ -58,4 +75,4 @@ async function collectOtp() {
   return otp
 }
 
-module.exports = { collectOtp }
+module.exports = collectOtp
