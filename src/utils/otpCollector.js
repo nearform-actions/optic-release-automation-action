@@ -2,6 +2,7 @@
 
 const fastify = require('fastify')
 const localtunnel = require('localtunnel')
+const { logInfo } = require('../log')
 
 async function collectOtp() {
   const app = fastify()
@@ -28,6 +29,7 @@ async function collectOtp() {
 
   app.post('/otp', async (req, reply) => {
     clearTimeout(timeout)
+    logInfo('Received OTP:', req.body.otp)
     otpPromiseResolve(req.body.otp)
     reply.send('OTP received. You can close this window.')
   })

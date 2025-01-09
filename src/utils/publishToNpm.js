@@ -3,6 +3,7 @@
 const { execWithOutput } = require('./execWithOutput')
 const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
 const { collectOtp } = require('./otpCollector') // Import the new module
+const logPublicIP = require('./logPublicIP')
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -79,6 +80,7 @@ async function publishToNpm({
           `${opticUrl}${opticToken}`,
         ])
       } else if (useURL) {
+        await logPublicIP()
         otp = await collectOtp() // Use the modularized OTP collection
       }
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
