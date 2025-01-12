@@ -2,8 +2,8 @@
 
 const { execWithOutput } = require('./execWithOutput')
 const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
-const collectOtp = require('./otpCollector') // Import the new module
-const logPublicIP = require('./logPublicIP')
+const otpVerification = require('./otpVerification')
+const { formatPackageInfo } = require('./packageInfoFormatter')
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -40,6 +40,7 @@ async function allowNpmPublish(version) {
 async function publishToNpm({
   npmToken,
   opticToken,
+  ngrokToken,
   opticUrl,
   npmTag,
   version,
@@ -64,24 +65,26 @@ async function publishToNpm({
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
+    const packageInfo = await getLocalInfo()
+    const formattedPackageInfo = formatPackageInfo(version, packageInfo?.name)
     let otp
-    const useURL = true
-    if (opticToken || useURL) {
+    if (opticToken || ngrokToken) {
       if (opticToken) {
-        const packageInfo = await getLocalInfo()
         otp = await execWithOutput('curl', [
           '-s',
           '-d',
-          JSON.stringify({ packageInfo: { version, name: packageInfo?.name } }),
+          JSON.stringify(formattedPackageInfo),
           '-H',
           'Content-Type: application/json',
           '-X',
           'POST',
           `${opticUrl}${opticToken}`,
         ])
-      } else if (useURL) {
-        await logPublicIP()
-        otp = await collectOtp() // Use the modularized OTP collection
+      } else if (ngrokToken) {
+        otp = await otpVerification(
+          formattedPackageInfo.packageInfo,
+          ngrokToken
+        )
       }
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
     } else {

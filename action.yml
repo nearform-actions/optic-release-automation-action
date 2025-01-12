@@ -83,6 +83,9 @@ inputs:
   access:
     description: 'If defined, sets package to public or restricted via `--access` flag on `npm publish`. Supported values are "restricted" or "public".'
     required: false
+  ngrok-token:
+    description: 'Your Ngrok token. Required only if you want to pubish to Npm and have MFA enabled for your account'
+    required: false
 
 runs:
   using: 'composite'
