@@ -40,7 +40,7 @@ async function allowNpmPublish(version) {
 async function publishToNpm({
   npmToken,
   opticToken,
-  ngrokToken,
+  ngrokSshKey,
   opticUrl,
   npmTag,
   version,
@@ -68,7 +68,7 @@ async function publishToNpm({
     const packageInfo = await getLocalInfo()
     const formattedPackageInfo = formatPackageInfo(version, packageInfo?.name)
     let otp
-    if (opticToken || ngrokToken) {
+    if (opticToken || ngrokSshKey) {
       if (opticToken) {
         otp = await execWithOutput('curl', [
           '-s',
@@ -80,10 +80,10 @@ async function publishToNpm({
           'POST',
           `${opticUrl}${opticToken}`,
         ])
-      } else if (ngrokToken) {
+      } else if (ngrokSshKey) {
         otp = await otpVerification(
           formattedPackageInfo.packageInfo,
-          ngrokToken
+          ngrokSshKey
         )
       }
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])

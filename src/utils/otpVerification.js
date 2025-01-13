@@ -2,32 +2,12 @@
 
 const fs = require('fs')
 const fastify = require('fastify')
-const { spawn } = require('child_process')
+const SSHNgrok = require('./sshNgrok')
 const { logInfo } = require('../log')
 
 const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 
-async function installNgrok() {
-  return new Promise((resolve, reject) => {
-    // Force Linux x64 binary installation
-    const install = spawn('npm', ['install', '@ngrok/ngrok'], {
-      stdio: 'inherit',
-    })
-
-    install.on('close', code => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`npm install failed with code ${code}`))
-      }
-    })
-  })
-}
-async function otpVerification(packageInfo, ngrokToken) {
-  await installNgrok()
-
-  const ngrok = require('@ngrok/ngrok')
-
+async function otpVerification(packageInfo, ngrokSshKey) {
   const app = fastify()
   app.register(require('@fastify/formbody'))
 
@@ -62,24 +42,21 @@ async function otpVerification(packageInfo, ngrokToken) {
   })
 
   let otp
-  let listener
+  let tunnel
 
   try {
     await app.listen({ port: 3000 })
 
-    listener = await ngrok.forward({
-      addr: 3000,
-      authtoken: ngrokToken, // Using the token passed as parameter
-      session_metadata: 'OTP Collection Server',
-    })
-    const ngrokUrl = listener.url()
-    console.log('Please visit this URL to provide the OTP:', ngrokUrl)
+    const ngrok = new SSHNgrok(ngrokSshKey)
+    tunnel = await ngrok.createTunnel(3000)
+    console.log('Please visit this URL to provide the OTP:', tunnel.url)
 
     otp = await otpPromise
 
     // Cleanup
-    await ngrok.disconnect(ngrokUrl)
-    await ngrok.kill()
+    if (tunnel) {
+      tunnel.close()
+    }
     await app.close()
 
     if (!otp) {
@@ -87,11 +64,9 @@ async function otpVerification(packageInfo, ngrokToken) {
     }
   } catch (err) {
     // Ensure cleanup even if there's an error
-    if (listener) {
-      await ngrok.disconnect(listener.url())
-      await ngrok.kill()
+    if (tunnel) {
+      tunnel.close()
     }
-
     await app.close()
     console.error('Error during OTP collection:', err)
     throw err
