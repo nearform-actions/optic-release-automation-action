@@ -2,12 +2,32 @@
 
 const fs = require('fs')
 const fastify = require('fastify')
-const ngrok = require('@ngrok/ngrok')
+const { spawn } = require('child_process')
 const { logInfo } = require('../log')
 
 const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 
+async function installNgrok() {
+  return new Promise((resolve, reject) => {
+    // Force Linux x64 binary installation
+    const install = spawn('npm', ['install', '@ngrok/ngrok'], {
+      stdio: 'inherit',
+    })
+
+    install.on('close', code => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`npm install failed with code ${code}`))
+      }
+    })
+  })
+}
 async function otpVerification(packageInfo, ngrokToken) {
+  await installNgrok()
+
+  const ngrok = require('@ngrok/ngrok')
+
   const app = fastify()
   app.register(require('@fastify/formbody'))
 
