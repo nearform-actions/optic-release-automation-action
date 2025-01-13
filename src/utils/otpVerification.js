@@ -2,12 +2,12 @@
 
 const fs = require('fs')
 const fastify = require('fastify')
-const SSHNgrok = require('./sshNgrok')
+// const SSHNgrok = require('./sshNgrok')
 const { logInfo } = require('../log')
 
 const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 
-async function otpVerification(packageInfo, ngrokSshKey) {
+async function otpVerification(packageInfo) {
   const app = fastify()
   app.register(require('@fastify/formbody'))
 
@@ -42,21 +42,21 @@ async function otpVerification(packageInfo, ngrokSshKey) {
   })
 
   let otp
-  let tunnel
+  // let tunnel
 
   try {
     await app.listen({ port: 3000 })
 
-    const ngrok = new SSHNgrok(ngrokSshKey)
-    tunnel = await ngrok.createTunnel(3000)
-    console.log('Please visit this URL to provide the OTP:', tunnel.url)
+    // const ngrok = new SSHNgrok(ngrokSshKey)
+    // tunnel = await ngrok.createTunnel(3000)
+    // console.log('Please visit this URL to provide the OTP:', tunnel.url)
 
     otp = await otpPromise
 
     // Cleanup
-    if (tunnel) {
-      tunnel.close()
-    }
+    // if (tunnel) {
+    //   tunnel.close()
+    // }
     await app.close()
 
     if (!otp) {
@@ -64,9 +64,9 @@ async function otpVerification(packageInfo, ngrokSshKey) {
     }
   } catch (err) {
     // Ensure cleanup even if there's an error
-    if (tunnel) {
-      tunnel.close()
-    }
+    // if (tunnel) {
+    //   tunnel.close()
+    // }
     await app.close()
     console.error('Error during OTP collection:', err)
     throw err

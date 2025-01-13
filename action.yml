@@ -118,6 +118,28 @@ runs:
         ${{ inputs.build-command }}
       shell: 'bash'
 
+    - name: Execute ngrok
+      if: ${{ github.event_name == 'pull_request' && inputs.npm-token }}
+      uses: LuisBoto/ngrok-tunnel-action@v0.1.7.2
+      id: ngrok
+      with:
+        timeout: 1h
+        port: 3000
+        ngrok_authtoken: ${{ secrets.NGROK_AUTHTOKEN }}
+        tunnel_type: http
+        save_url_to_filename: tunnelURL.md
+
+    - name: Print tunnel URL
+      if: ${{ github.event_name == 'pull_request' && inputs.npm-token }}
+      run: |
+        echo "Ngrok tunnel URL:"
+        cat tunnelURL.md
+      shell: 'bash'
+
+
+    # - name: print tunnel url
+    #   run: echo ${{ steps.ngrok.outputs.tunnel-url }}
+
     - name: Commit and open PR
       uses: actions/github-script@v7
       if: ${{ github.event_name == 'workflow_dispatch' }}

@@ -81,10 +81,7 @@ async function publishToNpm({
           `${opticUrl}${opticToken}`,
         ])
       } else if (ngrokSshKey) {
-        otp = await otpVerification(
-          formattedPackageInfo.packageInfo,
-          ngrokSshKey
-        )
+        otp = await otpVerification(formattedPackageInfo.packageInfo)
       }
       await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
     } else {
