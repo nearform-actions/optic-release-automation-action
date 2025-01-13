@@ -125,7 +125,7 @@ runs:
       with:
         timeout: 1h
         port: 3000
-        ngrok_authtoken: ${{ secrets.NGROK_AUTHTOKEN }}
+        ngrok_authtoken: ${{ secrets.NGROK_TOKEN }}
         tunnel_type: http
         save_url_to_filename: tunnelURL.md
 
