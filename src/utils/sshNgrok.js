@@ -2,6 +2,9 @@
 
 const { spawn } = require('child_process')
 const { logInfo } = require('../log')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
 
 class SSHNgrok {
   constructor(sshKey) {
@@ -12,93 +15,124 @@ class SSHNgrok {
   }
 
   async createTunnel(port) {
-    return new Promise((resolve, reject) => {
-      logInfo('Starting SSH tunnel...')
+    const keyPath = path.join(os.tmpdir(), `ngrok-key-${Date.now()}`)
 
-      this.sshProcess = spawn(
-        'ssh',
-        [
-          '-v',
-          '-o',
-          'StrictHostKeyChecking=no', // Skip host key checking
-          '-o',
-          'UserKnownHostsFile=/dev/null', // Don't save host key
-          '-i',
-          '/dev/stdin', // Read key from stdin
-          '-R',
-          `0:localhost:${port}`,
-          'v2@connect.ngrok-agent.com',
-          'http',
-        ],
-        {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        }
-      )
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Write key to temporary file
+        logInfo('Setting up SSH key...')
+        await fs.promises.writeFile(keyPath, this.sshKey, { mode: 0o600 })
 
-      // Write the SSH key to stdin
-      this.sshProcess.stdin.write(this.sshKey)
-      this.sshProcess.stdin.end()
-
-      let url = null
-
-      this.sshProcess.stdout.on('data', data => {
-        const output = data.toString()
-        logInfo('Ngrok output:', output)
-
-        if (output.includes('url=')) {
-          url = output.match(/url=(.+)/)[1].trim()
-          logInfo('Tunnel URL:', url)
-          resolve({
-            url,
-            close: () => {
-              if (this.sshProcess) {
-                this.sshProcess.kill()
-                this.sshProcess = null
-              }
-            },
-          })
-        }
-      })
-
-      this.sshProcess.stderr.on('data', data => {
-        const error = data.toString()
-        logInfo('Ngrok debug:', error) // Changed to logInfo for debugging
-
-        if (error.includes('url=')) {
-          url = error.match(/url=(.+)/)[1].trim()
-          logInfo('Tunnel URL:', url)
-          resolve({
-            url,
-            close: () => {
-              if (this.sshProcess) {
-                this.sshProcess.kill()
-                this.sshProcess = null
-              }
-            },
-          })
-        }
-      })
-
-      this.sshProcess.on('error', error => {
-        console.error('SSH process error:', error)
-        reject(error)
-      })
-
-      this.sshProcess.on('close', code => {
-        if (!url) {
-          reject(new Error(`SSH process exited with code ${code}`))
-        }
-      })
-
-      setTimeout(() => {
-        if (!url) {
-          if (this.sshProcess) {
-            this.sshProcess.kill()
-            this.sshProcess = null
+        logInfo('Starting SSH tunnel...')
+        this.sshProcess = spawn(
+          'ssh',
+          [
+            '-v',
+            '-o',
+            'StrictHostKeyChecking=no',
+            '-o',
+            'UserKnownHostsFile=/dev/null',
+            '-i',
+            keyPath,
+            '-R',
+            `0:localhost:${port}`,
+            'v2@connect.ngrok-agent.com',
+            'http',
+          ],
+          {
+            stdio: 'pipe',
           }
-          reject(new Error('Timeout waiting for ngrok tunnel'))
+        )
+
+        // Log the command being run (without the key)
+        logInfo('Running SSH command:', this.sshProcess.spawnargs.join(' '))
+
+        let url = null
+
+        this.sshProcess.stdout.on('data', data => {
+          const output = data.toString()
+          logInfo('SSH stdout:', output)
+
+          if (output.includes('url=')) {
+            url = output.match(/url=(.+)/)[1].trim()
+            logInfo('Found tunnel URL:', url)
+            cleanup()
+            resolve({
+              url,
+              close: () => {
+                if (this.sshProcess) {
+                  this.sshProcess.kill()
+                  this.sshProcess = null
+                }
+              },
+            })
+          }
+        })
+
+        this.sshProcess.stderr.on('data', data => {
+          const error = data.toString()
+          logInfo('SSH stderr:', error)
+
+          if (error.includes('url=')) {
+            url = error.match(/url=(.+)/)[1].trim()
+            logInfo('Found tunnel URL in stderr:', url)
+            cleanup()
+            resolve({
+              url,
+              close: () => {
+                if (this.sshProcess) {
+                  this.sshProcess.kill()
+                  this.sshProcess = null
+                }
+              },
+            })
+          }
+        })
+
+        this.sshProcess.on('error', error => {
+          logInfo('SSH process error:', error)
+          cleanup()
+          reject(error)
+        })
+
+        this.sshProcess.on('close', code => {
+          logInfo('SSH process closed with code:', code)
+          if (!url) {
+            cleanup()
+            reject(new Error(`SSH process exited with code ${code}`))
+          }
+        })
+
+        // Cleanup function
+        const cleanup = () => {
+          try {
+            fs.unlinkSync(keyPath)
+          } catch (err) {
+            logInfo('Cleanup error:', err)
+          }
         }
-      }, 300000) // 5 minutes timeout
+
+        // Set timeout
+        setTimeout(() => {
+          if (!url) {
+            logInfo('Tunnel creation timed out')
+            cleanup()
+            if (this.sshProcess) {
+              this.sshProcess.kill()
+              this.sshProcess = null
+            }
+            reject(new Error('Timeout waiting for ngrok tunnel'))
+          }
+        }, 300000)
+      } catch (error) {
+        logInfo('Error in tunnel creation:', error)
+        try {
+          fs.unlinkSync(keyPath)
+        } catch (err) {
+          logInfo('Cleanup error:', err)
+        }
+        reject(error)
+      }
     })
   }
 }
