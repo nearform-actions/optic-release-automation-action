@@ -15,11 +15,15 @@ class SSHNgrok {
   }
 
   async createTunnel(port) {
-    const keyPath = path.join(os.tmpdir(), `ngrok-key-${Date.now()}`)
+    const sshPath = path.join(os.homedir(), '.ssh')
+    const keyPath = path.join(sshPath, 'ngrok_key')
 
     return new Promise(async (resolve, reject) => {
       try {
-        // Write key to temporary file
+        // Create .ssh directory with correct permissions
+        await fs.promises.mkdir(sshPath, { recursive: true, mode: 0o700 })
+
+        // Write key with correct permissions
         logInfo('Setting up SSH key...')
         await fs.promises.writeFile(keyPath, this.sshKey, { mode: 0o600 })
 
@@ -27,11 +31,8 @@ class SSHNgrok {
         this.sshProcess = spawn(
           'ssh',
           [
-            '-v',
             '-o',
-            'StrictHostKeyChecking=no',
-            '-o',
-            'UserKnownHostsFile=/dev/null',
+            'StrictHostKeyChecking=accept-new', // Changed based on article
             '-i',
             keyPath,
             '-R',
@@ -44,9 +45,6 @@ class SSHNgrok {
           }
         )
 
-        // Log the command being run (without the key)
-        logInfo('Running SSH command:', this.sshProcess.spawnargs.join(' '))
-
         let url = null
 
         this.sshProcess.stdout.on('data', data => {
@@ -56,13 +54,18 @@ class SSHNgrok {
           if (output.includes('url=')) {
             url = output.match(/url=(.+)/)[1].trim()
             logInfo('Found tunnel URL:', url)
-            cleanup()
             resolve({
               url,
-              close: () => {
+              close: async () => {
                 if (this.sshProcess) {
                   this.sshProcess.kill()
                   this.sshProcess = null
+                  // Cleanup key file
+                  try {
+                    await fs.promises.unlink(keyPath)
+                  } catch (err) {
+                    logInfo('Cleanup error:', err)
+                  }
                 }
               },
             })
@@ -76,13 +79,18 @@ class SSHNgrok {
           if (error.includes('url=')) {
             url = error.match(/url=(.+)/)[1].trim()
             logInfo('Found tunnel URL in stderr:', url)
-            cleanup()
             resolve({
               url,
-              close: () => {
+              close: async () => {
                 if (this.sshProcess) {
                   this.sshProcess.kill()
                   this.sshProcess = null
+                  // Cleanup key file
+                  try {
+                    await fs.promises.unlink(keyPath)
+                  } catch (err) {
+                    logInfo('Cleanup error:', err)
+                  }
                 }
               },
             })
@@ -91,32 +99,23 @@ class SSHNgrok {
 
         this.sshProcess.on('error', error => {
           logInfo('SSH process error:', error)
-          cleanup()
+          fs.promises.unlink(keyPath).catch(() => {})
           reject(error)
         })
 
         this.sshProcess.on('close', code => {
           logInfo('SSH process closed with code:', code)
           if (!url) {
-            cleanup()
+            fs.promises.unlink(keyPath).catch(() => {})
             reject(new Error(`SSH process exited with code ${code}`))
           }
         })
-
-        // Cleanup function
-        const cleanup = () => {
-          try {
-            fs.unlinkSync(keyPath)
-          } catch (err) {
-            logInfo('Cleanup error:', err)
-          }
-        }
 
         // Set timeout
         setTimeout(() => {
           if (!url) {
             logInfo('Tunnel creation timed out')
-            cleanup()
+            fs.promises.unlink(keyPath).catch(() => {})
             if (this.sshProcess) {
               this.sshProcess.kill()
               this.sshProcess = null
@@ -126,11 +125,7 @@ class SSHNgrok {
         }, 300000)
       } catch (error) {
         logInfo('Error in tunnel creation:', error)
-        try {
-          fs.unlinkSync(keyPath)
-        } catch (err) {
-          logInfo('Cleanup error:', err)
-        }
+        fs.promises.unlink(keyPath).catch(() => {})
         reject(error)
       }
     })
