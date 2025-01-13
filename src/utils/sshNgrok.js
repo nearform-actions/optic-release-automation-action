@@ -19,6 +19,10 @@ class SSHNgrok {
         'ssh',
         [
           '-v',
+          '-o',
+          'StrictHostKeyChecking=no', // Skip host key checking
+          '-o',
+          'UserKnownHostsFile=/dev/null', // Don't save host key
           '-i',
           '/dev/stdin', // Read key from stdin
           '-R',
@@ -27,7 +31,7 @@ class SSHNgrok {
           'http',
         ],
         {
-          stdio: ['pipe', 'pipe', 'pipe'], // Changed to 'pipe' to write to stdin
+          stdio: ['pipe', 'pipe', 'pipe'],
         }
       )
 
@@ -58,7 +62,7 @@ class SSHNgrok {
 
       this.sshProcess.stderr.on('data', data => {
         const error = data.toString()
-        console.error('Ngrok error:', error)
+        logInfo('Ngrok debug:', error) // Changed to logInfo for debugging
 
         if (error.includes('url=')) {
           url = error.match(/url=(.+)/)[1].trim()
