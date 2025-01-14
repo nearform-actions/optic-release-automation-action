@@ -96,9 +96,11 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
-    const ngrokSshKey = inputs['ngrok-ssh-key']
+    const ngrokToken = inputs['ngrok-token']
     const provenance = /true/i.test(inputs['provenance'])
     const access = inputs['access']
+    const tunnelUrl = inputs.tunnelUrl || ''
+    logInfo('Ngrok Tunnel URL:', tunnelUrl)
 
     if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(
@@ -112,12 +114,13 @@ module.exports = async function ({ github, context, inputs }) {
     const publishOptions = {
       npmToken,
       opticToken,
-      ngrokSshKey,
+      ngrokToken,
       opticUrl,
       npmTag,
       version,
       provenance,
       access,
+      tunnelUrl,
     }
 
     if (provenance) {

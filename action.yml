@@ -131,9 +131,11 @@ runs:
 
     - name: Print tunnel URL
       if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
+      id: set-url
       run: |
         echo "Ngrok tunnel URL:"
-        cat tunnelURL.md
+        TUNNEL_URL=$(cat tunnelURL.md)
+        echo "tunnel-url=$TUNNEL_URL" >> "$GITHUB_OUTPUT"
       shell: 'bash'
 
 
@@ -156,4 +158,11 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const { runAction } = require('${{ github.action_path }}/dist/index.js')
-          await runAction({ github, context, inputs: ${{ toJSON(inputs) }} })
+          await runAction({ 
+          github, 
+          context, 
+          inputs: { 
+            ...${{ toJSON(inputs) }},
+            tunnelUrl: '${{ steps.set-url.outputs.tunnel-url }}'
+           } 
+          })

@@ -47,9 +47,10 @@ async function otpVerification(packageInfo) {
   try {
     await app.listen({ port: 3000 })
 
-    // const ngrok = new SSHNgrok(ngrokSshKey)
-    // tunnel = await ngrok.createTunnel(3000)
-    // console.log('Please visit this URL to provide the OTP:', tunnel.url)
+    console.log(
+      'Please visit this URL to provide the OTP:',
+      packageInfo.tunnelUrl
+    )
 
     otp = await otpPromise
 
