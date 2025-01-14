@@ -120,7 +120,7 @@ runs:
 
     - name: Execute ngrok
       if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
-      uses: LuisBoto/ngrok-tunnel-action@v0.1.7.2
+      uses: msgadi/ngrok-tunnel-action@main
       id: ngrok
       with:
         timeout: 1h
