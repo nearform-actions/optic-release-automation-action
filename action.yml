@@ -83,8 +83,8 @@ inputs:
   access:
     description: 'If defined, sets package to public or restricted via `--access` flag on `npm publish`. Supported values are "restricted" or "public".'
     required: false
-  ngrok-ssh-key:
-    description: 'Your Ngrok SSH Private Key. Required only if you want to pubish to Npm and have MFA enabled for your account'
+  ngrok-token:
+    description: 'Your Ngrok Auth Token. Required only if you want to pubish to Npm and have MFA enabled for your account'
     required: false
 
 runs:
@@ -119,18 +119,18 @@ runs:
       shell: 'bash'
 
     - name: Execute ngrok
-      if: ${{ github.event_name == 'pull_request' && inputs.npm-token }}
+      if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
       uses: LuisBoto/ngrok-tunnel-action@v0.1.7.2
       id: ngrok
       with:
         timeout: 1h
         port: 3000
-        ngrok_authtoken: ${{ secrets.NGROK_TOKEN }}
+        ngrok_authtoken: ${{ inputs.ngrok-token }}
         tunnel_type: http
         save_url_to_filename: tunnelURL.md
 
     - name: Print tunnel URL
-      if: ${{ github.event_name == 'pull_request' && inputs.npm-token }}
+      if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
       run: |
         echo "Ngrok tunnel URL:"
         cat tunnelURL.md
