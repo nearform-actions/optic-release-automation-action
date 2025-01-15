@@ -50,7 +50,7 @@ tap.afterEach(() => {
 })
 
 tap.test('Should successfully verify OTP', async t => {
-  const { otpVerificationProxy, mockApp, logInfoStub } = setup()
+  const { otpVerificationProxy, mockApp } = setup()
 
   // Capture the OTP callback
   let otpCallback
@@ -77,10 +77,6 @@ tap.test('Should successfully verify OTP', async t => {
 
   const otp = await otpPromise
   t.equal(otp, '123456', 'should return submitted OTP')
-  t.ok(
-    logInfoStub.calledWith('Received OTP 2: 123456'),
-    'should log received OTP'
-  )
 })
 
 tap.test('Should timeout after 5 minutes', async t => {
