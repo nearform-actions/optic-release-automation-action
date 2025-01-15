@@ -5,6 +5,7 @@ const fastify = require('fastify')
 const { logInfo, logError } = require('../log')
 
 const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
+const otpVerificationTimeout = 300000 // 5 minutes;
 
 async function otpVerification(packageInfo) {
   const app = fastify()
@@ -18,7 +19,7 @@ async function otpVerification(packageInfo) {
   const timeout = setTimeout(() => {
     otpPromiseResolve('')
     logError('OTP submission timed out.')
-  }, 300000) // 5 minutes timeout
+  }, otpVerificationTimeout)
 
   app.get('/', async (req, reply) => {
     try {
@@ -28,8 +29,8 @@ async function otpVerification(packageInfo) {
 
       reply.type('text/html').send(updatedHtml)
     } catch (err) {
+      logError(`err:  ${err}`)
       reply.code(500).send('Error loading HTML page')
-      logError(`Failed to load HTML file:  ${err}`)
     }
   })
 
