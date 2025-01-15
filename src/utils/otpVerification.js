@@ -9,7 +9,6 @@ const otpVerificationTimeout = 300000 // 5 minutes;
 
 async function otpVerification(packageInfo) {
   const app = fastify()
-  app.register(require('@fastify/formbody'))
 
   let otpPromiseResolve
   const otpPromise = new Promise(resolve => {
@@ -36,7 +35,7 @@ async function otpVerification(packageInfo) {
 
   app.post('/otp', async (req, reply) => {
     clearTimeout(timeout)
-    logInfo(`Received OTP 1:  ${req.body.otp}`)
+    logInfo(`Received OTP : ${req.body.otp}`)
     otpPromiseResolve(req.body.otp)
     reply.send('OTP received. You can close this window.')
   })
@@ -63,7 +62,6 @@ async function otpVerification(packageInfo) {
     throw err
   }
 
-  logInfo(`Received OTP 2: ${otp}`)
   return otp
 }
 

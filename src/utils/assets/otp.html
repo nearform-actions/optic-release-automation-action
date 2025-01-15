@@ -104,6 +104,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById('otp')
         const button = document.querySelector('button')
+        const form = document.getElementById('otpForm')
 
         input.addEventListener('input', () => {
           if (input.value.trim() !== '') {
@@ -112,6 +113,32 @@
           } else {
             button.style.background = '#000E38'
             button.style.color = 'white'
+          }
+        })
+
+        form.addEventListener('submit', async e => {
+          e.preventDefault()
+
+          const otpValue = input.value.trim()
+
+          if (!otpValue) {
+            return
+          }
+
+          try {
+            await fetch('/otp', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ otp: otpValue }),
+            })
+
+            if (response.ok) {
+              window.close()
+            }
+          } catch (error) {
+            console.log(error)
           }
         })
       })
@@ -132,7 +159,7 @@
         </div>
       </div>
 
-      <form action="/otp" method="post">
+      <form id="otpForm">
         <label for="otp">Please enter your OTP</label>
         <input type="text" id="otp" name="otp" required />
         <button type="submit">Verify</button>
