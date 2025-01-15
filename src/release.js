@@ -100,7 +100,6 @@ module.exports = async function ({ github, context, inputs }) {
     const provenance = /true/i.test(inputs['provenance'])
     const access = inputs['access']
     const tunnelUrl = inputs.tunnelUrl || ''
-    logInfo('Ngrok Tunnel URL:', tunnelUrl)
 
     if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(

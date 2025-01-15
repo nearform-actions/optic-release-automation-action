@@ -19,7 +19,6 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        /* background: radial-gradient(circle at center, rgba(30, 58, 138, 0.4) 35%, transparent 50%), linear-gradient(to bottom, #0a1445 0%, #1a2b6d 100%); */
         background: radial-gradient(
             circle at center,
             #ffffff0d 0%,
@@ -35,7 +34,6 @@
         max-width: 520px;
         max-height: 445px;
         background: #000000;
-        /* background: #000E38; */
         border-radius: 16px;
         padding: 24px;
         box-sizing: border-box;
@@ -82,8 +80,6 @@
         width: 25%;
         background: #000e38;
         color: white;
-        /* background: #00E5A4; */
-        /* color: #000E38; */
         border: none;
         border-radius: 30px;
         padding: 10px;
@@ -110,7 +106,6 @@
         const button = document.querySelector('button')
 
         input.addEventListener('input', () => {
-          // input.value = input.value.replace(/\D/g, '').slice(0, 10)
           if (input.value.trim() !== '') {
             button.style.background = '#00E5A4'
             button.style.color = '#000E38'
