@@ -126,7 +126,7 @@
           }
 
           try {
-            await fetch('/otp', {
+            const response = await fetch('/otp', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
