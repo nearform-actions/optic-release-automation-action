@@ -153,3 +153,66 @@ tap.test('Should handle HTML template rendering', async t => {
   t.match(renderedHtml, /test-package/, 'should include package name')
   t.match(renderedHtml, /v1.0.0/, 'should include package version')
 })
+
+tap.test(
+  'Should handle the failur case when fastify app or html fails to load',
+  async t => {
+    const { otpVerificationProxy, mockApp } = setup()
+
+    let otpHandler
+
+    // Store the OTP handler when registered
+    mockApp.post.withArgs('/otp').callsFake((path, handler) => {
+      otpHandler = handler
+    })
+    const sendSpy = sinon.spy()
+    const codeSpy = sinon.stub().returns({ send: sendSpy })
+    mockApp.get.withArgs('/').callsFake((path, handler) => {
+      handler(
+        {},
+        {
+          type: () => ({
+            send: () => {
+              throw new Error('Mock send error')
+            },
+          }),
+          code: codeSpy,
+        }
+      )
+    })
+
+    // Start OTP verification process in background
+    const otpPromise = otpVerificationProxy({
+      name: 'test-package',
+      version: 'v1.0.0',
+      tunnelUrl: 'http://localhost:3000',
+    })
+
+    // Submit OTP immediately after handlers are set up
+    setImmediate(() => {
+      if (otpHandler) {
+        otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
+      }
+    })
+
+    await otpPromise
+
+    t.ok(codeSpy.calledWith(500), 'should set 500 status code')
+    t.ok(
+      sendSpy.calledWith('Error loading HTML page'),
+      'should send error message'
+    )
+
+    // Or if using tap assertions:
+    t.equal(
+      codeSpy.firstCall.args[0],
+      500,
+      'should set correct error status code'
+    )
+    t.equal(
+      sendSpy.firstCall.args[0],
+      'Error loading HTML page',
+      'should send correct error message'
+    )
+  }
+)
