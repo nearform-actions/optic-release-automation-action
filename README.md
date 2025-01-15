@@ -24,3 +24,4 @@ To get started, visit the [Getting Started](https://optic.nearform.com/getting-s
 
 Please look at the [playground reposity](https://github.com/nearform/optic-release-automation-playground) for more information (only accessible by users in the NearForm org).
 
+[![banner](https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg)](https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages)
