@@ -127,16 +127,16 @@ runs:
         port: 3000
         ngrok_authtoken: ${{ inputs.ngrok-token }}
         tunnel_type: http
-        save_url_to_filename: tunnelURL.md
+        # save_url_to_filename: tunnelURL.md
 
-    - name: Print tunnel URL
-      if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
-      id: set-url
-      run: |
-        echo "Ngrok tunnel URL:"
-        TUNNEL_URL=$(cat tunnelURL.md)
-        echo "tunnel-url=$TUNNEL_URL" >> "$GITHUB_OUTPUT"
-      shell: 'bash'
+    # - name: Print tunnel URL
+    #   if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
+    #   id: set-url
+    #   run: |
+    #     echo "Ngrok tunnel URL:"
+    #     TUNNEL_URL=$(cat tunnelURL.md)
+    #     echo "tunnel-url=$TUNNEL_URL" >> "$GITHUB_OUTPUT"
+    #   shell: 'bash'
 
 
     # - name: print tunnel url
@@ -163,6 +163,6 @@ runs:
           context, 
           inputs: { 
             ...${{ toJSON(inputs) }},
-            tunnelUrl: '${{ steps.set-url.outputs.tunnel-url }}'
+            tunnelUrl: '${{ steps.ngrok.outputs.tunnel-url }}'
            } 
           })
