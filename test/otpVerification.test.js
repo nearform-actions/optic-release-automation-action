@@ -84,7 +84,7 @@ tap.test('Should successfully verify OTP', async t => {
 })
 
 tap.test('Should timeout after 5 minutes', async t => {
-  const { otpVerificationProxy, mockApp, logErrorStub } = setup()
+  const { otpVerificationProxy, logErrorStub } = setup()
 
   // Use fake timers
   const clock = sinon.useFakeTimers()
