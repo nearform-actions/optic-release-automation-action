@@ -393,7 +393,6 @@ tap.test('Adds --access flag if provided as an input', async () => {
   ])
 })
 
-// nrok tests
 tap.test('Should publish using ngrok for OTP verification', async t => {
   const { publishToNpmProxy, execWithOutputStub, otpVerificationStub } = setup({
     otpFlow: 'ngrok',
@@ -450,3 +449,39 @@ tap.test('Should fail gracefully when ngrok services fail', async t => {
     t.equal(error.message, 'OTP verification failed: Ngrok failed')
   }
 })
+
+tap.test(
+  'Should fail gracefully when fail to receive otp from optic',
+  async t => {
+    t.plan(1)
+    const { publishToNpmProxy, execWithOutputStub } = setup({
+      otpFlow: 'optic',
+    })
+
+    execWithOutputStub
+      .withArgs('curl', [
+        '-s',
+        '-d',
+        JSON.stringify({
+          packageInfo: { version: 'v5.1.3', name: 'fakeTestPkg' },
+        }),
+        '-H',
+        'Content-Type: application/json',
+        '-X',
+        'POST',
+        'https://optic-test.run.app/api/generate/optic-token',
+      ])
+      .throws(new Error('Optic failed'))
+    try {
+      await publishToNpmProxy.publishToNpm({
+        npmToken: 'a-token',
+        opticToken: 'optic-token',
+        opticUrl: 'https://optic-test.run.app/api/generate/',
+        npmTag: 'latest',
+        version: 'v5.1.3',
+      })
+    } catch (error) {
+      t.equal(error.message, 'OTP verification failed: Optic failed')
+    }
+  }
+)
