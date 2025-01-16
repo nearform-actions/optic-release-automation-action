@@ -118,15 +118,47 @@ runs:
         ${{ inputs.build-command }}
       shell: 'bash'
 
+    # - name: Execute ngrok
+    #   if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
+    #   uses: msgadi/ngrok-tunnel-action@master
+    #   id: ngrok
+    #   with:
+    #     timeout: 5m
+    #     port: 3000
+    #     ngrok_authtoken: ${{ inputs.ngrok-token }}
+    #     tunnel_type: http
+    - name: Install ngrok globally
+      run: npm i -g ngrok
+      shell: bash
+
     - name: Execute ngrok
       if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
-      uses: msgadi/ngrok-tunnel-action@master
+      uses: actions/github-script@v7
       id: ngrok
       with:
-        timeout: 5m
-        port: 3000
-        ngrok_authtoken: ${{ inputs.ngrok-token }}
-        tunnel_type: http
+        script: |
+          const ngrok = require('ngrok');
+          
+          try {
+            await ngrok.authtoken('${{ inputs.ngrok-token }}');
+            
+            // Start tunnel
+            const url = await ngrok.connect({
+              addr: 3000,
+              proto: 'http',
+              authtoken: '${{ inputs.ngrok-token }}', 
+            });
+            
+            // Set output for use in other steps
+            core.setOutput('tunnel-url', url);
+            
+            console.log('Ngrok tunnel established:', url);
+            return url;
+          } catch (error) {
+            console.error('Error establishing ngrok tunnel:', error);
+            core.setFailed(error.message);
+            throw error;
+          }
 
     - name: Commit and open PR
       uses: actions/github-script@v7
