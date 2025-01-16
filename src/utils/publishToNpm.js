@@ -2,9 +2,7 @@
 
 const { execWithOutput } = require('./execWithOutput')
 const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
-const otpVerification = require('./otpVerification')
-const { formatPackageInfo } = require('./packageInfoFormatter')
-const { logInfo } = require('../log')
+const ngrokOtpVerification = require('./ngrokOtpVerification')
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -38,61 +36,6 @@ async function allowNpmPublish(version) {
   return !packageVersionInfo
 }
 
-async function getOpticOTP(opticToken, opticUrl, formattedPackageInfo) {
-  try {
-    const otp = await execWithOutput('curl', [
-      '-s',
-      '-d',
-      JSON.stringify(formattedPackageInfo),
-      '-H',
-      'Content-Type: application/json',
-      '-X',
-      'POST',
-      `${opticUrl}${opticToken}`,
-    ])
-    return { source: 'optic', otp }
-  } catch (error) {
-    return { source: 'optic', error }
-  }
-}
-
-async function getNgrokOTP(formattedPackageInfo, tunnelUrl) {
-  try {
-    const otp = await otpVerification({
-      ...formattedPackageInfo.packageInfo,
-      tunnelUrl,
-    })
-    return { source: 'ngrok', otp }
-  } catch (error) {
-    return { source: 'ngrok', error }
-  }
-}
-
-async function getOTPPromises(options) {
-  const { opticToken, ngrokToken, opticUrl, formattedPackageInfo, tunnelUrl } =
-    options
-  const otpPromises = []
-
-  if (opticToken) {
-    otpPromises.push(getOpticOTP(opticToken, opticUrl, formattedPackageInfo))
-  }
-
-  if (ngrokToken) {
-    otpPromises.push(getNgrokOTP(formattedPackageInfo, tunnelUrl))
-  }
-
-  return otpPromises
-}
-
-async function publishWithOTP(flags, otpResult) {
-  if (otpResult.error) {
-    throw otpResult.error
-  }
-
-  logInfo(`OTP verification successful using ${otpResult.source}`)
-  await execWithOutput('npm', ['publish', '--otp', otpResult.otp, ...flags])
-}
-
 async function publishToNpm({
   npmToken,
   opticToken,
@@ -122,21 +65,40 @@ async function publishToNpm({
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
-    const packageInfo = await getLocalInfo()
-    const formattedPackageInfo = formatPackageInfo(version, packageInfo?.name)
+    const localInfo = await getLocalInfo()
 
     if (opticToken || ngrokToken) {
       try {
-        const options = {
-          opticToken,
-          ngrokToken,
-          opticUrl,
-          formattedPackageInfo,
-          tunnelUrl,
+        const otpPromises = []
+
+        if (opticToken) {
+          otpPromises.push(
+            execWithOutput('curl', [
+              '-s',
+              '-d',
+              JSON.stringify({
+                packageInfo: { version, name: localInfo?.name },
+              }),
+              '-H',
+              'Content-Type: application/json',
+              '-X',
+              'POST',
+              `${opticUrl}${opticToken}`,
+            ])
+          )
         }
-        const otpPromises = await getOTPPromises(options)
-        const result = await Promise.race(otpPromises)
-        await publishWithOTP(flags, result)
+
+        if (ngrokToken) {
+          otpPromises.push(
+            ngrokOtpVerification({
+              version,
+              name: localInfo?.name,
+              tunnelUrl,
+            })
+          )
+        }
+        const otp = await Promise.race(otpPromises)
+        await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
       } catch (error) {
         throw new Error(`OTP verification failed: ${error.message}`)
       }

@@ -11,13 +11,16 @@ async function otpVerification(packageInfo) {
   const app = fastify()
 
   let otpPromiseResolve
-  const otpPromise = new Promise(resolve => {
+  let otpPromiseReject
+
+  const otpPromise = new Promise((resolve, reject) => {
     otpPromiseResolve = resolve
+    otpPromiseReject = reject
   })
 
   const timeout = setTimeout(() => {
-    otpPromiseResolve('')
     logError('OTP submission timed out.')
+    otpPromiseReject()
   }, otpVerificationTimeout)
 
   app.get('/', async (req, reply) => {
@@ -51,18 +54,11 @@ async function otpVerification(packageInfo) {
     )
 
     otp = await otpPromise
-    await app.close()
 
-    if (!otp) {
-      throw new Error('No OTP received or submission timed out.')
-    }
-  } catch (err) {
+    return otp
+  } finally {
     await app.close()
-    logError(`Error during OTP collection:  ${err}`)
-    throw err
   }
-
-  return otp
 }
 
 module.exports = otpVerification

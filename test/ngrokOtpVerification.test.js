@@ -7,7 +7,6 @@ const proxyquire = require('proxyquire')
 const setup = () => {
   const logInfoStub = sinon.stub()
   const logErrorStub = sinon.stub()
-  const readFileSyncStub = sinon.stub()
 
   // Mock Fastify instance
   const mockApp = {
@@ -20,16 +19,8 @@ const setup = () => {
 
   const fastifyStub = sinon.stub().returns(mockApp)
 
-  readFileSyncStub
-    .withArgs(
-      sinon.match(path => path.endsWith('/src/utils/assets/otp.html')),
-      'utf8'
-    )
-    .returns('<html>{{package-name}} {{package-version}}</html>')
-
-  const otpVerificationProxy = proxyquire('../src/utils/otpVerification', {
+  const otpVerificationProxy = proxyquire('../src/utils/ngrokOtpVerification', {
     fastify: fastifyStub,
-    fs: { readFileSync: readFileSyncStub },
     '../log': {
       logInfo: logInfoStub,
       logError: logErrorStub,
@@ -39,7 +30,6 @@ const setup = () => {
   return {
     logInfoStub,
     logErrorStub,
-    readFileSyncStub,
     mockApp,
     otpVerificationProxy,
   }
@@ -85,21 +75,18 @@ tap.test('Should timeout after 5 minutes', async t => {
   // Use fake timers
   const clock = sinon.useFakeTimers()
 
-  // Start OTP verification process
-  const otpPromise = otpVerificationProxy({
-    name: 'test-package',
-    version: 'v1.0.0',
-    tunnelUrl: 'http://localhost:3000',
-  })
-
-  // Advance clock by 5 minutes + 1ms
-  clock.tick(300001)
-
   try {
-    await otpPromise
-    t.fail('should have thrown timeout error')
-  } catch (err) {
-    t.equal(err.message, 'No OTP received or submission timed out.')
+    const promise = otpVerificationProxy({
+      name: 'test-package',
+      version: 'v1.0.0',
+      tunnelUrl: 'http://localhost:3000',
+    })
+
+    // Advance clock by 5 minutes + 1ms
+    clock.tick(300001)
+
+    await t.rejects(promise)
+
     t.ok(logErrorStub.calledWith('OTP submission timed out.'))
   } finally {
     clock.restore()
@@ -151,7 +138,7 @@ tap.test('Should handle HTML template rendering', async t => {
 })
 
 tap.test(
-  'Should handle the failur case when fastify app or html fails to load',
+  'Should handle the failure case when fastify app or html fails to load',
   async t => {
     const { otpVerificationProxy, mockApp } = setup()
 

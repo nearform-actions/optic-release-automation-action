@@ -52,7 +52,7 @@ const setup = ({
     proxyConfig = {
       ...proxyConfig,
       './execWithOutput': { execWithOutput: execWithOutputStub },
-      './otpVerification': otpVerification,
+      './ngrokOtpVerification': otpVerification,
     }
   }
 
@@ -61,7 +61,7 @@ const setup = ({
   return {
     execWithOutputStub,
     publishToNpmProxy,
-    otpVerificationStub: proxyConfig['./otpVerification'],
+    otpVerificationStub: proxyConfig['./ngrokOtpVerification'],
   }
 }
 
@@ -423,7 +423,6 @@ tap.test('Should publish using ngrok for OTP verification', async t => {
 })
 
 tap.test('Should fail gracefully when ngrok services fail', async t => {
-  t.plan(1)
   const { publishToNpmProxy, otpVerificationStub } = setup({
     mockPackageInfo: ({ getLocalInfo, execWithOutputStub }) => ({
       getLocalInfo,
@@ -437,23 +436,21 @@ tap.test('Should fail gracefully when ngrok services fail', async t => {
   // Mock failed otpVerification
   otpVerificationStub.throws(new Error('Ngrok failed'))
 
-  try {
-    await publishToNpmProxy.publishToNpm({
+  await t.rejects(
+    publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
       ngrokToken: 'ngrok-token',
       tunnelUrl: 'https://example.ngrok.io',
       npmTag: 'latest',
       version: 'v5.1.3',
-    })
-  } catch (error) {
-    t.equal(error.message, 'OTP verification failed: Ngrok failed')
-  }
+    }),
+    { message: 'OTP verification failed: Ngrok failed' }
+  )
 })
 
 tap.test(
   'Should fail gracefully when fail to receive otp from optic',
   async t => {
-    t.plan(1)
     const { publishToNpmProxy, execWithOutputStub } = setup({
       otpFlow: 'optic',
     })
@@ -472,16 +469,15 @@ tap.test(
         'https://optic-test.run.app/api/generate/optic-token',
       ])
       .throws(new Error('Optic failed'))
-    try {
-      await publishToNpmProxy.publishToNpm({
+    await t.rejects(
+      publishToNpmProxy.publishToNpm({
         npmToken: 'a-token',
         opticToken: 'optic-token',
         opticUrl: 'https://optic-test.run.app/api/generate/',
         npmTag: 'latest',
         version: 'v5.1.3',
-      })
-    } catch (error) {
-      t.equal(error.message, 'OTP verification failed: Optic failed')
-    }
+      }),
+      { message: 'OTP verification failed: Optic failed' }
+    )
   }
 )
