@@ -49,13 +49,11 @@ async function otpVerification(packageInfo) {
   try {
     await app.listen({ port: 3000 })
 
-    const url = ngrok.connect({
+    const url = await ngrok.connect({
       addr: 3000,
       proto: 'http',
       authtoken: packageInfo.ngrokToken,
     })
-
-    logInfo(`Ngrok URL`, url)
 
     logInfo(
       `Please visit this URL to provide the OTP:
