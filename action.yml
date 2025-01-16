@@ -93,6 +93,11 @@ runs:
     - name: Checkout the fresh project
       uses: actions/checkout@v4
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
     - name: Configure git
       run: |
         git config --global user.email "${{ inputs.actor-email }}"
