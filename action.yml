@@ -118,38 +118,11 @@ runs:
         ${{ inputs.build-command }}
       shell: 'bash'
 
-    # - name: Execute ngrok
-    #   if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
-    #   uses: msgadi/ngrok-tunnel-action@master
-    #   id: ngrok
-    #   with:
-    #     timeout: 5m
-    #     port: 3000
-    #     ngrok_authtoken: ${{ inputs.ngrok-token }}
-    #     tunnel_type: http
     - name: Install ngrok locally
-      run: npm i ngrok
+      run: |
+            cd ${{ github.action_path }}
+            npm install ngrok
       shell: bash
-
-    # - name: Execute ngrok
-    #   if: ${{ github.event_name == 'pull_request' && inputs.npm-token && inputs.ngrok-token }}
-    #   uses: actions/github-script@v7
-    #   id: ngrok
-    #   with:
-    #     script: |
-    #        const ngrok = require('ngrok');
-    #         let tunnelUrlResolver;
-    #         const tunnelUrlPromise = new Promise(resolve => {
-    #           tunnelUrlResolver = resolve;
-    #         });
-
-    #         ngrok.connect({
-    #           addr: 3000,
-    #           proto: 'http',
-    #           authtoken: '${{ inputs.ngrok-token }}'
-    #         }).then(url => tunnelUrlResolver(url));
-
-    #         return await tunnelUrlPromise;
 
     - name: Commit and open PR
       uses: actions/github-script@v7
