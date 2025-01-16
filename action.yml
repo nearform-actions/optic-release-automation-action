@@ -99,7 +99,7 @@ runs:
         node-version-file: '.nvmrc'
 
     - name: Install ngrok locally
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.ngrok-token  }}
+      if: ${{ github.event_name == 'pull_request' && inputs.ngrok-token  }}
       run: |
         cd ${{ github.action_path }}
         npm install ngrok
