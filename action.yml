@@ -124,6 +124,7 @@ runs:
       shell: 'bash'
 
     - name: Install ngrok locally
+      if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
       run: |
         echo "Current directory:"
         pwd
@@ -136,7 +137,6 @@ runs:
         ls -la
         echo "Installing ngrok..."
         npm install ngrok
-        npm install
       shell: bash
 
     - name: Commit and open PR
