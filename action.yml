@@ -97,6 +97,20 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+    - name: Install ngrok locally
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Files in current directory:"
+        ls -la
+        echo "Action path directory:"
+        echo ${{ github.action_path }}
+        echo "Files in action path:"
+        cd ${{ github.action_path }}
+        ls -la
+        echo "Installing ngrok..."
+        npm install ngrok
+      shell: bash
 
     - name: Configure git
       run: |
@@ -123,21 +137,7 @@ runs:
         ${{ inputs.build-command }}
       shell: 'bash'
 
-    - name: Install ngrok locally
-      if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
-      run: |
-        echo "Current directory:"
-        pwd
-        echo "Files in current directory:"
-        ls -la
-        echo "Action path directory:"
-        echo ${{ github.action_path }}
-        echo "Files in action path:"
-        cd ${{ github.action_path }}
-        ls -la
-        echo "Installing ngrok..."
-        npm install ngrok
-      shell: bash
+    
 
     - name: Commit and open PR
       uses: actions/github-script@v7
