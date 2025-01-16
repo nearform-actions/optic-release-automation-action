@@ -97,7 +97,7 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        
+
     - name: Configure git
       run: |
         git config --global user.email "${{ inputs.actor-email }}"
@@ -125,8 +125,18 @@ runs:
 
     - name: Install ngrok locally
       run: |
-            cd ${{ github.action_path }}
-            npm install ngrok
+        echo "Current directory:"
+        pwd
+        echo "Files in current directory:"
+        ls -la
+        echo "Action path directory:"
+        echo ${{ github.action_path }}
+        echo "Files in action path:"
+        cd ${{ github.action_path }}
+        ls -la
+        echo "Installing ngrok..."
+        npm install ngrok
+        npm install
       shell: bash
 
     - name: Commit and open PR
