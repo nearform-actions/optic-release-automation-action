@@ -94,6 +94,7 @@ async function publishToNpm({
               version,
               name: localInfo?.name,
               tunnelUrl,
+              ngrokToken,
             })
           )
         }
