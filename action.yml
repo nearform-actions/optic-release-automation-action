@@ -101,8 +101,8 @@ runs:
 
     - name: Install ngrok locally
       run: |
-        # cd ${{ github.action_path }}
-        # echo "Installing ngrok..."
+        cd ${{ github.action_path }}
+        echo "Installing ngrok..."
         npm install ngrok
       shell: bash
 
