@@ -96,13 +96,12 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        # node-version: '20'
         node-version-file: '.nvmrc'
 
     - name: Install ngrok locally
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.ngrok-token  }}
       run: |
         cd ${{ github.action_path }}
-        echo "Installing ngrok..."
         npm install ngrok
       shell: bash
 
@@ -149,10 +148,4 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const { runAction } = require('${{ github.action_path }}/dist/index.js')
-          await runAction({ 
-          github, 
-          context, 
-          inputs: { 
-            ...${{ toJSON(inputs) }},
-           } 
-          })
+          await runAction({ github, context, inputs: ${{ toJSON(inputs) }} })

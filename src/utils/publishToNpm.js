@@ -45,7 +45,6 @@ async function publishToNpm({
   version,
   provenance,
   access,
-  tunnelUrl,
 }) {
   await execWithOutput('npm', [
     'config',
@@ -90,12 +89,13 @@ async function publishToNpm({
 
         if (ngrokToken) {
           otpPromises.push(
-            ngrokOtpVerification({
-              version,
-              name: localInfo?.name,
-              tunnelUrl,
-              ngrokToken,
-            })
+            ngrokOtpVerification(
+              {
+                version,
+                name: localInfo?.name,
+              },
+              ngrokToken
+            )
           )
         }
         const otp = await Promise.race(otpPromises)

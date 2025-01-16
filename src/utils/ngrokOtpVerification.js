@@ -3,12 +3,11 @@
 const fs = require('fs')
 const fastify = require('fastify')
 const { logInfo, logError } = require('../log')
-const ngrok = require('ngrok')
 
 const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 const otpVerificationTimeout = 300000 // 5 minutes;
 
-async function ngrokOtpVerification(packageInfo) {
+async function ngrokOtpVerification(packageInfo, ngrokToken) {
   const app = fastify()
 
   let otpPromiseResolve
@@ -45,13 +44,14 @@ async function ngrokOtpVerification(packageInfo) {
   })
 
   let otp
+  const ngrok = await import('ngrok')
   try {
     await app.listen({ port: 3000 })
 
     const url = await ngrok.connect({
       addr: 3000,
       proto: 'http',
-      authtoken: packageInfo.ngrokToken,
+      authtoken: ngrokToken,
     })
 
     logInfo(
