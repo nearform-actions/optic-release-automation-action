@@ -19,19 +19,22 @@ const setup = () => {
 
   const fastifyStub = sinon.stub().returns(mockApp)
 
-  const otpVerificationProxy = proxyquire('../src/utils/ngrokOtpVerification', {
-    fastify: fastifyStub,
-    '../log': {
-      logInfo: logInfoStub,
-      logError: logErrorStub,
-    },
-  })
+  const ngrokOtpVerificationProxy = proxyquire(
+    '../src/utils/ngrokOtpVerification',
+    {
+      fastify: fastifyStub,
+      '../log': {
+        logInfo: logInfoStub,
+        logError: logErrorStub,
+      },
+    }
+  )
 
   return {
     logInfoStub,
     logErrorStub,
     mockApp,
-    otpVerificationProxy,
+    ngrokOtpVerificationProxy,
   }
 }
 
@@ -40,7 +43,7 @@ tap.afterEach(() => {
 })
 
 tap.test('Should successfully verify OTP', async t => {
-  const { otpVerificationProxy, mockApp } = setup()
+  const { ngrokOtpVerificationProxy, mockApp } = setup()
 
   // Capture the OTP callback
   let otpCallback
@@ -49,7 +52,7 @@ tap.test('Should successfully verify OTP', async t => {
   })
 
   // Start OTP verification process
-  const otpPromise = otpVerificationProxy({
+  const otpPromise = ngrokOtpVerificationProxy({
     name: 'test-package',
     version: 'v1.0.0',
     tunnelUrl: 'http://localhost:3000',
@@ -70,13 +73,13 @@ tap.test('Should successfully verify OTP', async t => {
 })
 
 tap.test('Should timeout after 5 minutes', async t => {
-  const { otpVerificationProxy, logErrorStub } = setup()
+  const { ngrokOtpVerificationProxy, logErrorStub } = setup()
 
   // Use fake timers
   const clock = sinon.useFakeTimers()
 
   try {
-    const promise = otpVerificationProxy({
+    const promise = ngrokOtpVerificationProxy({
       name: 'test-package',
       version: 'v1.0.0',
       tunnelUrl: 'http://localhost:3000',
@@ -94,7 +97,7 @@ tap.test('Should timeout after 5 minutes', async t => {
 })
 
 tap.test('Should handle HTML template rendering', async t => {
-  const { otpVerificationProxy, mockApp } = setup()
+  const { ngrokOtpVerificationProxy, mockApp } = setup()
 
   let renderedHtml
   let otpHandler
@@ -118,7 +121,7 @@ tap.test('Should handle HTML template rendering', async t => {
   })
 
   // Start OTP verification process in background
-  const otpPromise = otpVerificationProxy({
+  const otpPromise = ngrokOtpVerificationProxy({
     name: 'test-package',
     version: 'v1.0.0',
     tunnelUrl: 'http://localhost:3000',
@@ -140,7 +143,7 @@ tap.test('Should handle HTML template rendering', async t => {
 tap.test(
   'Should handle the failure case when fastify app or html fails to load',
   async t => {
-    const { otpVerificationProxy, mockApp } = setup()
+    const { ngrokOtpVerificationProxy, mockApp } = setup()
 
     let otpHandler
 
@@ -165,7 +168,7 @@ tap.test(
     })
 
     // Start OTP verification process in background
-    const otpPromise = otpVerificationProxy({
+    const otpPromise = ngrokOtpVerificationProxy({
       name: 'test-package',
       version: 'v1.0.0',
       tunnelUrl: 'http://localhost:3000',

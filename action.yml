@@ -96,19 +96,13 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        # node-version: '20'
+        node-version-file: '.nvmrc'
+
     - name: Install ngrok locally
       run: |
-        echo "Current directory:"
-        pwd
-        echo "Files in current directory:"
-        ls -la
-        echo "Action path directory:"
-        echo ${{ github.action_path }}
-        echo "Files in action path:"
-        cd ${{ github.action_path }}
-        ls -la
-        echo "Installing ngrok..."
+        # cd ${{ github.action_path }}
+        # echo "Installing ngrok..."
         npm install ngrok
       shell: bash
 
@@ -160,6 +154,5 @@ runs:
           context, 
           inputs: { 
             ...${{ toJSON(inputs) }},
-            tunnelUrl: ''
            } 
           })
