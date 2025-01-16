@@ -127,8 +127,8 @@ runs:
     #     port: 3000
     #     ngrok_authtoken: ${{ inputs.ngrok-token }}
     #     tunnel_type: http
-    - name: Install ngrok globally
-      run: npm i -g ngrok
+    - name: Install ngrok locally
+      run: npm i ngrok
       shell: bash
 
     - name: Execute ngrok
