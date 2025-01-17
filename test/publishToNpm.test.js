@@ -401,16 +401,15 @@ tap.test('Should publish using ngrok for OTP verification', async t => {
   await publishToNpmProxy.publishToNpm({
     npmToken: 'a-token',
     ngrokToken: 'ngrok-token',
-    tunnelUrl: 'https://example.ngrok.io',
     npmTag: 'latest',
     version: 'v5.1.3',
   })
 
-  sinon.assert.calledWithExactly(otpVerificationStub, {
-    version: 'v5.1.3',
-    name: 'fakeTestPkg',
-    tunnelUrl: 'https://example.ngrok.io',
-  })
+  sinon.assert.calledWithExactly(
+    otpVerificationStub,
+    { version: 'v5.1.3', name: 'fakeTestPkg' },
+    'ngrok-token'
+  )
 
   sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
     'publish',
@@ -440,7 +439,6 @@ tap.test('Should fail gracefully when ngrok services fail', async t => {
     publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
       ngrokToken: 'ngrok-token',
-      tunnelUrl: 'https://example.ngrok.io',
       npmTag: 'latest',
       version: 'v5.1.3',
     }),

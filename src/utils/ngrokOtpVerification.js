@@ -43,7 +43,6 @@ async function ngrokOtpVerification(packageInfo, ngrokToken) {
     reply.send('OTP received. You can close this window.')
   })
 
-  let otp
   const ngrok = await import('ngrok')
   try {
     await app.listen({ port: 3000 })
@@ -59,7 +58,7 @@ async function ngrokOtpVerification(packageInfo, ngrokToken) {
       ${url}`
     )
 
-    otp = await otpPromise
+    const otp = await otpPromise
 
     return otp
   } finally {
