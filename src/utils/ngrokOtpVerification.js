@@ -3,6 +3,7 @@
 const fs = require('fs')
 const fastify = require('fastify')
 const { logInfo, logError } = require('../log')
+const getNgrok = require('./getNgrok')
 
 const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 const otpVerificationTimeout = 300000 // 5 minutes;
@@ -43,7 +44,8 @@ async function ngrokOtpVerification(packageInfo, ngrokToken) {
     reply.send('OTP received. You can close this window.')
   })
 
-  const ngrok = await import('ngrok')
+  // const ngrok = await import('ngrok')
+  const ngrok = await getNgrok()
   try {
     await app.listen({ port: 3000 })
 

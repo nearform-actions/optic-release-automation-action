@@ -27,6 +27,10 @@ const setup = () => {
         logInfo: logInfoStub,
         logError: logErrorStub,
       },
+      './getNgrok': async () => ({
+        connect: sinon.stub().resolves('https://test.ngrok.io'),
+        kill: sinon.stub().resolves(),
+      }),
     }
   )
 
