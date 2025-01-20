@@ -52,11 +52,13 @@ tap.test('Should successfully verify OTP', async t => {
   })
 
   // Start OTP verification process
-  const otpPromise = ngrokOtpVerificationProxy({
-    name: 'test-package',
-    version: 'v1.0.0',
-    tunnelUrl: 'http://localhost:3000',
-  })
+  const otpPromise = ngrokOtpVerificationProxy(
+    {
+      name: 'test-package',
+      version: 'v1.0.0',
+    },
+    'ngrok-token'
+  )
 
   // Simulate OTP submission
   await otpCallback(
@@ -79,11 +81,13 @@ tap.test('Should timeout after 5 minutes', async t => {
   const clock = sinon.useFakeTimers()
 
   try {
-    const promise = ngrokOtpVerificationProxy({
-      name: 'test-package',
-      version: 'v1.0.0',
-      tunnelUrl: 'http://localhost:3000',
-    })
+    const promise = ngrokOtpVerificationProxy(
+      {
+        name: 'test-package',
+        version: 'v1.0.0',
+      },
+      'ngrok-token'
+    )
 
     // Advance clock by 5 minutes + 1ms
     clock.tick(300001)
@@ -124,7 +128,6 @@ tap.test('Should handle HTML template rendering', async t => {
   const otpPromise = ngrokOtpVerificationProxy({
     name: 'test-package',
     version: 'v1.0.0',
-    tunnelUrl: 'http://localhost:3000',
   })
 
   // Submit OTP immediately after handlers are set up
@@ -132,7 +135,7 @@ tap.test('Should handle HTML template rendering', async t => {
     if (otpHandler) {
       otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
     }
-  })
+  }, 'ngrok-token')
 
   await otpPromise
 
@@ -168,11 +171,13 @@ tap.test(
     })
 
     // Start OTP verification process in background
-    const otpPromise = ngrokOtpVerificationProxy({
-      name: 'test-package',
-      version: 'v1.0.0',
-      tunnelUrl: 'http://localhost:3000',
-    })
+    const otpPromise = ngrokOtpVerificationProxy(
+      {
+        name: 'test-package',
+        version: 'v1.0.0',
+      },
+      'ngrok-token'
+    )
 
     // Submit OTP immediately after handlers are set up
     setImmediate(() => {
