@@ -96,6 +96,7 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     const opticToken = inputs['optic-token']
     const npmToken = inputs['npm-token']
+    const ngrokToken = inputs['ngrok-token']
     const provenance = /true/i.test(inputs['provenance'])
     const access = inputs['access']
 
@@ -111,6 +112,7 @@ module.exports = async function ({ github, context, inputs }) {
     const publishOptions = {
       npmToken,
       opticToken,
+      ngrokToken,
       opticUrl,
       npmTag,
       version,

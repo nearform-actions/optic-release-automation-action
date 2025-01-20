@@ -83,12 +83,27 @@ inputs:
   access:
     description: 'If defined, sets package to public or restricted via `--access` flag on `npm publish`. Supported values are "restricted" or "public".'
     required: false
+  ngrok-token:
+    description: 'Your Ngrok Auth Token. Required only if you want to pubish to Npm and have MFA enabled for your account'
+    required: false
 
 runs:
   using: 'composite'
   steps:
     - name: Checkout the fresh project
       uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Install ngrok locally
+      if: ${{ github.event_name == 'pull_request' && inputs.ngrok-token  }}
+      run: |
+        cd ${{ github.action_path }}
+        npm install ngrok
+      shell: bash
 
     - name: Configure git
       run: |
