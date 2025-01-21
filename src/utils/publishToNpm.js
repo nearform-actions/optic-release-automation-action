@@ -2,6 +2,7 @@
 
 const { execWithOutput } = require('./execWithOutput')
 const { getPublishedInfo, getLocalInfo } = require('./packageInfo')
+const ngrokOtpVerification = require('./ngrokOtpVerification')
 
 async function allowNpmPublish(version) {
   // We need to check if the package was already published. This can happen if
@@ -38,6 +39,7 @@ async function allowNpmPublish(version) {
 async function publishToNpm({
   npmToken,
   opticToken,
+  ngrokToken,
   opticUrl,
   npmTag,
   version,
@@ -62,20 +64,45 @@ async function publishToNpm({
 
   if (await allowNpmPublish(version)) {
     await execWithOutput('npm', ['pack', '--dry-run'])
+    const localInfo = await getLocalInfo()
 
-    if (opticToken) {
-      const packageInfo = await getLocalInfo()
-      const otp = await execWithOutput('curl', [
-        '-s',
-        '-d',
-        JSON.stringify({ packageInfo: { version, name: packageInfo?.name } }),
-        '-H',
-        'Content-Type: application/json',
-        '-X',
-        'POST',
-        `${opticUrl}${opticToken}`,
-      ])
-      await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
+    if (opticToken || ngrokToken) {
+      try {
+        const otpPromises = []
+
+        if (opticToken) {
+          otpPromises.push(
+            execWithOutput('curl', [
+              '-s',
+              '-d',
+              JSON.stringify({
+                packageInfo: { version, name: localInfo?.name },
+              }),
+              '-H',
+              'Content-Type: application/json',
+              '-X',
+              'POST',
+              `${opticUrl}${opticToken}`,
+            ])
+          )
+        }
+
+        if (ngrokToken) {
+          otpPromises.push(
+            ngrokOtpVerification(
+              {
+                version,
+                name: localInfo?.name,
+              },
+              ngrokToken
+            )
+          )
+        }
+        const otp = await Promise.race(otpPromises)
+        await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
+      } catch (error) {
+        throw new Error(`OTP verification failed: ${error.message}`)
+      }
     } else {
       await execWithOutput('npm', ['publish', ...flags])
     }

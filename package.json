@@ -1,6 +1,6 @@
 {
   "name": "optic-release-automation-action",
-  "version": "4.8.4",
+  "version": "4.9.0",
   "description": "Automate the release process of your npm modules by providing them OTP on-demand.",
   "main": "src/index.js",
   "scripts": {
@@ -22,6 +22,7 @@
     "@actions/github": "^6.0.0",
     "adm-zip": "^0.5.16",
     "conventional-changelog-monorepo": "github:nearform/conventional-changelog",
+    "fastify": "^5.2.1",
     "lodash.isequal": "^4.5.0",
     "lodash.template": "^4.5.0",
     "lodash.truncate": "^4.4.2",
@@ -36,7 +37,7 @@
     "@vercel/ncc": "^0.38.3",
     "doctoc": "^2.2.1",
     "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^4.2.1",
     "husky": "^9.1.7",
     "lodash.clonedeep": "^4.5.0",
