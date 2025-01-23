@@ -1,7 +1,8 @@
 'use strict'
 
-const tap = require('tap')
-const { ZIP_EXTENSION } = require('../src/const')
+const { test } = require('node:test')
+const assert = require('node:assert')
+const { ZIP_EXTENSION } = require('../src/const.js')
 
 const DEFAULT_INPUT_DATA = {
   artifactPath: 'dist',
@@ -9,17 +10,23 @@ const DEFAULT_INPUT_DATA = {
   token: 'token',
 }
 
-const setup = ({ throwsError }) => {
-  const attachArtifactModule = tap.mock('../src/utils/artifact.js', {
-    '../src/utils/archiver.js': {
+const setup = ({ t, throwsError }) => {
+  const archiverMock = t.mock.module('../src/utils/archiver.js', {
+    namedExports: {
       archiveItem: async () => null,
     },
-    'fs/promises': {
+  })
+
+  const fsMock = t.mock.module('fs/promises', {
+    namedExports: {
       stat: async () => 100,
       lstat: async () => ({ isDirectory: () => true }),
       readFile: async () => Buffer.from('hello world'),
     },
-    '@actions/github': {
+  })
+
+  const githubMock = t.mock.module('@actions/github', {
+    namedExports: {
       context: {
         repo: {
           repo: 'repo',
@@ -44,101 +51,141 @@ const setup = ({ throwsError }) => {
     },
   })
 
-  return { attachArtifactModule }
+  const attachArtifactModule = require('../src/utils/artifact.js')
+  return { attachArtifactModule, archiverMock, fsMock, githubMock }
 }
 
-tap.test(
-  'attach artifact does not throw errors with proper inputs',
-  async t => {
-    const { attachArtifactModule } = setup({ throwsError: false })
+test('artifact tests', async t => {
+  t.beforeEach(() => {
+    delete require.cache[require.resolve('../src/utils/artifact.js')]
+  })
 
-    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
+  await t.test(
+    'attach artifact does not throw errors with proper inputs',
+    async t => {
+      const { attachArtifactModule, archiverMock, fsMock, githubMock } = setup({
+        t,
+        throwsError: false,
+      })
+      const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    await t.resolves(
-      attachArtifactModule.attach(artifactPath, releaseId, token)
-    )
-  }
-)
-
-tap.test(
-  'attach artifact does not throw errors with path ending with .zip',
-  async t => {
-    const { attachArtifactModule } = setup({ throwsError: false })
-
-    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
-
-    await t.resolves(
-      attachArtifactModule.attach(
-        artifactPath + ZIP_EXTENSION,
-        releaseId,
-        token
+      await assert.doesNotReject(
+        attachArtifactModule.attach(artifactPath, releaseId, token)
       )
-    )
-  }
-)
+      archiverMock.restore()
+      fsMock.restore()
+      githubMock.restore()
+    }
+  )
 
-tap.test(
-  'attach artifact throws an error if build folder not found',
-  async t => {
-    const artifactModule = tap.mock('../src/utils/artifact.js', {
-      '../src/utils/archiver.js': {
-        archiveItem: async () => {
-          throw new Error('file not found')
-        },
-      },
-    })
+  await t.test(
+    'attach artifact does not throw errors with path ending with .zip',
+    async t => {
+      const { attachArtifactModule, archiverMock, fsMock, githubMock } = setup({
+        t,
+        throwsError: false,
+      })
+      const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
+      await assert.doesNotReject(
+        attachArtifactModule.attach(
+          artifactPath + ZIP_EXTENSION,
+          releaseId,
+          token
+        )
+      )
+      archiverMock.restore()
+      fsMock.restore()
+      githubMock.restore()
+    }
+  )
 
-    await t.rejects(artifactModule.attach(artifactPath, releaseId, token))
-  }
-)
-
-tap.test(
-  'attach artifact throws an error if an error occurres during the asset upload',
-  async t => {
-    const { attachArtifactModule } = setup({ throwsError: true })
-
-    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
-
-    await t.rejects(attachArtifactModule.attach(artifactPath, releaseId, token))
-  }
-)
-
-tap.test(
-  'attach artifact throws an error if the upload asset state is not uploaded',
-  async t => {
-    const artifactModule = tap.mock('../src/utils/artifact.js', {
-      '../src/utils/archiver.js': {
-        archiveItem: async () => null,
-      },
-      'fs/promises': {
-        stat: async () => 100,
-        lstat: async () => ({ isDirectory: () => true }),
-        readFile: async () => Buffer.from('hello world'),
-      },
-      '@actions/github': {
-        context: {
-          repo: {
-            repo: 'repo',
-            owner: 'owner',
+  await t.test(
+    'attach artifact throws an error if build folder not found',
+    async t => {
+      const archiverMock = t.mock.module('../src/utils/archiver.js', {
+        default: {
+          archiveItem: async () => {
+            throw new Error('file not found')
           },
         },
-        getOctokit: () => ({
-          rest: {
-            repos: {
-              uploadReleaseAsset: async () => ({
-                status: 201,
-                data: { state: 'not_uploaded' },
-              }),
+      })
+
+      const attachArtifactModule = require('../src/utils/artifact.js')
+      const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
+
+      await assert.rejects(
+        attachArtifactModule.attach(artifactPath, releaseId, token)
+      )
+      archiverMock.restore()
+    }
+  )
+
+  await t.test(
+    'attach artifact throws an error if an error occurres during the asset upload',
+    async t => {
+      const { attachArtifactModule, archiverMock, fsMock, githubMock } = setup({
+        t,
+        throwsError: true,
+      })
+      const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
+
+      await assert.rejects(
+        attachArtifactModule.attach(artifactPath, releaseId, token)
+      )
+      archiverMock.restore()
+      fsMock.restore()
+      githubMock.restore()
+    }
+  )
+
+  await t.test(
+    'attach artifact throws an error if the upload asset state is not uploaded',
+    async t => {
+      const archiverMock = t.mock.module('../src/utils/archiver.js', {
+        default: {
+          archiveItem: async () => null,
+        },
+      })
+
+      const fsMock = t.mock.module('fs/promises', {
+        namedExports: {
+          stat: async () => 100,
+          lstat: async () => ({ isDirectory: () => true }),
+          readFile: async () => Buffer.from('hello world'),
+        },
+      })
+
+      const githubMock = t.mock.module('@actions/github', {
+        namedExports: {
+          context: {
+            repo: {
+              repo: 'repo',
+              owner: 'owner',
             },
           },
-        }),
-      },
-    })
+          getOctokit: () => ({
+            rest: {
+              repos: {
+                uploadReleaseAsset: async () => ({
+                  status: 201,
+                  data: { state: 'not_uploaded' },
+                }),
+              },
+            },
+          }),
+        },
+      })
 
-    const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
+      const attachArtifactModule = require('../src/utils/artifact.js')
+      const { artifactPath, releaseId, token } = DEFAULT_INPUT_DATA
 
-    await t.rejects(artifactModule.attach(artifactPath, releaseId, token))
-  }
-)
+      await assert.rejects(
+        attachArtifactModule.attach(artifactPath, releaseId, token)
+      )
+      archiverMock.restore()
+      fsMock.restore()
+      githubMock.restore()
+    }
+  )
+})

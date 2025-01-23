@@ -1,79 +1,114 @@
 'use strict'
 
-const tap = require('tap')
+const { test } = require('node:test')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
-const actionLog = require('../src/log')
+const actionLog = require('../src/log.js')
 
-const setup = status => {
+const setup = ({ t, status }) => {
   const logStub = sinon.stub(actionLog)
   const fetchStub = sinon.stub()
-  const callApiProxy = proxyquire('../src/utils/callApi', {
-    '../log': logStub,
-    'node-fetch': fetchStub.resolves({
+
+  const fetchMock = t.mock.module('node-fetch', {
+    defaultExport: fetchStub.resolves({
       status,
       get json() {
         return () => {}
       },
     }),
   })
-  return { logStub, callApiProxy, fetchStub }
+
+  const logMock = t.mock.module('../src/log.js', {
+    defaultExport: logStub,
+  })
+
+  const callApiModule = require('../src/utils/callApi.js')
+  return { logStub, callApiModule, fetchMock, logMock, fetchStub }
 }
 
-tap.afterEach(() => {
-  sinon.restore()
-})
+test('callApi tests', async t => {
+  t.beforeEach(() => {
+    delete require.cache[require.resolve('../src/utils/callApi')]
+  })
 
-tap.test('Call api warns if code is not 200', async () => {
-  const { logStub, callApiProxy } = setup(401)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    {
-      'api-url': 'whatever',
+  t.afterEach(() => {
+    sinon.restore()
+  })
+
+  // done
+  await t.test('Call api warns if code is not 200', async t => {
+    const { logStub, callApiModule, fetchMock, logMock } = setup({
+      t,
+      status: 401,
+    })
+    await callApiModule.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      {
+        'api-url': 'whatever',
+      }
+    )
+    sinon.assert.calledOnce(logStub.logWarning)
+    fetchMock.restore()
+    logMock.restore()
+  })
+
+  await t.test('Call api does not warn if code is 200', async t => {
+    const { logStub, callApiModule, fetchMock, logMock } = setup({
+      t,
+      status: 200,
+    })
+    await callApiModule.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      { 'api-url': 'whatever' }
+    )
+    sinon.assert.notCalled(logStub.logWarning)
+    fetchMock.restore()
+    logMock.restore()
+  })
+
+  await t.test(
+    'Call api does not append slash to api url if present',
+    async t => {
+      const { fetchStub, callApiModule, fetchMock, logMock } = setup({
+        t,
+        status: 200,
+      })
+      await callApiModule.callApi(
+        {
+          endpoint: 'release',
+          method: 'PATCH',
+          body: {},
+        },
+        { 'api-url': 'whatever/' }
+      )
+      sinon.assert.calledWith(fetchStub, 'whatever/release')
+      fetchMock.restore()
+      logMock.restore()
     }
   )
-  sinon.assert.calledOnce(logStub.logWarning)
-})
 
-tap.test('Call api does not warn if code is  200', async () => {
-  const { logStub, callApiProxy } = setup(200)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    { 'api-url': 'whatever' }
-  )
-  sinon.assert.notCalled(logStub.logWarning)
-})
-
-tap.test('Call api does not append slash to api url if present', async () => {
-  const { fetchStub, callApiProxy } = setup(200)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    { 'api-url': 'whatever/' }
-  )
-  sinon.assert.calledWith(fetchStub, 'whatever/release')
-})
-
-tap.test('Call api appends slash to api url if not present', async () => {
-  const { fetchStub, callApiProxy } = setup(200)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    { 'api-url': 'whatever' }
-  )
-  sinon.assert.calledWith(fetchStub, 'whatever/release')
+  await t.test('Call api appends slash to api url if not present', async t => {
+    const { fetchStub, callApiModule, fetchMock, logMock } = setup({
+      t,
+      status: 200,
+    })
+    await callApiModule.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      { 'api-url': 'whatever' }
+    )
+    sinon.assert.calledWith(fetchStub, 'whatever/release')
+    fetchMock.restore()
+    logMock.restore()
+  })
 })
