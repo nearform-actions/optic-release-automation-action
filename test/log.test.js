@@ -1,55 +1,64 @@
 'use strict'
 
-const tap = require('tap')
+const { test } = require('node:test')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
 const core = require('@actions/core')
 
-const setup = () => {
+const setup = ({ t }) => {
   const coreStub = sinon.stub(core)
-  const logger = proxyquire('../src/log', {
-    '@actions/core': coreStub,
+  const coreMock = t.mock.module('@actions/core', {
+    namedExports: coreStub,
   })
 
-  return { coreStub, logger }
+  const logger = require('../src/log')
+  return { coreStub, logger, coreMock }
 }
 
-tap.afterEach(() => {
-  sinon.restore()
-})
+test('logger tests', async t => {
+  t.beforeEach(() => {
+    delete require.cache[require.resolve('../src/log')]
+  })
 
-tap.test('calling log with an array will stringify it', async () => {
-  const { logger, coreStub } = setup()
-  logger.logDebug([1, 2, 3])
-  sinon.assert.calledWithExactly(coreStub.debug, '1,2,3')
-})
+  t.afterEach(() => {
+    sinon.restore()
+  })
 
-tap.test('logDebug calls @actions/core/debug', async () => {
-  const { logger, coreStub } = setup()
-  logger.logDebug('Debug')
-  sinon.assert.calledOnce(coreStub.debug)
-  sinon.assert.notCalled(coreStub.error)
-})
+  await t.test('calling log with an array will stringify it', async t => {
+    const { logger, coreStub, coreMock } = setup({ t })
+    logger.logDebug([1, 2, 3])
+    sinon.assert.calledWithExactly(coreStub.debug, '1,2,3')
+    coreMock.restore()
+  })
 
-tap.test('logError calls @actions/core/error', async () => {
-  const { logger, coreStub } = setup()
-  logger.logError(new Error('not a string'))
-  sinon.assert.calledOnce(coreStub.error)
-  sinon.assert.notCalled(coreStub.debug)
-})
+  await t.test('logDebug calls @actions/core/debug', async t => {
+    const { logger, coreStub, coreMock } = setup({ t })
+    logger.logDebug('Debug')
+    sinon.assert.calledOnce(coreStub.debug)
+    sinon.assert.notCalled(coreStub.error)
+    coreMock.restore()
+  })
 
-tap.test('logInfo calls @actions/core/info', async () => {
-  const { logger, coreStub } = setup()
-  logger.logInfo('Debug')
+  await t.test('logError calls @actions/core/error', async t => {
+    const { logger, coreStub, coreMock } = setup({ t })
+    logger.logError(new Error('not a string'))
+    sinon.assert.calledOnce(coreStub.error)
+    sinon.assert.notCalled(coreStub.debug)
+    coreMock.restore()
+  })
 
-  sinon.assert.calledOnce(coreStub.info)
-  sinon.assert.notCalled(coreStub.debug)
-})
+  await t.test('logInfo calls @actions/core/info', async t => {
+    const { logger, coreStub, coreMock } = setup({ t })
+    logger.logInfo('Debug')
+    sinon.assert.calledOnce(coreStub.info)
+    sinon.assert.notCalled(coreStub.debug)
+    coreMock.restore()
+  })
 
-tap.test('logWarning calls @actions/core/warning', async () => {
-  const { logger, coreStub } = setup()
-  logger.logWarning('warning')
-
-  sinon.assert.calledOnce(coreStub.warning)
-  sinon.assert.notCalled(coreStub.debug)
+  await t.test('logWarning calls @actions/core/warning', async t => {
+    const { logger, coreStub, coreMock } = setup({ t })
+    logger.logWarning('warning')
+    sinon.assert.calledOnce(coreStub.warning)
+    sinon.assert.notCalled(coreStub.debug)
+    coreMock.restore()
+  })
 })

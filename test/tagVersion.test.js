@@ -1,38 +1,48 @@
 'use strict'
 
-const tap = require('tap')
+const { test } = require('node:test')
+const assert = require('node:assert')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
 
-const setup = () => {
+const setup = ({ t }) => {
   const execWithOutputStub = sinon.stub()
-  const tagVersionProxy = proxyquire('../src/utils/tagVersion', {
-    './execWithOutput': { execWithOutput: execWithOutputStub },
+  const execMock = t.mock.module('../src/utils/execWithOutput.js', {
+    namedExports: {
+      execWithOutput: execWithOutputStub,
+    },
   })
 
-  return { execWithOutputStub, tagVersionProxy }
+  const tagVersionProxy = require('../src/utils/tagVersion')
+  return { execWithOutputStub, tagVersionProxy, execMock }
 }
 
-tap.afterEach(() => {
-  sinon.restore()
-})
+test('tagVersion tests', async t => {
+  t.beforeEach(() => {
+    delete require.cache[require.resolve('../src/utils/tagVersion')]
+  })
 
-tap.test('Tag version in git', async t => {
-  const { tagVersionProxy, execWithOutputStub } = setup()
-  const version = 'v3.0.0'
-  await tagVersionProxy.tagVersionInGit(version)
+  t.afterEach(() => {
+    sinon.restore()
+  })
 
-  t.ok(execWithOutputStub.callCount === 2)
+  await t.test('Tag version in git', async t => {
+    const { tagVersionProxy, execWithOutputStub, execMock } = setup({ t })
+    const version = 'v3.0.0'
+    await tagVersionProxy.tagVersionInGit(version)
 
-  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
-    'tag',
-    '-f',
-    `${version}`,
-  ])
-  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
-    'push',
-    'origin',
-    '-f',
-    `v3.0.0`,
-  ])
+    assert.equal(execWithOutputStub.callCount, 2)
+
+    sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
+      'tag',
+      '-f',
+      `${version}`,
+    ])
+    sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
+      'push',
+      'origin',
+      '-f',
+      `v3.0.0`,
+    ])
+    execMock.restore()
+  })
 })
