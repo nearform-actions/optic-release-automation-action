@@ -1,6 +1,7 @@
 'use strict'
 
-const { describe, it, afterEach } = require('node:test')
+const { afterEach, test } = require('node:test')
+
 const assert = require('node:assert')
 const sinon = require('sinon')
 const fs = require('node:fs')
@@ -31,15 +32,17 @@ function setup() {
 
 const { notifyIssues } = require('../src/utils/notifyIssues')
 
-describe('notifyIssues', () => {
+test('notifyIssues tests', async t => {
   afterEach(() => {
     sinon.restore()
   })
 
-  it('should not call createComment if no linked issues', async () => {
-    setup()
+  await t.test(
+    'should not call createComment if no linked issues',
+    async () => {
+      setup()
 
-    const releaseNotes = `
+      const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
       * chore 18 by @people in https://github.com/owner/repo/pull/15\n
@@ -49,17 +52,20 @@ describe('notifyIssues', () => {
       **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
     `
 
-    const release = { body: releaseNotes, html_url: 'some_url' }
+      const release = { body: releaseNotes, html_url: 'some_url' }
 
-    await notifyIssues(DEFAULT_GITHUB_CLIENT, false, 'owner', 'repo', release)
+      await notifyIssues(DEFAULT_GITHUB_CLIENT, false, 'owner', 'repo', release)
 
-    assert.strictEqual(createCommentStub.called, false)
-  })
+      assert.strictEqual(createCommentStub.called, false)
+    }
+  )
 
-  it('should not call createComment if linked issue belongs to external repo', async () => {
-    setup()
+  await t.test(
+    'should not call createComment if linked issue belongs to external repo',
+    async () => {
+      setup()
 
-    const releaseNotes = `
+      const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
       \n
@@ -67,41 +73,44 @@ describe('notifyIssues', () => {
       **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
     `
 
-    const release = { body: releaseNotes, html_url: 'some_url' }
+      const release = { body: releaseNotes, html_url: 'some_url' }
 
-    const graphqlStub = sinon.stub().resolves({
-      repository: {
-        pullRequest: {
-          closingIssuesReferences: {
-            nodes: [
-              {
-                number: '13',
-                repository: {
-                  name: 'ext-repo',
-                  owner: { login: 'ext-owner' },
+      const graphqlStub = sinon.stub().resolves({
+        repository: {
+          pullRequest: {
+            closingIssuesReferences: {
+              nodes: [
+                {
+                  number: '13',
+                  repository: {
+                    name: 'ext-repo',
+                    owner: { login: 'ext-owner' },
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-    })
+      })
 
-    await notifyIssues(
-      { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
-      false,
-      'owner',
-      'repo',
-      release
-    )
+      await notifyIssues(
+        { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+        false,
+        'owner',
+        'repo',
+        release
+      )
 
-    assert.strictEqual(createCommentStub.called, false)
-  })
+      assert.strictEqual(createCommentStub.called, false)
+    }
+  )
 
-  it('should call createComment with correct arguments for linked issues with npm link', async () => {
-    setup()
+  await t.test(
+    'should call createComment with correct arguments for linked issues with npm link',
+    async () => {
+      setup()
 
-    const releaseNotes = `
+      const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
       \n
@@ -109,42 +118,42 @@ describe('notifyIssues', () => {
       **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
     `
 
-    const release = { body: releaseNotes, html_url: 'some_url' }
+      const release = { body: releaseNotes, html_url: 'some_url' }
 
-    const graphqlStub = sinon.stub().resolves({
-      repository: {
-        pullRequest: {
-          closingIssuesReferences: {
-            nodes: [
-              {
-                number: '10',
-                repository: {
-                  name: 'repo',
-                  owner: { login: 'owner' },
+      const graphqlStub = sinon.stub().resolves({
+        repository: {
+          pullRequest: {
+            closingIssuesReferences: {
+              nodes: [
+                {
+                  number: '10',
+                  repository: {
+                    name: 'repo',
+                    owner: { login: 'owner' },
+                  },
                 },
-              },
-              {
-                number: '15',
-                repository: {
-                  name: 'repo',
-                  owner: { login: 'owner' },
+                {
+                  number: '15',
+                  repository: {
+                    name: 'repo',
+                    owner: { login: 'owner' },
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-    })
+      })
 
-    await notifyIssues(
-      { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
-      true,
-      'owner',
-      'repo',
-      release
-    )
+      await notifyIssues(
+        { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+        true,
+        'owner',
+        'repo',
+        release
+      )
 
-    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉
+      const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉
 
 
   The release is available on:
@@ -154,25 +163,28 @@ describe('notifyIssues', () => {
 
   Your **[optic](https://github.com/nearform-actions/optic-release-automation-action)** bot 📦🚀`
 
-    assert.deepStrictEqual(createCommentStub.firstCall.args[0], {
-      owner: 'owner',
-      repo: 'repo',
-      issue_number: '10',
-      body: expectedCommentBody,
-    })
+      assert.deepStrictEqual(createCommentStub.firstCall.args[0], {
+        owner: 'owner',
+        repo: 'repo',
+        issue_number: '10',
+        body: expectedCommentBody,
+      })
 
-    assert.deepStrictEqual(createCommentStub.secondCall.args[0], {
-      owner: 'owner',
-      repo: 'repo',
-      issue_number: '15',
-      body: expectedCommentBody,
-    })
-  })
+      assert.deepStrictEqual(createCommentStub.secondCall.args[0], {
+        owner: 'owner',
+        repo: 'repo',
+        issue_number: '15',
+        body: expectedCommentBody,
+      })
+    }
+  )
 
-  it.skip('should call createComment with correct arguments for linked issues without npm link', async () => {
-    setup()
+  await t.skip(
+    'should call createComment with correct arguments for linked issues without npm link',
+    async () => {
+      setup()
 
-    const releaseNotes = `
+      const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
       \n
@@ -180,42 +192,42 @@ describe('notifyIssues', () => {
       **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
     `
 
-    const release = { body: releaseNotes, html_url: 'some_url' }
+      const release = { body: releaseNotes, html_url: 'some_url' }
 
-    const graphqlStub = sinon.stub().resolves({
-      repository: {
-        pullRequest: {
-          closingIssuesReferences: {
-            nodes: [
-              {
-                number: '10',
-                repository: {
-                  name: 'repo',
-                  owner: { login: 'owner' },
+      const graphqlStub = sinon.stub().resolves({
+        repository: {
+          pullRequest: {
+            closingIssuesReferences: {
+              nodes: [
+                {
+                  number: '10',
+                  repository: {
+                    name: 'repo',
+                    owner: { login: 'owner' },
+                  },
                 },
-              },
-              {
-                number: '15',
-                repository: {
-                  name: 'repo',
-                  owner: { login: 'owner' },
+                {
+                  number: '15',
+                  repository: {
+                    name: 'repo',
+                    owner: { login: 'owner' },
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-    })
+      })
 
-    await notifyIssues(
-      { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
-      false,
-      'owner',
-      'repo',
-      release
-    )
+      await notifyIssues(
+        { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+        false,
+        'owner',
+        'repo',
+        release
+      )
 
-    const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉
+      const expectedCommentBody = `🎉 This issue has been resolved in version 1.0.0 🎉
 
 
   The release is available on:
@@ -224,25 +236,28 @@ describe('notifyIssues', () => {
 
   Your **[optic](https://github.com/nearform-actions/optic-release-automation-action)** bot 📦🚀`
 
-    assert.deepStrictEqual(createCommentStub.firstCall.args[0], {
-      owner: 'owner',
-      repo: 'repo',
-      issue_number: '10',
-      body: expectedCommentBody,
-    })
+      assert.deepStrictEqual(createCommentStub.firstCall.args[0], {
+        owner: 'owner',
+        repo: 'repo',
+        issue_number: '10',
+        body: expectedCommentBody,
+      })
 
-    assert.deepStrictEqual(createCommentStub.secondCall.args[0], {
-      owner: 'owner',
-      repo: 'repo',
-      issue_number: '15',
-      body: expectedCommentBody,
-    })
-  })
+      assert.deepStrictEqual(createCommentStub.secondCall.args[0], {
+        owner: 'owner',
+        repo: 'repo',
+        issue_number: '15',
+        body: expectedCommentBody,
+      })
+    }
+  )
 
-  it("shouldn't fail if createComment on an issue fails", async () => {
-    setup()
+  await t.test(
+    "shouldn't fail if createComment on an issue fails",
+    async () => {
+      setup()
 
-    const releaseNotes = `
+      const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
       \n
@@ -250,43 +265,44 @@ describe('notifyIssues', () => {
       **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
     `
 
-    const release = { body: releaseNotes, html_url: 'some_url' }
+      const release = { body: releaseNotes, html_url: 'some_url' }
 
-    const graphqlStub = sinon.stub().resolves({
-      repository: {
-        pullRequest: {
-          closingIssuesReferences: {
-            nodes: [
-              {
-                number: '10',
-                repository: {
-                  name: 'repo',
-                  owner: { login: 'owner' },
+      const graphqlStub = sinon.stub().resolves({
+        repository: {
+          pullRequest: {
+            closingIssuesReferences: {
+              nodes: [
+                {
+                  number: '10',
+                  repository: {
+                    name: 'repo',
+                    owner: { login: 'owner' },
+                  },
                 },
-              },
-              {
-                number: '15',
-                repository: {
-                  name: 'repo',
-                  owner: { login: 'owner' },
+                {
+                  number: '15',
+                  repository: {
+                    name: 'repo',
+                    owner: { login: 'owner' },
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-    })
+      })
 
-    createCommentStub.rejects()
+      createCommentStub.rejects()
 
-    await assert.doesNotReject(
-      notifyIssues(
-        { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
-        true,
-        'owner',
-        'repo',
-        release
+      await assert.doesNotReject(
+        notifyIssues(
+          { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+          true,
+          'owner',
+          'repo',
+          release
+        )
       )
-    )
-  })
+    }
+  )
 })

@@ -143,7 +143,7 @@ test('artifact tests', async t => {
     'attach artifact throws an error if the upload asset state is not uploaded',
     async t => {
       const archiverMock = t.mock.module('../src/utils/archiver.js', {
-        default: {
+        defaultExport: {
           archiveItem: async () => null,
         },
       })
