@@ -67,6 +67,7 @@ const setup = ({
   env,
   isPublished = true,
   isScoped = true,
+  skipProvenanceRequire = false,
 } = {}) => {
   if (env) {
     Object.entries(env).forEach(([key, value]) => {
@@ -102,21 +103,38 @@ const setup = ({
     },
   })
 
-  const provenanceMock = t.mock.module('../src/utils/provenance.js', {
+  let provenanceMock
+
+  if (skipProvenanceRequire) {
+    provenanceMock = t.mock.module('../src/utils/provenance.js', {
+      namedExports: {
+        getNpmVersion: npmVersion ? () => npmVersion : undefined,
+        getProvenanceOptions: () => ({
+          provenance: true,
+          provenanceToken: 'otp123',
+        }),
+      },
+    })
+  } else {
+    provenanceMock = t.mock.module('../src/utils/provenance.js', {
+      namedExports: {
+        getNpmVersion: npmVersion ? () => npmVersion : undefined,
+        getProvenanceOptions: require('../src/utils/provenance.js')
+          .getProvenanceOptions,
+      },
+    })
+  }
+
+  const execWithOutputMock = t.mock.module('../src/utils/execWithOutput.js', {
     namedExports: {
-      getNpmVersion: npmVersion ? () => npmVersion : undefined,
-      getProvenanceOptions: () => ({
-        provenance: true,
-        provenanceToken: 'otp123',
-      }),
+      execWithOutput: execWithOutputStub,
     },
   })
-
   const callApiStub = sinon
     .stub(callApiAction, 'callApi')
     .resolves({ data: { body: 'test_body', html_url: 'test_url' } })
 
-  const release = require('../src/release')
+  const release = require('../src/release.js')
 
   return {
     release,
@@ -133,6 +151,7 @@ const setup = ({
     mocks: {
       packageInfoMock,
       provenanceMock,
+      execWithOutputMock,
     },
   }
 }
@@ -271,8 +290,7 @@ test('release tests', async t => {
     }
   )
 
-  // failed
-  await t.skip(
+  await t.test(
     'Aborts publish with provenance if NPM version too old',
     async t => {
       const { release, stubs, mocks } = setup({
@@ -290,6 +308,7 @@ test('release tests', async t => {
         },
       })
 
+      // console.log('sionon calls', stubs.coreStub.setFailed.args)
       sinon.assert.calledWithMatch(
         stubs.coreStub.setFailed,
         'Provenance requires NPM >=9.5.0, but this action is using v9.4.0'
@@ -298,8 +317,7 @@ test('release tests', async t => {
     }
   )
 
-  //failed
-  await t.skip(
+  await t.test(
     'Aborts publish with provenance if missing permission',
     async t => {
       const { release, stubs, mocks } = setup({
@@ -316,9 +334,6 @@ test('release tests', async t => {
           provenance: 'true',
         },
       })
-
-      // Add this to see what message was actually passed
-      console.log('Actual setFailed calls:', stubs.coreStub.setFailed.args)
 
       sinon.assert.calledWithMatch(
         stubs.coreStub.setFailed,
@@ -888,8 +903,7 @@ test('release tests', async t => {
     sinon.assert.calledWithExactly(stubs.tagVersionStub, 'v5.0.0')
   })
 
-  //failed
-  await t.skip(
+  await t.test(
     'Should delete the release branch ALWAYS when the PR is closed',
     async t => {
       const { release, stubs, mocks } = setup({ t })
@@ -904,13 +918,10 @@ test('release tests', async t => {
         },
       })
 
-      // We check that it's actually the first command line command to be executed
-      sinon.assert.calledWithExactly(
-        stubs.execWithOutputStub.getCall(0),
+      assert.deepEqual(stubs.execWithOutputStub.getCall(0).args, [
         'git',
-        ['push', 'origin', '--delete', 'release/v5.1.3']
-      )
-
+        ['push', 'origin', '--delete', 'release/v5.1.3'],
+      ])
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -1064,4 +1075,39 @@ test('release tests', async t => {
     sinon.assert.notCalled(stubs.coreStub.setFailed)
     Object.values(mocks).forEach(mock => mock.restore())
   })
+
+  await t.test(
+    'Should merge extraOptions from getProvenanceOptions when available',
+    async t => {
+      const { release, stubs, mocks } = setup({
+        t,
+        npmVersion: '9.5.0',
+        env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' },
+        skipProvenanceRequire: true,
+      })
+
+      await release({
+        ...DEFAULT_ACTION_DATA,
+        inputs: {
+          'app-name': APP_NAME,
+          'npm-token': 'a-token',
+          provenance: 'true',
+        },
+      })
+
+      sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+        npmToken: 'a-token',
+        opticToken: undefined,
+        ngrokToken: undefined,
+        opticUrl: 'https://optic-test.run.app/api/generate/',
+        npmTag: 'latest',
+        version: 'v5.1.3',
+        provenance: true,
+        access: undefined,
+        provenanceToken: 'otp123',
+      })
+
+      Object.values(mocks).forEach(mock => mock.restore())
+    }
+  )
 })
