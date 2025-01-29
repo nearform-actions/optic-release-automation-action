@@ -54,7 +54,7 @@ test('provenance tests', async t => {
 
   await t.test(
     'checkIsSupported passes on major version after minimum',
-    async t => {
+    async () => {
       assert.doesNotThrow(() => checkIsSupported('10.0.0'))
     }
   )
