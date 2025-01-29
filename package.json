@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "node --test --experimental-test-module-mocks  --experimental-test-coverage",
+    "test": "node --test --experimental-test-module-mocks  --experimental-test-coverage --test-coverage-exclude=test/**",
     "build": "ncc build src/index.js",
     "prepare": "husky",
     "update-readme-TOC": "doctoc README.md"
