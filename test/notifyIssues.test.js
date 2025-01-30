@@ -1,7 +1,6 @@
 'use strict'
 
-const { afterEach, test } = require('node:test')
-
+const { test } = require('node:test')
 const assert = require('node:assert')
 const sinon = require('sinon')
 const fs = require('node:fs')
@@ -24,7 +23,7 @@ const DEFAULT_GITHUB_CLIENT = {
   graphql: noDataGraphqlStub,
 }
 
-function setup() {
+function setupTest() {
   sinon
     .stub(fs, 'readFileSync')
     .returns('{ "name": "packageName", "version": "1.0.0"}')
@@ -33,15 +32,18 @@ function setup() {
 const { notifyIssues } = require('../src/utils/notifyIssues')
 
 test('notifyIssues tests', async t => {
-  afterEach(() => {
+  t.beforeEach(() => {
+    setupTest()
+  })
+
+  t.afterEach(() => {
     sinon.restore()
+    createCommentStub.reset()
   })
 
   await t.test(
     'should not call createComment if no linked issues',
     async () => {
-      setup()
-
       const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -63,8 +65,6 @@ test('notifyIssues tests', async t => {
   await t.test(
     'should not call createComment if linked issue belongs to external repo',
     async () => {
-      setup()
-
       const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -108,8 +108,6 @@ test('notifyIssues tests', async t => {
   await t.test(
     'should call createComment with correct arguments for linked issues with npm link',
     async () => {
-      setup()
-
       const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -179,11 +177,9 @@ test('notifyIssues tests', async t => {
     }
   )
 
-  await t.skip(
+  await t.test(
     'should call createComment with correct arguments for linked issues without npm link',
     async () => {
-      setup()
-
       const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -255,8 +251,6 @@ test('notifyIssues tests', async t => {
   await t.test(
     "shouldn't fail if createComment on an issue fails",
     async () => {
-      setup()
-
       const releaseNotes = `
       ## What's Changed\n +
       * chore 15 by @people in https://github.com/owner/repo/pull/13\n
