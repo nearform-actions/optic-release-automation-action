@@ -1,7 +1,7 @@
 'use strict'
 
 const { test } = require('node:test')
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
 const transformCommitMessage = require('../src/utils/commitMessage')
 
 test('Handles normal commit messages', async () => {

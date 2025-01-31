@@ -1,7 +1,7 @@
 'use strict'
 
 const { test } = require('node:test')
-const assert = require('node:assert')
+const assert = require('node:assert/strict')
 const { ZIP_EXTENSION } = require('../src/const.js')
 
 const DEFAULT_INPUT_DATA = {
