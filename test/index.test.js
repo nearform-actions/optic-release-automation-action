@@ -212,7 +212,7 @@ test('index tests', async t => {
         '--preid=',
         'major',
       ])
-      assert.equal(newVersion, '3.0.0')
+      assert.strictEqual(newVersion, '3.0.0')
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -231,7 +231,7 @@ test('index tests', async t => {
 
       sinon.assert.notCalled(stubs.bumpStub)
       sinon.assert.calledTwice(stubs.execWithOutputStub)
-      assert.equal(newVersion, '3.1.1')
+      assert.strictEqual(newVersion, '3.1.1')
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -255,7 +255,7 @@ test('index tests', async t => {
       '--preid=',
       'major',
     ])
-    assert.equal(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '3.0.0')
     Object.values(mocks).forEach(mock => mock.restore())
   })
 
@@ -278,7 +278,7 @@ test('index tests', async t => {
       '--preid=',
       'minor',
     ])
-    assert.equal(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '3.0.0')
     Object.values(mocks).forEach(mock => mock.restore())
   })
 
@@ -301,7 +301,7 @@ test('index tests', async t => {
       '--preid=',
       'patch',
     ])
-    assert.equal(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '3.0.0')
     Object.values(mocks).forEach(mock => mock.restore())
   })
 
@@ -330,7 +330,7 @@ test('index tests', async t => {
         '--preid=',
         'patch',
       ])
-      assert.equal(newVersion, '3.0.0')
+      assert.strictEqual(newVersion, '3.0.0')
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -361,7 +361,7 @@ test('index tests', async t => {
         '--preid=',
         'patch',
       ])
-      assert.equal(newVersion, '3.0.0')
+      assert.strictEqual(newVersion, '3.0.0')
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -409,7 +409,7 @@ test('index tests', async t => {
         'npm',
         ['version', '--no-git-tag-version', '--preid=', 'patch']
       )
-      assert.deepEqual(newVersion, '3.0.0')
+      assert.deepStrictEqual(newVersion, '3.0.0')
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )

@@ -82,7 +82,7 @@ test('ngrok otp tests', async t => {
     )
 
     const otp = await otpPromise
-    assert.equal(otp, '123456', 'should return submitted OTP')
+    assert.strictEqual(otp, '123456', 'should return submitted OTP')
     Object.values(mocks).forEach(mock => mock.restore())
   })
 
@@ -200,12 +200,12 @@ test('ngrok otp tests', async t => {
         sendSpy.calledWith('Error loading HTML page'),
         'should send error message'
       )
-      assert.equal(
+      assert.strictEqual(
         codeSpy.firstCall.args[0],
         500,
         'should set correct error status code'
       )
-      assert.equal(
+      assert.strictEqual(
         sendSpy.firstCall.args[0],
         'Error loading HTML page',
         'should send correct error message'

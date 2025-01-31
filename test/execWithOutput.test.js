@@ -123,13 +123,13 @@ test('execWithOutput tests', async t => {
 
     const envInExec = execStub.firstCall.lastArg.env
 
-    assert.deepEqual(
+    assert.deepStrictEqual(
       envInExec.ACTIONS_ID_TOKEN_REQUEST_URL,
       ACTIONS_ID_TOKEN_REQUEST_URL
     )
-    assert.deepEqual(envInExec.GITHUB_EVENT_NAME, GITHUB_EVENT_NAME)
-    assert.equal(envInExec.INPUT_NPM_TOKEN, undefined)
-    assert.equal(envInExec.INPUT_OPTIC_TOKEN, undefined)
+    assert.deepStrictEqual(envInExec.GITHUB_EVENT_NAME, GITHUB_EVENT_NAME)
+    assert.strictEqual(envInExec.INPUT_NPM_TOKEN, undefined)
+    assert.strictEqual(envInExec.INPUT_OPTIC_TOKEN, undefined)
     assert.ok(envInExec.NODE)
     execMock.restore()
   })
@@ -139,13 +139,13 @@ test('execWithOutput tests', async t => {
     const redactedUndefinedArray = redactConfidentialArguments(undefined)
     const redactedNullArray = redactConfidentialArguments(null)
 
-    assert.equal(Array.isArray(redactedBlankArray), true)
-    assert.equal(Array.isArray(redactedUndefinedArray), true)
-    assert.equal(Array.isArray(redactedNullArray), true)
+    assert.strictEqual(Array.isArray(redactedBlankArray), true)
+    assert.strictEqual(Array.isArray(redactedUndefinedArray), true)
+    assert.strictEqual(Array.isArray(redactedNullArray), true)
 
-    assert.equal(redactedBlankArray.length, 0)
-    assert.equal(redactedUndefinedArray.length, 0)
-    assert.equal(redactedNullArray.length, 0)
+    assert.strictEqual(redactedBlankArray.length, 0)
+    assert.strictEqual(redactedUndefinedArray.length, 0)
+    assert.strictEqual(redactedNullArray.length, 0)
   })
 
   await t.test('Valid arguments inputs should pass', async () => {
@@ -161,75 +161,75 @@ test('execWithOutput tests', async t => {
     const redactedArray3 = redactConfidentialArguments(arrayWithOTPAtEnd)
     const redactedArray4 = redactConfidentialArguments(args)
 
-    assert.equal(
+    assert.strictEqual(
       Array.isArray(redactedArray1),
       true,
       'Failed - [Array with OTP] - Output Not An Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray1.length,
       arrayWithOTP.length - 2,
       'Failed - [Array with OTP] - Output Array Length not matching>>'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray1.includes('--otp'),
       false,
       'Failed - [Array with OTP] - OTP Keyword is found in Output Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray1.includes(otp),
       false,
       'Failed - [Array with OTP] - OTP Value is found in Output Array'
     )
 
-    assert.equal(
+    assert.strictEqual(
       Array.isArray(redactedArray2),
       true,
       'Failed - [Array with OTP in start] - Output Not An Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray2.length,
       arrayWithOTPInStart.length - 2,
       'Failed - [Array with OTP in start] - Output Array Length not matching'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray2.includes('--otp'),
       false,
       'Failed - [Array with OTP in start] - OTP Keyword is found in Output Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray2.includes(otp),
       false,
       'Failed - [Array with OTP in start] - OTP Value is found in Output Array'
     )
 
-    assert.equal(
+    assert.strictEqual(
       Array.isArray(redactedArray3),
       true,
       'Failed - [Array with OTP in end] - Output Not An Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray3.length,
       arrayWithOTPAtEnd.length - 2,
       'Failed - [Array with OTP in end] - Output Array Length not matching'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray3.includes('--otp'),
       false,
       'Failed - [Array with OTP in end] - OTP Keyword is found in Output Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray3.includes(otp),
       false,
       'Failed - [Array with OTP in end] - OTP Value is found in Output Array'
     )
 
-    assert.equal(
+    assert.strictEqual(
       Array.isArray(redactedArray4),
       true,
       'Failed - [Array with no OTP] - Output Not An Array'
     )
-    assert.equal(
+    assert.strictEqual(
       redactedArray4.length,
       args.length,
       'Failed - [Array with no OTP] - Output Array Length not matching'
@@ -250,12 +250,12 @@ test('execWithOutput tests', async t => {
       await assert.rejects(
         () => execWithOutputModule.execWithOutput('ls', arrayWithOTP),
         error => {
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf('--otp'),
             -1,
             'Failed - [Array with OTP] - OTP Keyword is found in Error Output'
           )
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf(otp),
             -1,
             'Failed - [Array with OTP] - OTP Value is found in Error Output'
@@ -267,12 +267,12 @@ test('execWithOutput tests', async t => {
       await assert.rejects(
         () => execWithOutputModule.execWithOutput('ls', arrayWithOTPInStart),
         error => {
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf('--otp'),
             -1,
             'Failed - [Array with OTP in start] - OTP Keyword is found in Error Output'
           )
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf(otp),
             -1,
             'Failed - [Array with OTP in start] - OTP Value is found in Error Output'
@@ -284,12 +284,12 @@ test('execWithOutput tests', async t => {
       await assert.rejects(
         () => execWithOutputModule.execWithOutput('ls', arrayWithOTPAtEnd),
         error => {
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf('--otp'),
             -1,
             'Failed - [Array with OTP in end] - OTP Keyword is found in Error Output'
           )
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf(otp),
             -1,
             'Failed - [Array with OTP in end] - OTP Value is found in Error Output'
@@ -301,12 +301,12 @@ test('execWithOutput tests', async t => {
       await assert.rejects(
         () => execWithOutputModule.execWithOutput('ls', args),
         error => {
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf('--tag') > -1,
             true,
             'Failed - [Array without OTP] - Expected Keyword is not found in Error Output'
           )
-          assert.equal(
+          assert.strictEqual(
             error.message.indexOf('latest') > -1,
             true,
             'Failed - [Array without OTP] - Expected Value is not found in Error Output'

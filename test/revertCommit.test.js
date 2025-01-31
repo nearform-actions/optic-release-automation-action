@@ -30,7 +30,7 @@ test('revertCommit tests', async t => {
     const baseRef = 'master'
     await revertCommitProxy.revertCommit(baseRef)
 
-    assert.equal(execWithOutputStub.callCount, 2)
+    assert.strictEqual(execWithOutputStub.callCount, 2)
 
     sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
       'revert',

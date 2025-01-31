@@ -46,7 +46,7 @@ test('releaseNotes tests', async t => {
     const result = getPrNumbersFromReleaseNotes(testReleaseNotes)
     const expected = ['13', '15', '16', '18', '42', '50', '52', '53']
 
-    assert.deepEqual(result, expected)
+    assert.deepStrictEqual(result, expected)
   })
 
   await t.test('Should return truncated PR body', async () => {

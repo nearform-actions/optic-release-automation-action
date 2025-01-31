@@ -9,7 +9,6 @@ const {
   checkIsSupported,
   checkPermissions,
   getNpmVersion,
-  // getAccessAdjustment needs proxyquire to mock internal package.json getter results
 } = require('../src/utils/provenance')
 
 const MINIMUM_VERSION = '9.5.0'
@@ -44,7 +43,7 @@ test('provenance tests', async t => {
   await t.test('getNpmVersion can get a real NPM version number', async () => {
     // const { getNpmVersion } = require('../src/utils/provenance')
     const npmVersion = await getNpmVersion()
-    assert.equal(typeof npmVersion, 'string')
+    assert.strictEqual(typeof npmVersion, 'string')
     assert.ok(semver.satisfies(npmVersion, '>0.0.1'))
   })
 
@@ -122,7 +121,7 @@ test('provenance tests', async t => {
         local: { name: unscopedPackageName },
         published: null,
       })
-      assert.deepEqual(await getAccessAdjustment(), { access: 'public' })
+      assert.deepStrictEqual(await getAccessAdjustment(), { access: 'public' })
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -135,7 +134,10 @@ test('provenance tests', async t => {
         local: { name: unscopedPackageName },
         published: null,
       })
-      assert.equal(await getAccessAdjustment({ access: 'public' }), undefined)
+      assert.strictEqual(
+        await getAccessAdjustment({ access: 'public' }),
+        undefined
+      )
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -151,7 +153,7 @@ test('provenance tests', async t => {
         },
         published: null,
       })
-      assert.equal(await getAccessAdjustment(), undefined)
+      assert.strictEqual(await getAccessAdjustment(), undefined)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -164,7 +166,7 @@ test('provenance tests', async t => {
         local: { name: scopedPackageName },
         published: null,
       })
-      assert.equal(await getAccessAdjustment(), undefined)
+      assert.strictEqual(await getAccessAdjustment(), undefined)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -177,7 +179,7 @@ test('provenance tests', async t => {
         local: { name: unscopedPackageName },
         published: { name: unscopedPackageName },
       })
-      assert.equal(await getAccessAdjustment(), undefined)
+      assert.strictEqual(await getAccessAdjustment(), undefined)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -207,7 +209,7 @@ test('provenance tests', async t => {
 
       const publishOptions = { someOption: 'value' }
       const result = await getProvenanceOptions('9.6.0', publishOptions)
-      assert.deepEqual(result, { access: 'public' })
+      assert.deepStrictEqual(result, { access: 'public' })
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -226,7 +228,7 @@ test('provenance tests', async t => {
         .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
 
       const result = await getProvenanceOptions('9.6.0')
-      assert.equal(result, undefined)
+      assert.strictEqual(result, undefined)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )

@@ -30,7 +30,7 @@ test('tagVersion tests', async t => {
     const version = 'v3.0.0'
     await tagVersionProxy.tagVersionInGit(version)
 
-    assert.equal(execWithOutputStub.callCount, 2)
+    assert.strictEqual(execWithOutputStub.callCount, 2)
 
     sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
       'tag',

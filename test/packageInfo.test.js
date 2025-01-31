@@ -67,14 +67,14 @@ test('packageInfo tests', async t => {
     'getPublishedInfo does not get any info for this package',
     async () => {
       const info = await getPublishedInfo()
-      assert.equal(info, null)
+      assert.strictEqual(info, null)
     }
   )
 
   await t.test('getPublishedInfo parses any valid JSON it finds', async t => {
     const { packageInfo, mocks } = setupPublished({ t })
     const info = await packageInfo.getPublishedInfo()
-    assert.deepEqual(info, mockPackageInfo)
+    assert.deepStrictEqual(info, mockPackageInfo)
     Object.values(mocks).forEach(mock => mock.restore())
   })
 
@@ -87,7 +87,7 @@ test('packageInfo tests', async t => {
         error: new Error('code E404 - package not found'),
       })
       const info = await packageInfo.getPublishedInfo()
-      assert.equal(info, null)
+      assert.strictEqual(info, null)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -112,7 +112,7 @@ test('packageInfo tests', async t => {
         value: null,
       })
       const info = await packageInfo.getPublishedInfo()
-      assert.equal(info, null)
+      assert.strictEqual(info, null)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )
@@ -133,8 +133,8 @@ test('packageInfo tests', async t => {
     'getLocalInfo gets real name and stable properties of this package',
     async () => {
       const info = getLocalInfo()
-      assert.equal(info.name, 'optic-release-automation-action')
-      assert.equal(info.license, 'MIT')
+      assert.strictEqual(info.name, 'optic-release-automation-action')
+      assert.strictEqual(info.license, 'MIT')
     }
   )
 
@@ -143,7 +143,7 @@ test('packageInfo tests', async t => {
     async t => {
       const { packageInfo, mocks } = setupLocal({ t })
       const info = packageInfo.getLocalInfo()
-      assert.deepEqual(info, mockPackageInfo)
+      assert.deepStrictEqual(info, mockPackageInfo)
       Object.values(mocks).forEach(mock => mock.restore())
     }
   )

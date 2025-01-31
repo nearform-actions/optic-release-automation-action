@@ -918,7 +918,7 @@ test('release tests', async t => {
         },
       })
 
-      assert.deepEqual(stubs.execWithOutputStub.getCall(0).args, [
+      assert.deepStrictEqual(stubs.execWithOutputStub.getCall(0).args, [
         'git',
         ['push', 'origin', '--delete', 'release/v5.1.3'],
       ])
