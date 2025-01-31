@@ -7,7 +7,12 @@ const core = require('@actions/core')
 const setup = ({ t }) => {
   const coreStub = sinon.stub(core)
   const coreMock = t.mock.module('@actions/core', {
-    namedExports: coreStub,
+    namedExports: {
+      debug: coreStub.debug,
+      error: coreStub.error,
+      info: coreStub.info,
+      warning: coreStub.warning,
+    },
   })
 
   const logger = require('../src/log')
