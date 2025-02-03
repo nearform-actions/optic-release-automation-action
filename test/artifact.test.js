@@ -55,7 +55,7 @@ const setup = ({ t, throwsError }) => {
   return { attachArtifactModule, archiverMock, fsMock, githubMock }
 }
 
-describe('artifact tests', async t => {
+describe('artifact tests', async () => {
   beforeEach(() => {
     delete require.cache[require.resolve('../src/utils/artifact.js')]
   })
