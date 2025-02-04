@@ -13,20 +13,8 @@ const {
 const { mockModule } = require('./mockModule.js')
 
 const MINIMUM_VERSION = '9.5.0'
-// const setup = ({ local, published }) => {
-//   const packageInfoMock = mockModule('../src/utils/packageInfo.js', {
-//     namedExports: {
-//       getPublishedInfo: async () => published,
-//       getLocalInfo: () => local,
-//     },
-//   })
-
-//   return {
-//     getAccessAdjustment: provenance.getAccessAdjustment,
-//     getProvenanceOptions: provenance.getProvenanceOptions,
-//     mocks: { packageInfoMock },
-//   }
-// }
+const unscopedPackageName = 'unscoped-fake-package'
+const scopedPackageName = '@scoped/fake-package'
 
 const setupAccessAdjustment = ({ local, published }) => {
   const { getAccessAdjustment } = mockModule('../src/utils/provenance.js', {
@@ -44,9 +32,6 @@ describe('provenance tests', async () => {
   afterEach(() => {
     sinon.restore()
   })
-
-  const unscopedPackageName = 'unscoped-fake-package'
-  const scopedPackageName = '@scoped/fake-package'
 
   it('getNpmVersion can get a real NPM version number', async () => {
     const npmVersion = await getNpmVersion()
@@ -182,5 +167,22 @@ describe('provenance tests', async () => {
 
     const result = await getProvenanceOptions('9.6.0')
     assert.strictEqual(result, undefined)
+  })
+
+  it('getProvenanceOptions returns whatever getAccessAdjustment returns', async () => {
+    const getProvenanceOptions = mockModule('../src/utils/provenance.js', {
+      '../src/utils/packageInfo.js': {
+        namedExports: {
+          getPublishedInfo: async () => null,
+          getLocalInfo: () => ({ name: 'unscoped-package' }),
+        },
+      },
+    }).getProvenanceOptions
+
+    sinon
+      .stub(process, 'env')
+      .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
+    const result = await getProvenanceOptions('9.6.1', {})
+    assert.deepStrictEqual(result, { access: 'public' })
   })
 })
