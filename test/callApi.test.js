@@ -1,25 +1,30 @@
 'use strict'
 
-const { describe, it, afterEach } = require('node:test')
-const sinon = require('sinon')
+const { describe, it, mock } = require('node:test')
+const assert = require('node:assert/strict')
 const actionLog = require('../src/log.js')
 const { mockModule } = require('./mockModule.js')
 
+const mockAllMethods = obj =>
+  Object.fromEntries(Object.keys(obj).map(key => [key, mock.fn()]))
+
 const setup = ({ status }) => {
-  const logStub = sinon.stub(actionLog)
-  const fetchStub = sinon.stub()
+  const logStub = mockAllMethods(actionLog)
+  const fetchStub = mock.fn(() =>
+    Promise.resolve({
+      status,
+      get json() {
+        return () => {}
+      },
+    })
+  )
 
   const callApiProxy = mockModule('../src/utils/callApi.js', {
     '../src/log.js': {
       defaultExport: logStub,
     },
     'node-fetch': {
-      defaultExport: fetchStub.resolves({
-        status,
-        get json() {
-          return () => {}
-        },
-      }),
+      defaultExport: fetchStub,
     },
   })
 
@@ -27,10 +32,6 @@ const setup = ({ status }) => {
 }
 
 describe('callApi tests', async () => {
-  afterEach(() => {
-    sinon.restore()
-  })
-
   it('Call api warns if code is not 200', async () => {
     const { logStub, callApiProxy } = setup({
       status: 401,
@@ -45,7 +46,7 @@ describe('callApi tests', async () => {
         'api-url': 'whatever',
       }
     )
-    sinon.assert.calledOnce(logStub.logWarning)
+    assert.strictEqual(logStub.logWarning.mock.calls.length, 1)
   })
 
   it('Call api does not warn if code is 200', async () => {
@@ -60,7 +61,7 @@ describe('callApi tests', async () => {
       },
       { 'api-url': 'whatever' }
     )
-    sinon.assert.notCalled(logStub.logWarning)
+    assert.strictEqual(logStub.logWarning.mock.calls.length, 0)
   })
 
   it('Call api does not append slash to api url if present', async () => {
@@ -75,7 +76,8 @@ describe('callApi tests', async () => {
       },
       { 'api-url': 'whatever/' }
     )
-    sinon.assert.calledWith(fetchStub, 'whatever/release')
+    assert.strictEqual(fetchStub.mock.calls.length, 1)
+    assert.strictEqual(fetchStub.mock.calls[0].arguments[0], 'whatever/release')
   })
 
   it('Call api appends slash to api url if not present', async () => {
@@ -90,6 +92,7 @@ describe('callApi tests', async () => {
       },
       { 'api-url': 'whatever' }
     )
-    sinon.assert.calledWith(fetchStub, 'whatever/release')
+    assert.strictEqual(fetchStub.mock.calls.length, 1)
+    assert.strictEqual(fetchStub.mock.calls[0].arguments[0], 'whatever/release')
   })
 })
