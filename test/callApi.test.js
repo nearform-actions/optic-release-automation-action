@@ -1,46 +1,41 @@
 'use strict'
 
-const { test } = require('node:test')
+const { describe, it, afterEach } = require('node:test')
 const sinon = require('sinon')
 const actionLog = require('../src/log.js')
+const { mockModule } = require('./mockModule.js')
 
-const setup = ({ t, status }) => {
+const setup = ({ status }) => {
   const logStub = sinon.stub(actionLog)
   const fetchStub = sinon.stub()
 
-  const fetchMock = t.mock.module('node-fetch', {
-    defaultExport: fetchStub.resolves({
-      status,
-      get json() {
-        return () => {}
-      },
-    }),
+  const callApiProxy = mockModule('../src/utils/callApi.js', {
+    '../src/log.js': {
+      defaultExport: logStub,
+    },
+    'node-fetch': {
+      defaultExport: fetchStub.resolves({
+        status,
+        get json() {
+          return () => {}
+        },
+      }),
+    },
   })
 
-  const logMock = t.mock.module('../src/log.js', {
-    defaultExport: logStub,
-  })
-
-  const callApiModule = require('../src/utils/callApi.js')
-  return { logStub, callApiModule, fetchMock, logMock, fetchStub }
+  return { logStub, callApiProxy, fetchStub }
 }
 
-test('callApi tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/utils/callApi')]
-  })
-
-  t.afterEach(() => {
+describe('callApi tests', async () => {
+  afterEach(() => {
     sinon.restore()
   })
 
-  // done
-  await t.test('Call api warns if code is not 200', async t => {
-    const { logStub, callApiModule, fetchMock, logMock } = setup({
-      t,
+  it('Call api warns if code is not 200', async () => {
+    const { logStub, callApiProxy } = setup({
       status: 401,
     })
-    await callApiModule.callApi(
+    await callApiProxy.callApi(
       {
         endpoint: 'release',
         method: 'PATCH',
@@ -51,16 +46,13 @@ test('callApi tests', async t => {
       }
     )
     sinon.assert.calledOnce(logStub.logWarning)
-    fetchMock.restore()
-    logMock.restore()
   })
 
-  await t.test('Call api does not warn if code is 200', async t => {
-    const { logStub, callApiModule, fetchMock, logMock } = setup({
-      t,
+  it('Call api does not warn if code is 200', async () => {
+    const { logStub, callApiProxy } = setup({
       status: 200,
     })
-    await callApiModule.callApi(
+    await callApiProxy.callApi(
       {
         endpoint: 'release',
         method: 'PATCH',
@@ -69,37 +61,28 @@ test('callApi tests', async t => {
       { 'api-url': 'whatever' }
     )
     sinon.assert.notCalled(logStub.logWarning)
-    fetchMock.restore()
-    logMock.restore()
   })
 
-  await t.test(
-    'Call api does not append slash to api url if present',
-    async t => {
-      const { fetchStub, callApiModule, fetchMock, logMock } = setup({
-        t,
-        status: 200,
-      })
-      await callApiModule.callApi(
-        {
-          endpoint: 'release',
-          method: 'PATCH',
-          body: {},
-        },
-        { 'api-url': 'whatever/' }
-      )
-      sinon.assert.calledWith(fetchStub, 'whatever/release')
-      fetchMock.restore()
-      logMock.restore()
-    }
-  )
-
-  await t.test('Call api appends slash to api url if not present', async t => {
-    const { fetchStub, callApiModule, fetchMock, logMock } = setup({
-      t,
+  it('Call api does not append slash to api url if present', async () => {
+    const { fetchStub, callApiProxy } = setup({
       status: 200,
     })
-    await callApiModule.callApi(
+    await callApiProxy.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      { 'api-url': 'whatever/' }
+    )
+    sinon.assert.calledWith(fetchStub, 'whatever/release')
+  })
+
+  it('Call api appends slash to api url if not present', async () => {
+    const { fetchStub, callApiProxy } = setup({
+      status: 200,
+    })
+    await callApiProxy.callApi(
       {
         endpoint: 'release',
         method: 'PATCH',
@@ -108,7 +91,5 @@ test('callApi tests', async t => {
       { 'api-url': 'whatever' }
     )
     sinon.assert.calledWith(fetchStub, 'whatever/release')
-    fetchMock.restore()
-    logMock.restore()
   })
 })

@@ -1,32 +1,30 @@
 'use strict'
 
-const { test } = require('node:test')
+const { afterEach, describe, it } = require('node:test')
 const assert = require('node:assert/strict')
 const sinon = require('sinon')
+const { mockModule } = require('./mockModule.js')
 
-const setup = ({ t }) => {
+const setup = () => {
   const execWithOutputStub = sinon.stub()
-  const execMock = t.mock.module('../src/utils/execWithOutput.js', {
-    namedExports: {
-      execWithOutput: execWithOutputStub,
+  const revertCommitProxy = mockModule('../src/utils/revertCommit', {
+    '../src/utils/execWithOutput.js': {
+      namedExports: {
+        execWithOutput: execWithOutputStub,
+      },
     },
   })
 
-  const revertCommitProxy = require('../src/utils/revertCommit')
-  return { execWithOutputStub, revertCommitProxy, execMock }
+  return { execWithOutputStub, revertCommitProxy }
 }
 
-test('revertCommit tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/utils/revertCommit')]
-  })
-
-  t.afterEach(() => {
+describe('revertCommit tests', async () => {
+  afterEach(() => {
     sinon.restore()
   })
 
-  await t.test('Revert commit', async t => {
-    const { revertCommitProxy, execWithOutputStub, execMock } = setup({ t })
+  it('Revert commit', async () => {
+    const { revertCommitProxy, execWithOutputStub } = setup()
     const baseRef = 'master'
     await revertCommitProxy.revertCommit(baseRef)
 
@@ -41,6 +39,5 @@ test('revertCommit tests', async t => {
       'origin',
       `${baseRef}`,
     ])
-    execMock.restore()
   })
 })

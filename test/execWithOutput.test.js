@@ -1,73 +1,63 @@
 'use strict'
 
-const { test } = require('node:test')
+const { it, describe, afterEach } = require('node:test')
 const assert = require('node:assert/strict')
 const sinon = require('sinon')
 const { redactConfidentialArguments } = require('../src/utils/execWithOutput')
+const { mockModule } = require('./mockModule.js')
 
-const setup = ({ t }) => {
+const setup = () => {
   const execStubInner = sinon.stub()
-  const execMock = t.mock.module('@actions/exec', {
-    namedExports: {
-      exec: execStubInner,
-    },
-  })
 
-  const execWithOutputModule = require('../src/utils/execWithOutput')
-  return { execStub: execStubInner, execWithOutputModule, execMock }
+  return {
+    execStub: execStubInner,
+    execWithOutputModule: mockModule('../src/utils/execWithOutput.js', {
+      '@actions/exec': {
+        namedExports: {
+          exec: execStubInner,
+        },
+      },
+    }),
+  }
 }
+const { execStub, execWithOutputModule } = setup()
 
-test('execWithOutput tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/utils/execWithOutput')]
-  })
-
-  t.afterEach(() => {
+describe('execWithOutput tests', async () => {
+  afterEach(() => {
     sinon.restore()
   })
 
-  await t.test(
-    'resolves with output of the exec command if exit code is 0',
-    async t => {
-      const { execStub, execWithOutputModule, execMock } = setup({ t })
-      const output = 'output'
+  it('resolves with output of the exec command if exit code is 0', async () => {
+    const output = 'output'
 
-      execStub.callsFake((_, __, options) => {
-        options.listeners.stdout(Buffer.from(output, 'utf8'))
-        return Promise.resolve(0)
-      })
+    execStub.callsFake((_, __, options) => {
+      options.listeners.stdout(Buffer.from(output, 'utf8'))
+      return Promise.resolve(0)
+    })
 
-      await assert.doesNotReject(
-        execWithOutputModule.execWithOutput('ls', ['-al']),
-        output
-      )
-      sinon.assert.calledWithExactly(execStub, 'ls', ['-al'], sinon.match({}))
-      execMock.restore()
-    }
-  )
+    await assert.doesNotReject(
+      execWithOutputModule.execWithOutput('ls', ['-al']),
+      output
+    )
+    sinon.assert.calledWithExactly(execStub, 'ls', ['-al'], sinon.match({}))
+  })
 
-  await t.test(
-    'Throws with output of the exec command if exit code is not 0',
-    async t => {
-      const { execStub, execWithOutputModule, execMock } = setup({ t })
-      const output = 'output'
+  it('Throws with output of the exec command if exit code is not 0', async () => {
+    const output = 'output'
 
-      execStub.callsFake((_, __, options) => {
-        options.listeners.stderr(Buffer.from(output, 'utf8'))
-        return Promise.reject(new Error())
-      })
+    execStub.callsFake((_, __, options) => {
+      options.listeners.stderr(Buffer.from(output, 'utf8'))
+      return Promise.reject(new Error())
+    })
 
-      await assert.rejects(
-        execWithOutputModule.execWithOutput('ls', ['-al']),
-        'Error: ls -al returned code 1  \nSTDOUT:  \nSTDERR: ${output}'
-      )
-      sinon.assert.calledWithExactly(execStub, 'ls', ['-al'], sinon.match({}))
-      execMock.restore()
-    }
-  )
+    await assert.rejects(
+      execWithOutputModule.execWithOutput('ls', ['-al']),
+      'Error: ls -al returned code 1  \nSTDOUT:  \nSTDERR: ${output}'
+    )
+    sinon.assert.calledWithExactly(execStub, 'ls', ['-al'], sinon.match({}))
+  })
 
-  await t.test('provides cwd to exec function', async t => {
-    const { execStub, execWithOutputModule, execMock } = setup({ t })
+  it('provides cwd to exec function', async () => {
     const cwd = './'
 
     execStub.resolves(0)
@@ -78,11 +68,9 @@ test('execWithOutput tests', async t => {
       [],
       sinon.match({ cwd })
     )
-    execMock.restore()
   })
 
-  await t.test('rejects if exit code is not 0', async t => {
-    const { execStub, execWithOutputModule, execMock } = setup({ t })
+  it('rejects if exit code is not 0', async () => {
     const errorOutput = 'error output'
 
     execStub.callsFake((_, __, options) => {
@@ -99,11 +87,9 @@ test('execWithOutput tests', async t => {
         return true
       }
     )
-
-    execMock.restore()
   })
 
-  await t.test('passes env vars excluding `INPUT_*` env vars', async t => {
+  it('passes env vars excluding `INPUT_*` env vars', async () => {
     const INPUT_NPM_TOKEN = 'some-secret-value'
     const INPUT_OPTIC_TOKEN = 'another-secret-value'
     const ACTIONS_ID_TOKEN_REQUEST_URL = 'https://example.com'
@@ -116,12 +102,11 @@ test('execWithOutput tests', async t => {
       ACTIONS_ID_TOKEN_REQUEST_URL,
       GITHUB_EVENT_NAME,
     })
+    const withEnv = setup()
+    withEnv.execStub.resolves(0)
+    await withEnv.execWithOutputModule.execWithOutput('command', [])
 
-    const { execStub, execWithOutputModule, execMock } = setup({ t })
-    execStub.resolves(0)
-    await execWithOutputModule.execWithOutput('command', [])
-
-    const envInExec = execStub.firstCall.lastArg.env
+    const envInExec = withEnv.execStub.firstCall.lastArg.env
 
     assert.deepStrictEqual(
       envInExec.ACTIONS_ID_TOKEN_REQUEST_URL,
@@ -131,10 +116,9 @@ test('execWithOutput tests', async t => {
     assert.strictEqual(envInExec.INPUT_NPM_TOKEN, undefined)
     assert.strictEqual(envInExec.INPUT_OPTIC_TOKEN, undefined)
     assert.ok(envInExec.NODE)
-    execMock.restore()
   })
 
-  await t.test('Invalid arguments inputs should not fail', async () => {
+  it('Invalid arguments inputs should not fail', async () => {
     const redactedBlankArray = redactConfidentialArguments([])
     const redactedUndefinedArray = redactConfidentialArguments(undefined)
     const redactedNullArray = redactConfidentialArguments(null)
@@ -148,7 +132,7 @@ test('execWithOutput tests', async t => {
     assert.strictEqual(redactedNullArray.length, 0)
   })
 
-  await t.test('Valid arguments inputs should pass', async () => {
+  it('Valid arguments inputs should pass', async () => {
     const args = ['publish', '--tag', 'latest', '--access', 'public']
     const otp = '1827Sdys7'
 
@@ -236,86 +220,80 @@ test('execWithOutput tests', async t => {
     )
   })
 
-  await t.test(
-    'Otp should be redacted from args in case of an error',
-    async t => {
-      const { execWithOutputModule, execMock } = setup({ t })
-      const args = ['publish', '--tag', 'latest', '--access', 'public']
-      const otp = '872333'
+  it('Otp should be redacted from args in case of an error', async () => {
+    const args = ['publish', '--tag', 'latest', '--access', 'public']
+    const otp = '872333'
 
-      const arrayWithOTP = [...args.slice(0, 2), '--otp', otp, ...args.slice(2)]
-      const arrayWithOTPInStart = ['--otp', otp, ...args]
-      const arrayWithOTPAtEnd = [...args, '--otp', otp]
+    const arrayWithOTP = [...args.slice(0, 2), '--otp', otp, ...args.slice(2)]
+    const arrayWithOTPInStart = ['--otp', otp, ...args]
+    const arrayWithOTPAtEnd = [...args, '--otp', otp]
 
-      await assert.rejects(
-        () => execWithOutputModule.execWithOutput('ls', arrayWithOTP),
-        error => {
-          assert.strictEqual(
-            error.message.indexOf('--otp'),
-            -1,
-            'Failed - [Array with OTP] - OTP Keyword is found in Error Output'
-          )
-          assert.strictEqual(
-            error.message.indexOf(otp),
-            -1,
-            'Failed - [Array with OTP] - OTP Value is found in Error Output'
-          )
-          return true
-        }
-      )
+    await assert.rejects(
+      () => execWithOutputModule.execWithOutput('ls', arrayWithOTP),
+      error => {
+        assert.strictEqual(
+          error.message.indexOf('--otp'),
+          -1,
+          'Failed - [Array with OTP] - OTP Keyword is found in Error Output'
+        )
+        assert.strictEqual(
+          error.message.indexOf(otp),
+          -1,
+          'Failed - [Array with OTP] - OTP Value is found in Error Output'
+        )
+        return true
+      }
+    )
 
-      await assert.rejects(
-        () => execWithOutputModule.execWithOutput('ls', arrayWithOTPInStart),
-        error => {
-          assert.strictEqual(
-            error.message.indexOf('--otp'),
-            -1,
-            'Failed - [Array with OTP in start] - OTP Keyword is found in Error Output'
-          )
-          assert.strictEqual(
-            error.message.indexOf(otp),
-            -1,
-            'Failed - [Array with OTP in start] - OTP Value is found in Error Output'
-          )
-          return true
-        }
-      )
+    await assert.rejects(
+      () => execWithOutputModule.execWithOutput('ls', arrayWithOTPInStart),
+      error => {
+        assert.strictEqual(
+          error.message.indexOf('--otp'),
+          -1,
+          'Failed - [Array with OTP in start] - OTP Keyword is found in Error Output'
+        )
+        assert.strictEqual(
+          error.message.indexOf(otp),
+          -1,
+          'Failed - [Array with OTP in start] - OTP Value is found in Error Output'
+        )
+        return true
+      }
+    )
 
-      await assert.rejects(
-        () => execWithOutputModule.execWithOutput('ls', arrayWithOTPAtEnd),
-        error => {
-          assert.strictEqual(
-            error.message.indexOf('--otp'),
-            -1,
-            'Failed - [Array with OTP in end] - OTP Keyword is found in Error Output'
-          )
-          assert.strictEqual(
-            error.message.indexOf(otp),
-            -1,
-            'Failed - [Array with OTP in end] - OTP Value is found in Error Output'
-          )
-          return true
-        }
-      )
+    await assert.rejects(
+      () => execWithOutputModule.execWithOutput('ls', arrayWithOTPAtEnd),
+      error => {
+        assert.strictEqual(
+          error.message.indexOf('--otp'),
+          -1,
+          'Failed - [Array with OTP in end] - OTP Keyword is found in Error Output'
+        )
+        assert.strictEqual(
+          error.message.indexOf(otp),
+          -1,
+          'Failed - [Array with OTP in end] - OTP Value is found in Error Output'
+        )
+        return true
+      }
+    )
 
-      await assert.rejects(
-        () => execWithOutputModule.execWithOutput('ls', args),
-        error => {
-          assert.strictEqual(
-            error.message.indexOf('--tag') > -1,
-            true,
-            'Failed - [Array without OTP] - Expected Keyword is not found in Error Output'
-          )
-          assert.strictEqual(
-            error.message.indexOf('latest') > -1,
-            true,
-            'Failed - [Array without OTP] - Expected Value is not found in Error Output'
-          )
-          return true
-        }
-      )
-
-      execMock.restore()
-    }
-  )
+    await assert.rejects(
+      () => execWithOutputModule.execWithOutput('ls', args),
+      error => {
+        assert.strictEqual(
+          error.message.indexOf('--tag') > -1,
+          true,
+          'Failed - [Array without OTP] - Expected Keyword is not found in Error Output'
+        )
+        assert.strictEqual(
+          error.message.indexOf('latest') > -1,
+          true,
+          'Failed - [Array without OTP] - Expected Value is not found in Error Output'
+        )
+        return true
+      }
+    )
+  })
 })

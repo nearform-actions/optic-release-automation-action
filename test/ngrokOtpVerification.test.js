@@ -1,13 +1,15 @@
 'use strict'
 
-const { test } = require('node:test')
+const { describe, afterEach, it } = require('node:test')
 const assert = require('node:assert/strict')
 const sinon = require('sinon')
+const { mockModule } = require('./mockModule.js')
 
-const setup = ({ t }) => {
+const setup = () => {
   const logInfoStub = sinon.stub()
   const logErrorStub = sinon.stub()
 
+  // Mock Fastify instance
   const mockApp = {
     get: sinon.stub(),
     post: sinon.stub(),
@@ -18,46 +20,85 @@ const setup = ({ t }) => {
 
   const fastifyStub = sinon.stub().returns(mockApp)
 
-  const fastifyMock = t.mock.module('fastify', {
-    defaultExport: fastifyStub,
-  })
-
-  const logMock = t.mock.module('../src/log.js', {
-    namedExports: {
-      logInfo: logInfoStub,
-      logError: logErrorStub,
-    },
-  })
-
-  const ngrokMock = t.mock.module('../src/utils/getNgrok.js', {
-    defaultExport: async () => ({
-      connect: sinon.stub().resolves('https://test.ngrok.io'),
-      kill: sinon.stub().resolves(),
-    }),
-  })
-
-  const ngrokOtpVerificationProxy = require('../src/utils/ngrokOtpVerification')
+  const ngrokOtpVerificationProxy = mockModule(
+    '../src/utils/ngrokOtpVerification.js',
+    {
+      fastify: {
+        defaultExport: fastifyStub,
+      },
+      '../src/log.js': {
+        namedExports: {
+          logInfo: logInfoStub,
+          logError: logErrorStub,
+        },
+      },
+      '../src/utils/getNgrok.js': {
+        defaultExport: async () => ({
+          connect: sinon.stub().resolves('https://test.ngrok.io'),
+          kill: sinon.stub().resolves(),
+        }),
+      },
+    }
+  )
 
   return {
     logInfoStub,
     logErrorStub,
     mockApp,
     ngrokOtpVerificationProxy,
-    mocks: { fastifyMock, logMock, ngrokMock },
   }
 }
 
-test('ngrok otp tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/utils/ngrokOtpVerification')]
-  })
+// const setup = () => {
+//   const logInfoStub = sinon.stub()
+//   const logErrorStub = sinon.stub()
 
-  t.afterEach(() => {
+//   const mockApp = {
+//     get: sinon.stub(),
+//     post: sinon.stub(),
+//     register: sinon.stub(),
+//     listen: sinon.stub().resolves(),
+//     close: sinon.stub().resolves(),
+//   }
+
+//   const fastifyStub = sinon.stub().returns(mockApp)
+
+//   const fastifyMock = t.mock.module('fastify', {
+//     defaultExport: fastifyStub,
+//   })
+
+//   const logMock = t.mock.module('../src/log.js', {
+//     namedExports: {
+//       logInfo: logInfoStub,
+//       logError: logErrorStub,
+//     },
+//   })
+
+//   const ngrokMock = t.mock.module('../src/utils/getNgrok.js', {
+//     defaultExport: async () => ({
+//       connect: sinon.stub().resolves('https://test.ngrok.io'),
+//       kill: sinon.stub().resolves(),
+//     }),
+//   })
+
+//   const ngrokOtpVerificationProxy = require('../src/utils/ngrokOtpVerification')
+
+//   return {
+//     logInfoStub,
+//     logErrorStub,
+//     mockApp,
+//     ngrokOtpVerificationProxy,
+//     mocks: { fastifyMock, logMock, ngrokMock },
+//   }
+// }
+
+describe('ngrok otp tests', async () => {
+  afterEach(() => {
     sinon.restore()
   })
 
-  await t.test('Should successfully verify OTP', async t => {
-    const { ngrokOtpVerificationProxy, mockApp, mocks } = setup({ t })
+  it('Should successfully verify OTP', async () => {
+    const { ngrokOtpVerificationProxy, mockApp } = setup()
 
     let otpCallback
     mockApp.post.withArgs('/otp').callsFake((path, handler) => {
@@ -83,11 +124,10 @@ test('ngrok otp tests', async t => {
 
     const otp = await otpPromise
     assert.strictEqual(otp, '123456', 'should return submitted OTP')
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test('Should timeout after 5 minutes', async t => {
-    const { ngrokOtpVerificationProxy, logErrorStub, mocks } = setup({ t })
+  it('Should timeout after 5 minutes', async () => {
+    const { ngrokOtpVerificationProxy, logErrorStub } = setup()
 
     const clock = sinon.useFakeTimers()
 
@@ -106,12 +146,11 @@ test('ngrok otp tests', async t => {
       assert.ok(logErrorStub.calledWith('OTP submission timed out.'))
     } finally {
       clock.restore()
-      Object.values(mocks).forEach(mock => mock.restore())
     }
   })
 
-  await t.test('Should handle HTML template rendering', async t => {
-    const { ngrokOtpVerificationProxy, mockApp, mocks } = setup({ t })
+  it('Should handle HTML template rendering', async () => {
+    const { ngrokOtpVerificationProxy, mockApp } = setup()
 
     let renderedHtml
     let otpHandler
@@ -148,69 +187,64 @@ test('ngrok otp tests', async t => {
 
     assert.match(renderedHtml, /test-package/, 'should include package name')
     assert.match(renderedHtml, /v1.0.0/, 'should include package version')
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'Should handle the failure case when fastify app or html fails to load',
-    async t => {
-      const { ngrokOtpVerificationProxy, mockApp, mocks } = setup({ t })
+  it('Should handle the failure case when fastify app or html fails to load', async () => {
+    const { ngrokOtpVerificationProxy, mockApp } = setup()
 
-      let otpHandler
+    let otpHandler
 
-      mockApp.post.withArgs('/otp').callsFake((path, handler) => {
-        otpHandler = handler
-      })
+    mockApp.post.withArgs('/otp').callsFake((path, handler) => {
+      otpHandler = handler
+    })
 
-      const sendSpy = sinon.spy()
-      const codeSpy = sinon.stub().returns({ send: sendSpy })
+    const sendSpy = sinon.spy()
+    const codeSpy = sinon.stub().returns({ send: sendSpy })
 
-      mockApp.get.withArgs('/').callsFake((path, handler) => {
-        handler(
-          {},
-          {
-            type: () => ({
-              send: () => {
-                throw new Error('Mock send error')
-              },
-            }),
-            code: codeSpy,
-          }
-        )
-      })
-
-      const otpPromise = ngrokOtpVerificationProxy(
+    mockApp.get.withArgs('/').callsFake((path, handler) => {
+      handler(
+        {},
         {
-          name: 'test-package',
-          version: 'v1.0.0',
-        },
-        'ngrok-token'
-      )
-
-      setImmediate(() => {
-        if (otpHandler) {
-          otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
+          type: () => ({
+            send: () => {
+              throw new Error('Mock send error')
+            },
+          }),
+          code: codeSpy,
         }
-      })
+      )
+    })
 
-      await otpPromise
+    const otpPromise = ngrokOtpVerificationProxy(
+      {
+        name: 'test-package',
+        version: 'v1.0.0',
+      },
+      'ngrok-token'
+    )
 
-      assert.ok(codeSpy.calledWith(500), 'should set 500 status code')
-      assert.ok(
-        sendSpy.calledWith('Error loading HTML page'),
-        'should send error message'
-      )
-      assert.strictEqual(
-        codeSpy.firstCall.args[0],
-        500,
-        'should set correct error status code'
-      )
-      assert.strictEqual(
-        sendSpy.firstCall.args[0],
-        'Error loading HTML page',
-        'should send correct error message'
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+    setImmediate(() => {
+      if (otpHandler) {
+        otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
+      }
+    })
+
+    await otpPromise
+
+    assert.ok(codeSpy.calledWith(500), 'should set 500 status code')
+    assert.ok(
+      sendSpy.calledWith('Error loading HTML page'),
+      'should send error message'
+    )
+    assert.strictEqual(
+      codeSpy.firstCall.args[0],
+      500,
+      'should set correct error status code'
+    )
+    assert.strictEqual(
+      sendSpy.firstCall.args[0],
+      'Error loading HTML page',
+      'should send correct error message'
+    )
+  })
 })

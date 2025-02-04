@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('node:test')
+const { describe, it } = require('node:test')
 const assert = require('node:assert/strict')
 const _template = require('lodash.template')
 const fs = require('fs')
@@ -11,12 +11,8 @@ const {
   getPRBody,
 } = require('../src/utils/releaseNotes')
 
-test('releaseNotes tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/utils/releaseNotes')]
-  })
-
-  await t.test('Should return the correct PR numbers', async () => {
+describe('releaseNotes tests', async () => {
+  it('Should return the correct PR numbers', async () => {
     const testReleaseNotes = `
      ## Whats Changed\n +
      * chore 15 by @people in https://github.com/owner/repo/pull/13\n
@@ -49,7 +45,7 @@ test('releaseNotes tests', async t => {
     assert.deepStrictEqual(result, expected)
   })
 
-  await t.test('Should return truncated PR body', async () => {
+  it('Should return truncated PR body', async () => {
     const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
 
     const testReleaseNotes = `

@@ -1,10 +1,11 @@
 'use strict'
 
-const { test } = require('node:test')
+const { afterEach, describe, it } = require('node:test')
 const assert = require('node:assert/strict')
 const sinon = require('sinon')
 const core = require('@actions/core')
 const clone = require('lodash.clonedeep')
+const { mockModule } = require('./mockModule.js')
 
 const callApiAction = require('../src/utils/callApi.js')
 const artifactAction = require('../src/utils/artifact.js')
@@ -18,7 +19,7 @@ const TEST_LATEST_VERSION = '3.1.0'
 const TEST_VERSION = '3.1.1'
 const TEST_COMMIT_HASH = 'c86b0a35014a7036b245f81ff9de9bd738a5fe95'
 
-const setup = ({ t }) => {
+function setup() {
   const attachArtifactStub = sinon.stub(artifactAction, 'attach').resolves({
     artifact: {
       isPresent: true,
@@ -36,7 +37,6 @@ const setup = ({ t }) => {
   const execWithOutputStub = sinon
     .stub(execWithOutput, 'execWithOutput')
     .resolves(TEST_VERSION)
-
   execWithOutputStub
     .withArgs('git', ['rev-parse', 'HEAD'])
     .resolves(TEST_COMMIT_HASH)
@@ -71,23 +71,24 @@ const setup = ({ t }) => {
       body: TEST_RELEASE_NOTES,
     })
 
-  const execWithOutputMock = t.mock.module('../src/utils/execWithOutput.js', {
-    namedExports: {
-      execWithOutput: execWithOutputStub,
+  const openPr = mockModule('../src/openPr.js', {
+    '../src/utils/execWithOutput.js': {
+      namedExports: {
+        execWithOutput: execWithOutputStub,
+      },
+    },
+    '../src/utils/artifact.js': {
+      namedExports: {
+        attach: attachArtifactStub,
+      },
+    },
+    '@actions/core': {
+      namedExports: coreStub,
     },
   })
 
-  const artifactMock = t.mock.module('../src/utils/artifact.js', {
-    namedExports: {
-      attach: attachArtifactStub,
-    },
-  })
-
-  const coreMock = t.mock.module('@actions/core', {
-    namedExports: coreStub,
-  })
   return {
-    openPr: require('../src/openPr.js'),
+    openPr,
     stubs: {
       execWithOutputStub,
       callApiStub,
@@ -97,15 +98,8 @@ const setup = ({ t }) => {
       releasesFetchLatestReleaseStub,
       releasesGenerateReleaseNotesStub,
     },
-    mocks: {
-      // openPrMock,
-      execWithOutputMock,
-      artifactMock,
-      coreMock,
-    },
   }
 }
-
 const DEFAULT_ACTION_DATA = {
   packageVersion: TEST_VERSION,
   inputs: {
@@ -131,55 +125,43 @@ const DEFAULT_ACTION_DATA = {
   },
 }
 
-test('openPr tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/openPr')]
-  })
-
-  t.afterEach(() => {
+describe('openPr tests', async () => {
+  afterEach(() => {
     sinon.restore()
   })
 
-  await t.test(
-    'should trigger an error when the packageVersion is missing',
-    async t => {
-      const { openPr, mocks } = setup({ t })
+  it('should trigger an error when the packageVersion is missing', async () => {
+    const { openPr } = setup()
 
-      await assert.rejects(
-        openPr({
-          ...DEFAULT_ACTION_DATA,
-          packageVersion: undefined,
-        }),
-        /packageVersion is missing/
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test(
-    'should trigger an error if the branch already exists',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
-
-      const actionData = {
+    await assert.rejects(
+      openPr({
         ...DEFAULT_ACTION_DATA,
-        packageVersion: '1.2.3',
-      }
+        packageVersion: undefined,
+      }),
+      /packageVersion is missing/
+    )
+  })
 
-      stubs.execWithOutputStub
-        .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v1.2.3'])
-        .resolves('somehashhere          refs/heads/release/v1.2.3')
+  it('should trigger an error if the branch already exists', async () => {
+    const { openPr, stubs } = setup()
 
-      await assert.rejects(
-        openPr(actionData),
-        /Release branch release\/v1.2.3 already exists on the remote. {2}Please either delete it and run again, or select a different version/
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
+    const actionData = {
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: '1.2.3',
     }
-  )
 
-  await t.test('should create a new git branch', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
+    stubs.execWithOutputStub
+      .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v1.2.3'])
+      .resolves('somehashhere          refs/heads/release/v1.2.3')
+
+    await assert.rejects(
+      openPr(actionData),
+      /Release branch release\/v1.2.3 already exists on the remote. {2}Please either delete it and run again, or select a different version/
+    )
+  })
+
+  it('should create a new git branch', async () => {
+    const { openPr, stubs } = setup()
     await openPr(DEFAULT_ACTION_DATA)
 
     const branchName = `release/v${TEST_VERSION}`
@@ -203,11 +185,10 @@ test('openPr tests', async t => {
       'origin',
       branchName,
     ])
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test('should handle custom commit messages', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
+  it('should handle custom commit messages', async () => {
+    const { openPr, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.inputs['commit-message'] =
       '[{version}] The brand new {version} has been released'
@@ -230,104 +211,10 @@ test('openPr tests', async t => {
       'origin',
       branchName,
     ])
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'should trigger an error when the packageVersion is missing',
-    async t => {
-      const { openPr, mocks } = setup({ t })
-
-      await assert.rejects(
-        openPr({
-          ...DEFAULT_ACTION_DATA,
-          packageVersion: undefined,
-        }),
-        /packageVersion is missing/
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test(
-    'should trigger an error if the branch already exists',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
-
-      const actionData = {
-        ...DEFAULT_ACTION_DATA,
-        packageVersion: '1.2.3',
-      }
-
-      stubs.execWithOutputStub
-        .withArgs('git', ['ls-remote', '--heads', 'origin', 'release/v1.2.3'])
-        .resolves('somehashhere          refs/heads/release/v1.2.3')
-
-      await assert.rejects(
-        openPr(actionData),
-        /Release branch release\/v1.2.3 already exists on the remote. {2}Please either delete it and run again, or select a different version/
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test('should create a new git branch', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
-    await openPr(DEFAULT_ACTION_DATA)
-
-    const branchName = `release/v${TEST_VERSION}`
-
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'checkout',
-      '-b',
-      branchName,
-    ])
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'add',
-      '-A',
-    ])
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'commit',
-      '-m',
-      `Release v${TEST_VERSION}`,
-    ])
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'push',
-      'origin',
-      branchName,
-    ])
-    Object.values(mocks).forEach(mock => mock.restore())
-  })
-
-  await t.test('should handle custom commit messages', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
-    const data = clone(DEFAULT_ACTION_DATA)
-    data.inputs['commit-message'] =
-      '[{version}] The brand new {version} has been released'
-    await openPr(data)
-
-    const branchName = `release/v${TEST_VERSION}`
-
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'checkout',
-      '-b',
-      branchName,
-    ])
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'commit',
-      '-m',
-      `[v${TEST_VERSION}] The brand new v${TEST_VERSION} has been released`,
-    ])
-    sinon.assert.calledWithExactly(stubs.execWithOutputStub, 'git', [
-      'push',
-      'origin',
-      branchName,
-    ])
-    Object.values(mocks).forEach(mock => mock.restore())
-  })
-
-  await t.test('should work with a custom version-prefix', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
+  it('should work with a custom version-prefix', async () => {
+    const { openPr, stubs } = setup()
 
     const prData = {
       ...DEFAULT_ACTION_DATA,
@@ -390,51 +277,41 @@ test('openPr tests', async t => {
         head: `refs/heads/${branchName}`,
       },
     })
-
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'should call the release endpoint with a new version',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
-      await openPr(DEFAULT_ACTION_DATA)
+  it('should call the release endpoint with a new version', async () => {
+    const { openPr, stubs } = setup()
+    await openPr(DEFAULT_ACTION_DATA)
 
-      sinon.assert.calledWithExactly(
-        stubs.callApiStub,
-        {
-          method: 'POST',
-          endpoint: 'release',
-          body: {
-            version: `v${TEST_VERSION}`,
-            target: TEST_COMMIT_HASH,
-            generateReleaseNotes: false,
-            releaseNotes: TEST_RELEASE_NOTES,
-          },
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: false,
+          releaseNotes: TEST_RELEASE_NOTES,
         },
-        DEFAULT_ACTION_DATA.inputs
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  })
 
-  await t.test(
-    'should trigger an error if the release endpoint responds with an invalid draft release',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
+  it('should trigger an error if the release endpoint responds with an invalid draft release', async () => {
+    const { openPr, stubs } = setup()
 
-      stubs.callApiStub.resolves({})
+    stubs.callApiStub.resolves({})
 
-      await assert.rejects(
-        openPr(DEFAULT_ACTION_DATA),
-        /Unable to create draft release: API responded with a 200 status but no draft release returned. {2}Please clean up any artifacts \(draft release, release branch, etc.\) and try again/
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+    await assert.rejects(
+      openPr(DEFAULT_ACTION_DATA),
+      /Unable to create draft release: API responded with a 200 status but no draft release returned. {2}Please clean up any artifacts \(draft release, release branch, etc.\) and try again/
+    )
+  })
 
-  await t.test('should call the PR endpoint with a new version', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
+  it('should call the PR endpoint with a new version', async () => {
+    const { openPr, stubs } = setup()
     await openPr(DEFAULT_ACTION_DATA)
 
     const branchName = `release/v${TEST_VERSION}`
@@ -481,129 +358,120 @@ test('openPr tests', async t => {
       },
       DEFAULT_ACTION_DATA.inputs
     )
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'should create the correct release for a version with no minor',
-    async t => {
-      const localVersion = '2.0.0'
-      const { openPr, stubs, mocks } = setup({ t })
-      stubs.execWithOutputStub.returns(localVersion)
+  it('should create the correct release for a version with no minor', async () => {
+    const localVersion = '2.0.0'
+    const { openPr, stubs } = setup()
+    stubs.execWithOutputStub.returns(localVersion)
 
-      await openPr({
-        ...DEFAULT_ACTION_DATA,
-        packageVersion: localVersion,
-      })
-      const branchName = `release/v${localVersion}`
-      sinon.assert.calledWithExactly(
-        stubs.callApiStub,
-        {
-          method: 'POST',
-          endpoint: 'pr',
-          body: {
-            head: `refs/heads/${branchName}`,
-            base: DEFAULT_ACTION_DATA.context.payload.ref,
-            title: `${PR_TITLE_PREFIX} ${branchName}`,
-            body:
-              '## Optic Release Automation\n' +
-              '\n' +
-              'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
-              '\n' +
-              `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
-              '\n' +
-              `Release author: @John\n` +
-              '\n' +
-              '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
-              '\n' +
-              '- The GitHub release will be published\n' +
-              '\n' +
-              '- No npm package will be published as configured\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '- No major or minor tags will be updated as configured\n' +
-              '\n' +
-              '\n' +
-              '#### If you close the PR\n' +
-              '\n' +
-              '- The new draft release will be deleted and nothing will change\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '<!--\n' +
-              `<release-meta>{"id":"foo","version":"v${localVersion}"}</release-meta>\n` +
-              '-->\n',
-          },
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: localVersion,
+    })
+    const branchName = `release/v${localVersion}`
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: DEFAULT_ACTION_DATA.context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body:
+            '## Optic Release Automation\n' +
+            '\n' +
+            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
+            '\n' +
+            `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
+            '\n' +
+            `Release author: @John\n` +
+            '\n' +
+            '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
+            '\n' +
+            '- The GitHub release will be published\n' +
+            '\n' +
+            '- No npm package will be published as configured\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '- No major or minor tags will be updated as configured\n' +
+            '\n' +
+            '\n' +
+            '#### If you close the PR\n' +
+            '\n' +
+            '- The new draft release will be deleted and nothing will change\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '<!--\n' +
+            `<release-meta>{"id":"foo","version":"v${localVersion}"}</release-meta>\n` +
+            '-->\n',
         },
-        DEFAULT_ACTION_DATA.inputs
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  })
 
-  await t.test(
-    'should create the correct release for a version with no major',
-    async t => {
-      const localVersion = '0.0.5'
-      const { openPr, stubs, mocks } = setup({ t })
-
-      stubs.execWithOutputStub.returns(localVersion)
-
-      await openPr({
-        ...DEFAULT_ACTION_DATA,
-        packageVersion: localVersion,
-      })
-      const branchName = `release/v${localVersion}`
-      sinon.assert.calledWithExactly(
-        stubs.callApiStub,
-        {
-          method: 'POST',
-          endpoint: 'pr',
-          body: {
-            head: `refs/heads/${branchName}`,
-            base: DEFAULT_ACTION_DATA.context.payload.ref,
-            title: `${PR_TITLE_PREFIX} ${branchName}`,
-            body:
-              '## Optic Release Automation\n' +
-              '\n' +
-              'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
-              '\n' +
-              `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
-              '\n' +
-              `Release author: @John\n` +
-              '\n' +
-              '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
-              '\n' +
-              '- The GitHub release will be published\n' +
-              '\n' +
-              '- No npm package will be published as configured\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '- No major or minor tags will be updated as configured\n' +
-              '\n' +
-              '\n' +
-              '#### If you close the PR\n' +
-              '\n' +
-              '- The new draft release will be deleted and nothing will change\n' +
-              '\n' +
-              '\n' +
-              '\n' +
-              '<!--\n' +
-              `<release-meta>{"id":"foo","version":"v${localVersion}"}</release-meta>\n` +
-              '-->\n',
-          },
-        },
-        DEFAULT_ACTION_DATA.inputs
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test('should delete branch in case of pr failure', async t => {
+  it('should create the correct release for a version with no major', async () => {
     const localVersion = '0.0.5'
-    const { openPr, stubs, mocks } = setup({ t })
+    const { openPr, stubs } = setup()
+
+    stubs.execWithOutputStub.returns(localVersion)
+
+    await openPr({
+      ...DEFAULT_ACTION_DATA,
+      packageVersion: localVersion,
+    })
+    const branchName = `release/v${localVersion}`
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'pr',
+        body: {
+          head: `refs/heads/${branchName}`,
+          base: DEFAULT_ACTION_DATA.context.payload.ref,
+          title: `${PR_TITLE_PREFIX} ${branchName}`,
+          body:
+            '## Optic Release Automation\n' +
+            '\n' +
+            'This **draft** PR is opened by Github action [optic-release-automation-action](https://github.com/nearform-actions/optic-release-automation-action).\n' +
+            '\n' +
+            `A new **draft** GitHub release [v${localVersion}]() has been created.\n` +
+            '\n' +
+            `Release author: @John\n` +
+            '\n' +
+            '#### If you want to go ahead with the release, please merge this PR. When you merge:\n' +
+            '\n' +
+            '- The GitHub release will be published\n' +
+            '\n' +
+            '- No npm package will be published as configured\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '- No major or minor tags will be updated as configured\n' +
+            '\n' +
+            '\n' +
+            '#### If you close the PR\n' +
+            '\n' +
+            '- The new draft release will be deleted and nothing will change\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '<!--\n' +
+            `<release-meta>{"id":"foo","version":"v${localVersion}"}</release-meta>\n` +
+            '-->\n',
+        },
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  })
+
+  it('should delete branch in case of pr failure', async () => {
+    const localVersion = '0.0.5'
+    const { openPr, stubs } = setup()
     const { context, inputs } = DEFAULT_ACTION_DATA
 
     stubs.callApiStub.onCall(1).rejects()
@@ -618,131 +486,110 @@ test('openPr tests', async t => {
       branchName,
     ])
     assert.ok(true, 'branch deleted')
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'Should call core.setFailed if it fails to create a PR',
-    async t => {
-      const branchName = `release/v${TEST_VERSION}`
+  it('Should call core.setFailed if it fails to create a PR', async () => {
+    const branchName = `release/v${TEST_VERSION}`
 
-      const { openPr, stubs } = setup({ t })
-      const { context, inputs, packageVersion } = DEFAULT_ACTION_DATA
-      stubs.callApiStub.onCall(1).rejects()
+    const { openPr, stubs } = setup()
+    const { context, inputs, packageVersion } = DEFAULT_ACTION_DATA
+    stubs.callApiStub.onCall(1).rejects()
 
-      stubs.execWithOutputStub
-        .withArgs('git', ['push', 'origin', '--delete', branchName])
-        .rejects()
+    stubs.execWithOutputStub
+      .withArgs('git', ['push', 'origin', '--delete', branchName])
+      .rejects()
 
-      await openPr({ context, inputs, packageVersion })
+    await openPr({ context, inputs, packageVersion })
 
-      sinon.assert.calledOnce(stubs.coreStub.setFailed)
-      assert.ok(true, 'failed called')
-    }
-  )
+    sinon.assert.calledOnce(stubs.coreStub.setFailed)
+    assert.ok(true, 'failed called')
+  })
 
-  await t.test(
-    'should call attachArtifact if artifact-path input is present',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
-      const data = clone(DEFAULT_ACTION_DATA)
-      data.inputs['artifact-path'] = 'dist'
-      await openPr(data)
+  it('should call attachArtifact if artifact-path input is present', async () => {
+    const { openPr, stubs } = setup()
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs['artifact-path'] = 'dist'
+    await openPr(data)
 
-      sinon.assert.calledOnce(stubs.attachArtifactStub)
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+    sinon.assert.calledOnce(stubs.attachArtifactStub)
+  })
 
-  await t.test('should not open Pr if create release draft fails', async t => {
-    const { openPr, stubs, mocks } = setup({ t })
+  it('should not open Pr if create release draft fails', async () => {
+    const { openPr, stubs } = setup()
     stubs.callApiStub.throws({ message: 'error message' })
 
     await assert.rejects(openPr(DEFAULT_ACTION_DATA), {
       message: 'Unable to create draft release: error message',
     })
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'should generate release notes if the latest release has not been found -> first release',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
-      stubs.releasesFetchLatestReleaseStub =
-        stubs.releasesFetchLatestReleaseStub.returns(null)
+  it('should generate release notes if the latest release has not been found -> first release', async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesFetchLatestReleaseStub =
+      stubs.releasesFetchLatestReleaseStub.returns(null)
 
-      await openPr(DEFAULT_ACTION_DATA)
+    await openPr(DEFAULT_ACTION_DATA)
 
-      sinon.assert.calledWithExactly(
-        stubs.callApiStub,
-        {
-          method: 'POST',
-          endpoint: 'release',
-          body: {
-            version: `v${TEST_VERSION}`,
-            target: TEST_COMMIT_HASH,
-            generateReleaseNotes: true,
-          },
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
         },
-        DEFAULT_ACTION_DATA.inputs
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  })
 
-  await t.test(
-    'should automatically generate release notes if an error occurred while generating the specific release notes',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
-      stubs.releasesGenerateReleaseNotesStub =
-        stubs.releasesGenerateReleaseNotesStub.throws({
-          message: 'Unexpected Error',
-        })
+  it('should automatically generate release notes if an error occurred while generating the specific release notes', async () => {
+    const { openPr, stubs } = setup()
+    stubs.releasesGenerateReleaseNotesStub =
+      stubs.releasesGenerateReleaseNotesStub.throws({
+        message: 'Unexpected Error',
+      })
 
-      await openPr(DEFAULT_ACTION_DATA)
+    await openPr(DEFAULT_ACTION_DATA)
 
-      sinon.assert.calledWithExactly(
-        stubs.callApiStub,
-        {
-          method: 'POST',
-          endpoint: 'release',
-          body: {
-            version: `v${TEST_VERSION}`,
-            target: TEST_COMMIT_HASH,
-            generateReleaseNotes: true,
-          },
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: true,
         },
-        DEFAULT_ACTION_DATA.inputs
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+      },
+      DEFAULT_ACTION_DATA.inputs
+    )
+  })
 
-  await t.test(
-    'should retrieve the specified base-tag release and POST a release with the generated release notes',
-    async t => {
-      const { openPr, stubs, mocks } = setup({ t })
+  it('should retrieve the specified base-tag release and POST a release with the generated release notes', async () => {
+    const { openPr, stubs } = setup()
 
-      const data = clone(DEFAULT_ACTION_DATA)
-      data.inputs['base-tag'] = TEST_BASE_TAG_VERSION
+    const data = clone(DEFAULT_ACTION_DATA)
+    data.inputs['base-tag'] = TEST_BASE_TAG_VERSION
 
-      await openPr(data)
+    await openPr(data)
 
-      sinon.assert.calledWithExactly(
-        stubs.callApiStub,
-        {
-          method: 'POST',
-          endpoint: 'release',
-          body: {
-            version: `v${TEST_VERSION}`,
-            target: TEST_COMMIT_HASH,
-            generateReleaseNotes: false,
-            releaseNotes: TEST_RELEASE_NOTES,
-          },
+    sinon.assert.calledWithExactly(
+      stubs.callApiStub,
+      {
+        method: 'POST',
+        endpoint: 'release',
+        body: {
+          version: `v${TEST_VERSION}`,
+          target: TEST_COMMIT_HASH,
+          generateReleaseNotes: false,
+          releaseNotes: TEST_RELEASE_NOTES,
         },
-        data.inputs
-      )
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+      },
+      data.inputs
+    )
+  })
 })

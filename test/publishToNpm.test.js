@@ -1,18 +1,19 @@
 'use strict'
 
-const { test } = require('node:test')
+const { afterEach, describe, it } = require('node:test')
 const assert = require('node:assert/strict')
 const sinon = require('sinon')
+const { mockModule } = require('./mockModule.js')
 
 const setup = ({
-  t,
   packageName = 'fakeTestPkg',
   published = true,
   mockPackageInfo,
   otpFlow = 'optic',
 } = {}) => {
   const execWithOutputStub = sinon.stub()
-
+  const otpVerificationStub = sinon.stub().resolves('ngrok123')
+  // npm behavior < v8.13.0
   execWithOutputStub
     .withArgs('npm', ['view', `${packageName}@v5.1.3`])
     .returns('')
@@ -21,28 +22,17 @@ const setup = ({
   const getPublishedInfo = async () =>
     published ? { name: packageName } : null
 
-  let mocks = {}
+  // Conditional setup based on otpFlow
   let proxyConfig = {
-    namedExports: {
-      getLocalInfo,
-      getPublishedInfo,
-    },
+    '../src/utils/packageInfo.js': mockPackageInfo
+      ? mockPackageInfo({ execWithOutputStub, getLocalInfo, getPublishedInfo })
+      : {
+          namedExports: {
+            getLocalInfo,
+            getPublishedInfo,
+          },
+        },
   }
-
-  if (mockPackageInfo) {
-    proxyConfig = mockPackageInfo({
-      execWithOutputStub,
-      getLocalInfo,
-      getPublishedInfo,
-    })
-  }
-
-  const packageInfoMock = t.mock.module(
-    '../src/utils/packageInfo.js',
-    proxyConfig
-  )
-  mocks.packageInfoMock = packageInfoMock
-  let otpVerificationStub = sinon.stub().resolves('ngrok123')
   if (otpFlow === 'optic') {
     execWithOutputStub
       .withArgs('curl', [
@@ -58,50 +48,46 @@ const setup = ({
         'https://optic-test.run.app/api/generate/optic-token',
       ])
       .returns('otp123')
-
-    const execMock = t.mock.module('../src/utils/execWithOutput.js', {
+    proxyConfig['../src/utils/execWithOutput.js'] = {
       namedExports: {
         execWithOutput: execWithOutputStub,
       },
-    })
-    mocks.execMock = execMock
+    }
   } else if (otpFlow === 'ngrok') {
-    const execMock = t.mock.module('../src/utils/execWithOutput.js', {
-      namedExports: {
-        execWithOutput: execWithOutputStub,
+    proxyConfig = {
+      ...proxyConfig,
+      '../src/utils/execWithOutput.js': {
+        namedExports: {
+          execWithOutput: execWithOutputStub,
+        },
       },
-    })
-
-    const ngrokMock = t.mock.module('../src/utils/ngrokOtpVerification.js', {
-      defaultExport: otpVerificationStub,
-    })
-
-    mocks.execMock = execMock
-    mocks.ngrokMock = ngrokMock
+      '../src/utils/ngrokOtpVerification.js': {
+        defaultExport: otpVerificationStub,
+      },
+    }
   }
 
-  const publishToNpm = require('../src/utils/publishToNpm')
+  const publishToNpmProxy = mockModule(
+    '../src/utils/publishToNpm.js',
+    proxyConfig
+  )
+
   return {
     execWithOutputStub,
-    publishToNpm,
+    publishToNpmProxy,
     otpVerificationStub,
-    mocks,
   }
 }
 
-test('publishToNpm tests', async t => {
-  t.beforeEach(() => {
-    delete require.cache[require.resolve('../src/utils/publishToNpm')]
-  })
-
-  t.afterEach(() => {
+describe('publishToNpm tests', async () => {
+  afterEach(() => {
     sinon.restore()
   })
 
-  await t.test('Should publish to npm with optic', async t => {
-    const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
+  it('Should publish to npm with optic', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
 
-    await publishToNpm.publishToNpm({
+    await publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
       opticToken: 'optic-token',
       opticUrl: 'https://optic-test.run.app/api/generate/',
@@ -141,43 +127,14 @@ test('publishToNpm tests', async t => {
       'latest',
     ])
     assert.ok(true, 'npm pack called')
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    "Should publish to npm when package hasn't been published before",
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({
-        t,
-        published: false,
-      })
+  it("Should publish to npm when package hasn't been published before", async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup({
+      published: false,
+    })
 
-      await publishToNpm.publishToNpm({
-        npmToken: 'a-token',
-        opticUrl: 'https://optic-test.run.app/api/generate/',
-        npmTag: 'latest',
-        version: 'v5.1.3',
-      })
-
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'pack',
-        '--dry-run',
-      ])
-      assert.ok(true, 'npm pack called')
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'npm publish called')
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test('Should publish to npm without optic', async t => {
-    const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
-
-    await publishToNpm.publishToNpm({
+    await publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
       opticUrl: 'https://optic-test.run.app/api/generate/',
       npmTag: 'latest',
@@ -195,220 +152,212 @@ test('publishToNpm tests', async t => {
       'latest',
     ])
     assert.ok(true, 'npm publish called')
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'Should skip npm package publication when it was already published',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
+  it('Should publish to npm without optic', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
 
-      execWithOutputStub
-        .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
-        .returns('fake package data that says it was published')
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
 
-      await publishToNpm.publishToNpm({
-        npmToken: 'a-token',
-        opticUrl: 'https://optic-test.run.app/api/generate/',
-        npmTag: 'latest',
-        version: 'v5.1.3',
-      })
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'pack',
+      '--dry-run',
+    ])
+    assert.ok(true, 'npm pack called')
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'npm publish called')
+  })
 
-      sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
-        'publish',
-        '--otp',
-        'otp123',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'publish never called with otp')
-      sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'publish never called')
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+  it('Should skip npm package publication when it was already published', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
 
-  await t.test(
-    'Should stop action if package info retrieval fails',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({
-        t,
-        mockPackageInfo: ({ getLocalInfo }) => ({
-          namedExports: {
-            getLocalInfo,
-            getPublishedInfo: async () => {
-              throw new Error('Network Error')
-            },
+    execWithOutputStub
+      .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+      .returns('fake package data that says it was published')
+
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
+
+    sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
+      'publish',
+      '--otp',
+      'otp123',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'publish never called with otp')
+    sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'publish never called')
+  })
+
+  it('Should stop action if package info retrieval fails', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup({
+      mockPackageInfo: ({ getLocalInfo }) => ({
+        namedExports: {
+          getLocalInfo,
+          getPublishedInfo: async () => {
+            throw new Error('Network Error')
           },
-        }),
-      })
+        },
+      }),
+    })
 
-      await assert.rejects(
-        publishToNpm.publishToNpm({
-          npmToken: 'a-token',
-          opticUrl: 'https://optic-test.run.app/api/generate/',
-          npmTag: 'latest',
-          version: 'v5.1.3',
-        }),
-        /Network Error/
-      )
-
-      sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
-        'publish',
-        '--otp',
-        'otp123',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'package is not published with otp code')
-      sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'package is not published without otp code')
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test(
-    'Should stop action if package version info retrieval fails',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
-
-      execWithOutputStub
-        .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
-        .throws(new Error('Network Error'))
-
-      await assert.rejects(
-        publishToNpm.publishToNpm({
-          npmToken: 'a-token',
-          opticUrl: 'https://optic-test.run.app/api/generate/',
-          npmTag: 'latest',
-          version: 'v5.1.3',
-        }),
-        /Network Error/
-      )
-
-      sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
-        'publish',
-        '--otp',
-        'otp123',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'package is not published with otp code')
-      sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-      ])
-      assert.ok(true, 'package is not published without otp code')
-
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
-
-  await t.test(
-    'Should continue action if package info returns not found',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({
-        t,
-        mockPackageInfo: ({ getLocalInfo }) => ({
-          namedExports: {
-            getLocalInfo,
-            getPublishedInfo: async () => new Error('code E404'),
-          },
-        }),
-      })
-
-      execWithOutputStub
-        .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
-        .returns('')
-
-      await publishToNpm.publishToNpm({
+    await assert.rejects(
+      publishToNpmProxy.publishToNpm({
         npmToken: 'a-token',
         opticUrl: 'https://optic-test.run.app/api/generate/',
         npmTag: 'latest',
         version: 'v5.1.3',
-      })
+      }),
+      /Network Error/
+    )
 
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'pack',
-        '--dry-run',
-      ])
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-      ])
+    sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
+      'publish',
+      '--otp',
+      'otp123',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'package is not published with otp code')
+    sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'package is not published without otp code')
+  })
 
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+  it('Should stop action if package version info retrieval fails', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
 
-  await t.test(
-    'Should continue action if package version info returns not found',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
+    execWithOutputStub
+      .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+      .throws(new Error('Network Error'))
 
-      execWithOutputStub
-        .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
-        .throws(new Error('code E404'))
-
-      await publishToNpm.publishToNpm({
+    await assert.rejects(
+      publishToNpmProxy.publishToNpm({
         npmToken: 'a-token',
         opticUrl: 'https://optic-test.run.app/api/generate/',
         npmTag: 'latest',
         version: 'v5.1.3',
-      })
+      }),
+      /Network Error/
+    )
 
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'pack',
-        '--dry-run',
-      ])
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-      ])
+    sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
+      'publish',
+      '--otp',
+      'otp123',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'package is not published with otp code')
+    sinon.assert.neverCalledWith(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+    assert.ok(true, 'package is not published without otp code')
+  })
 
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+  it('Should continue action if package info returns not found', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup({
+      mockPackageInfo: ({ getLocalInfo }) => ({
+        namedExports: {
+          getLocalInfo,
+          getPublishedInfo: async () => new Error('code E404'),
+        },
+      }),
+    })
 
-  await t.test(
-    'Adds --provenance flag when provenance option provided',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
+    execWithOutputStub
+      .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+      .returns('')
 
-      await publishToNpm.publishToNpm({
-        npmToken: 'a-token',
-        opticUrl: 'https://optic-test.run.app/api/generate/',
-        npmTag: 'latest',
-        version: 'v5.1.3',
-        provenance: true,
-      })
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
 
-      sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
-        'publish',
-        '--tag',
-        'latest',
-        '--provenance',
-      ])
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'pack',
+      '--dry-run',
+    ])
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  })
 
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+  it('Should continue action if package version info returns not found', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
 
-  await t.test('Adds --access flag if provided as an input', async t => {
-    const { publishToNpm, execWithOutputStub, mocks } = setup({ t })
+    execWithOutputStub
+      .withArgs('npm', ['view', 'fakeTestPkg@v5.1.3'])
+      .throws(new Error('code E404'))
 
-    await publishToNpm.publishToNpm({
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+    })
+
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'pack',
+      '--dry-run',
+    ])
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  })
+
+  it('Adds --provenance flag when provenance option provided', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
+
+    await publishToNpmProxy.publishToNpm({
+      npmToken: 'a-token',
+      opticUrl: 'https://optic-test.run.app/api/generate/',
+      npmTag: 'latest',
+      version: 'v5.1.3',
+      provenance: true,
+    })
+
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+      '--provenance',
+    ])
+  })
+
+  it('Adds --access flag if provided as an input', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
+
+    await publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
       opticUrl: 'https://optic-test.run.app/api/generate/',
       npmTag: 'latest',
@@ -423,18 +372,13 @@ test('publishToNpm tests', async t => {
       '--access',
       'public',
     ])
-
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test('Should publish using ngrok for OTP verification', async t => {
-    const { publishToNpm, execWithOutputStub, otpVerificationStub, mocks } =
-      setup({
-        t,
-        otpFlow: 'ngrok',
-      })
+  it('Should publish using ngrok for OTP verification', async () => {
+    const { publishToNpmProxy, execWithOutputStub, otpVerificationStub } =
+      setup({ otpFlow: 'ngrok' })
 
-    await publishToNpm.publishToNpm({
+    await publishToNpmProxy.publishToNpm({
       npmToken: 'a-token',
       ngrokToken: 'ngrok-token',
       npmTag: 'latest',
@@ -454,13 +398,10 @@ test('publishToNpm tests', async t => {
       '--tag',
       'latest',
     ])
-
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test('Should fail gracefully when ngrok services fail', async t => {
-    const { publishToNpm, otpVerificationStub, mocks } = setup({
-      t,
+  it('Should fail gracefully when ngrok services fail', async () => {
+    const { publishToNpmProxy, otpVerificationStub } = setup({
       mockPackageInfo: ({ getLocalInfo }) => ({
         namedExports: {
           getLocalInfo,
@@ -474,7 +415,7 @@ test('publishToNpm tests', async t => {
     otpVerificationStub.throws(new Error('Ngrok failed'))
 
     await assert.rejects(
-      publishToNpm.publishToNpm({
+      publishToNpmProxy.publishToNpm({
         npmToken: 'a-token',
         ngrokToken: 'ngrok-token',
         npmTag: 'latest',
@@ -482,47 +423,39 @@ test('publishToNpm tests', async t => {
       }),
       { message: 'OTP verification failed: Ngrok failed' }
     )
-
-    Object.values(mocks).forEach(mock => mock.restore())
   })
 
-  await t.test(
-    'Should fail gracefully when fail to receive otp from optic',
-    async t => {
-      const { publishToNpm, execWithOutputStub, mocks } = setup({
-        t,
-        otpFlow: 'optic',
-      })
+  it('Should fail gracefully when fail to receive otp from optic', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup({
+      otpFlow: 'optic',
+    })
 
-      execWithOutputStub
-        .withArgs('curl', [
-          '-s',
-          '-d',
-          JSON.stringify({
-            packageInfo: { version: 'v5.1.3', name: 'fakeTestPkg' },
-          }),
-          '-H',
-          'Content-Type: application/json',
-          '-X',
-          'POST',
-          'https://optic-test.run.app/api/generate/optic-token',
-        ])
-        .throws(new Error('Optic failed'))
-
-      await assert.rejects(
-        publishToNpm.publishToNpm({
-          npmToken: 'a-token',
-          opticToken: 'optic-token',
-          opticUrl: 'https://optic-test.run.app/api/generate/',
-          npmTag: 'latest',
-          version: 'v5.1.3',
+    execWithOutputStub
+      .withArgs('curl', [
+        '-s',
+        '-d',
+        JSON.stringify({
+          packageInfo: { version: 'v5.1.3', name: 'fakeTestPkg' },
         }),
-        {
-          message: 'OTP verification failed: Optic failed',
-        }
-      )
+        '-H',
+        'Content-Type: application/json',
+        '-X',
+        'POST',
+        'https://optic-test.run.app/api/generate/optic-token',
+      ])
+      .throws(new Error('Optic failed'))
 
-      Object.values(mocks).forEach(mock => mock.restore())
-    }
-  )
+    await assert.rejects(
+      publishToNpmProxy.publishToNpm({
+        npmToken: 'a-token',
+        opticToken: 'optic-token',
+        opticUrl: 'https://optic-test.run.app/api/generate/',
+        npmTag: 'latest',
+        version: 'v5.1.3',
+      }),
+      {
+        message: 'OTP verification failed: Optic failed',
+      }
+    )
+  })
 })
