@@ -49,49 +49,6 @@ const setup = () => {
   }
 }
 
-// const setup = () => {
-//   const logInfoStub = sinon.stub()
-//   const logErrorStub = sinon.stub()
-
-//   const mockApp = {
-//     get: sinon.stub(),
-//     post: sinon.stub(),
-//     register: sinon.stub(),
-//     listen: sinon.stub().resolves(),
-//     close: sinon.stub().resolves(),
-//   }
-
-//   const fastifyStub = sinon.stub().returns(mockApp)
-
-//   const fastifyMock = t.mock.module('fastify', {
-//     defaultExport: fastifyStub,
-//   })
-
-//   const logMock = t.mock.module('../src/log.js', {
-//     namedExports: {
-//       logInfo: logInfoStub,
-//       logError: logErrorStub,
-//     },
-//   })
-
-//   const ngrokMock = t.mock.module('../src/utils/getNgrok.js', {
-//     defaultExport: async () => ({
-//       connect: sinon.stub().resolves('https://test.ngrok.io'),
-//       kill: sinon.stub().resolves(),
-//     }),
-//   })
-
-//   const ngrokOtpVerificationProxy = require('../src/utils/ngrokOtpVerification')
-
-//   return {
-//     logInfoStub,
-//     logErrorStub,
-//     mockApp,
-//     ngrokOtpVerificationProxy,
-//     mocks: { fastifyMock, logMock, ngrokMock },
-//   }
-// }
-
 describe('ngrok otp tests', async () => {
   afterEach(() => {
     sinon.restore()
