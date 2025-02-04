@@ -1,8 +1,7 @@
 'use strict'
 
-const { describe, it, afterEach } = require('node:test')
+const { describe, it, mock } = require('node:test')
 const assert = require('node:assert/strict')
-const sinon = require('sinon')
 const actionLog = require('../src/log.js')
 const { mockModule } = require('./mockModule.js')
 
@@ -10,10 +9,10 @@ const TOKEN = 'GH-TOKEN'
 const TAG = 'v1.0.1'
 
 const setup = ({ throwsError }) => {
-  const logStub = sinon.stub(actionLog)
+  const logStub = mock.fn()
   const releasesModule = mockModule('../src/utils/releases.js', {
     '../src/log.js': {
-      defaultExport: logStub,
+      defaultExport: { ...actionLog, info: logStub, error: logStub },
     },
     '@actions/github': {
       namedExports: {
@@ -64,10 +63,6 @@ const setup = ({ throwsError }) => {
 }
 
 describe('releases tests', async () => {
-  afterEach(() => {
-    sinon.restore()
-  })
-
   it('fetchLatestRelease return properly the latest release', async () => {
     const { releasesModule } = setup({ throwsError: false })
     await assert.doesNotReject(releasesModule.fetchLatestRelease(TOKEN))
@@ -91,11 +86,11 @@ describe('releases tests', async () => {
   })
 
   it('fetchLatestRelease returns null if no previous releases are found', async () => {
-    const logStub = sinon.stub(actionLog)
+    const logStub = mock.fn()
 
     const releasesModule = mockModule('../src/utils/releases.js', {
       '../src/log.js': {
-        defaultExport: logStub,
+        defaultExport: { ...actionLog, info: logStub, error: logStub },
       },
       '@actions/github': {
         namedExports: {
@@ -131,11 +126,11 @@ describe('releases tests', async () => {
   })
 
   it('fetchReleaseByTag throws an error if Not Found', async () => {
-    const logStub = sinon.stub(actionLog)
+    const logStub = mock.fn()
 
     const releasesModule = mockModule('../src/utils/releases.js', {
       '../src/log.js': {
-        defaultExport: logStub,
+        defaultExport: { ...actionLog, info: logStub, error: logStub },
       },
       '@actions/github': {
         namedExports: {

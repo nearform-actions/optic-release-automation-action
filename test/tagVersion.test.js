@@ -1,11 +1,10 @@
 'use strict'
 
-const { afterEach, describe, it } = require('node:test')
+const { describe, it, mock } = require('node:test')
 const assert = require('node:assert/strict')
-const sinon = require('sinon')
 const { mockModule } = require('./mockModule.js')
 const setup = () => {
-  const execWithOutputStub = sinon.stub()
+  const execWithOutputStub = mock.fn()
   const tagVersionProxy = mockModule('../src/utils/tagVersion', {
     '../src/utils/execWithOutput.js': {
       namedExports: {
@@ -18,27 +17,20 @@ const setup = () => {
 }
 
 describe('tagVersion tests', async () => {
-  afterEach(() => {
-    sinon.restore()
-  })
-
   it('Tag version in git', async () => {
     const { tagVersionProxy, execWithOutputStub } = setup()
     const version = 'v3.0.0'
     await tagVersionProxy.tagVersionInGit(version)
 
-    assert.strictEqual(execWithOutputStub.callCount, 2)
+    assert.strictEqual(execWithOutputStub.mock.calls.length, 2)
 
-    sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
-      'tag',
-      '-f',
-      `${version}`,
+    assert.deepStrictEqual(execWithOutputStub.mock.calls[0].arguments, [
+      'git',
+      ['tag', '-f', version],
     ])
-    sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
-      'push',
-      'origin',
-      '-f',
-      `v3.0.0`,
+    assert.deepStrictEqual(execWithOutputStub.mock.calls[1].arguments, [
+      'git',
+      ['push', 'origin', '-f', version],
     ])
   })
 })
