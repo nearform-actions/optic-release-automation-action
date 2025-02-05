@@ -188,7 +188,7 @@ describe('release tests', async () => {
     })
   })
 
-  it('Should delete the release even if deleting the branch failed and should not fail', async t => {
+  it('Should delete the release even if deleting the branch failed and should not fail', async () => {
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
@@ -206,7 +206,7 @@ describe('release tests', async () => {
     })
   })
 
-  it('Should log an error if deleting the release fails', async t => {
+  it('Should log an error if deleting the release fails', async () => {
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
@@ -220,7 +220,7 @@ describe('release tests', async () => {
     )
   })
 
-  it('Should log and exit if both the release and the branch fail', async t => {
+  it('Should log and exit if both the release and the branch fail', async () => {
     const { release, stubs } = setup()
     const data = clone(DEFAULT_ACTION_DATA)
     data.context.payload.pull_request.merged = false
@@ -238,7 +238,7 @@ describe('release tests', async () => {
     sinon.assert.notCalled(stubs.publishToNpmStub)
   })
 
-  it('Should publish to npm without optic', async t => {
+  it('Should publish to npm without optic', async () => {
     const { release, stubs } = setup()
     await release({
       ...DEFAULT_ACTION_DATA,
@@ -255,7 +255,7 @@ describe('release tests', async () => {
     })
   })
 
-  it('Should publish with provenance if flag set and conditions met', async t => {
+  it('Should publish with provenance if flag set and conditions met', async () => {
     const { release, stubs } = setup({
       npmVersion: '9.5.0',
       env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' },
@@ -282,7 +282,7 @@ describe('release tests', async () => {
     assert.ok(true, 'publish called')
   })
 
-  it('Aborts publish with provenance if NPM version too old', async t => {
+  it('Aborts publish with provenance if NPM version too old', async () => {
     const { release, stubs } = setup({
       npmVersion: '9.4.0',
       env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' },
@@ -304,7 +304,7 @@ describe('release tests', async () => {
     )
   })
 
-  it('Aborts publish with provenance if missing permission', async t => {
+  it('Aborts publish with provenance if missing permission', async () => {
     const { release, stubs } = setup({
       npmVersion: '9.5.0',
       env: { ACTIONS_ID_TOKEN_REQUEST_URL: undefined }, // Explicitly unset
@@ -325,7 +325,7 @@ describe('release tests', async () => {
     )
   })
 
-  it('Should publish with --access public if flag set', async t => {
+  it('Should publish with --access public if flag set', async () => {
     const { release, stubs } = setup()
     await release({
       ...DEFAULT_ACTION_DATA,
@@ -348,7 +348,7 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
-  it('Should publish with --access restricted if flag set', async t => {
+  it('Should publish with --access restricted if flag set', async () => {
     const { release, stubs } = setup()
     await release({
       ...DEFAULT_ACTION_DATA,
@@ -371,7 +371,7 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
-  it('Should disallow unsupported --access flag', async t => {
+  it('Should disallow unsupported --access flag', async () => {
     const { release, stubs } = setup()
 
     const invalidString =
@@ -392,9 +392,8 @@ describe('release tests', async () => {
     )
   })
 
-  it('Should publish with --access public and provenance if unscoped and unpublished', async t => {
+  it('Should publish with --access public and provenance if unscoped and unpublished', async () => {
     const { release, stubs } = setup({
-      t,
       isScoped: false,
       isPublished: false,
       npmVersion: '9.5.0',
@@ -424,9 +423,8 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
-  it('Should not override access restricted with provenance while unscoped and unpublished', async t => {
+  it('Should not override access restricted with provenance while unscoped and unpublished', async () => {
     const { release, stubs } = setup({
-      t,
       isScoped: false,
       isPublished: false,
       npmVersion: '9.5.0',
@@ -456,7 +454,7 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
-  it('Should not publish to npm if there is no npm token', async t => {
+  it('Should not publish to npm if there is no npm token', async () => {
     const { release, stubs } = setup()
     stubs.callApiStub.throws()
 
@@ -472,9 +470,8 @@ describe('release tests', async () => {
     sinon.assert.notCalled(stubs.publishToNpmStub)
   })
 
-  it('Should publish with provenance and not add access when scoped and unpublished', async t => {
+  it('Should publish with provenance and not add access when scoped and unpublished', async () => {
     const { release, stubs } = setup({
-      t,
       isScoped: true,
       isPublished: false,
       npmVersion: '9.5.0', // valid
@@ -501,9 +498,8 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
-  it('Should publish with provenance and not add access when unscoped and published', async t => {
+  it('Should publish with provenance and not add access when unscoped and published', async () => {
     const { release, stubs } = setup({
-      t,
       isScoped: false,
       isPublished: true,
       npmVersion: '9.5.0', // valid
@@ -530,7 +526,7 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
-  it('Should publish to npm with optic', async t => {
+  it('Should publish to npm with optic', async () => {
     const { release, stubs } = setup()
     await release({
       ...DEFAULT_ACTION_DATA,
@@ -548,7 +544,7 @@ describe('release tests', async () => {
     })
   })
 
-  it('Should tag versions', async t => {
+  it('Should tag versions', async () => {
     const { release, stubs } = setup()
     await release({
       ...DEFAULT_ACTION_DATA,
