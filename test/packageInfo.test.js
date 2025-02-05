@@ -1,9 +1,10 @@
 'use strict'
-const tap = require('tap')
-const sinon = require('sinon')
-const proxyquire = require('proxyquire')
 
+const { afterEach, describe, it } = require('node:test')
+const assert = require('node:assert/strict')
+const sinon = require('sinon')
 const { getLocalInfo, getPublishedInfo } = require('../src/utils/packageInfo')
+const { mockModule } = require('./mockModule.js')
 
 const mockPackageInfo = {
   name: 'some-package-name',
@@ -27,8 +28,12 @@ const setupPublished = ({
     execWithOutputStub.withArgs(...args).throws(error)
   }
 
-  return proxyquire('../src/utils/packageInfo', {
-    './execWithOutput': { execWithOutput: execWithOutputStub },
+  return mockModule('../src/utils/packageInfo', {
+    '../src/utils/execWithOutput.js': {
+      namedExports: {
+        execWithOutput: execWithOutputStub,
+      },
+    },
   })
 }
 
@@ -38,80 +43,71 @@ const setupLocal = ({ value = JSON.stringify(mockPackageInfo) } = {}) => {
     .withArgs('./package.json', 'utf8')
     .returns(value)
 
-  return proxyquire('../src/utils/packageInfo', {
-    fs: { readFileSync: readFileSyncStub },
+  return mockModule('../src/utils/packageInfo.js', {
+    fs: {
+      namedExports: {
+        readFileSync: readFileSyncStub,
+      },
+    },
   })
 }
 
-tap.test('getPublishedInfo does not get any info for this package', async t => {
-  // Check it works for real: this package is a Github Action, not published on NPM, so expect null
-  const packageInfo = await getPublishedInfo()
-  t.notOk(packageInfo)
-})
+describe('packageInfo tests', async () => {
+  afterEach(() => {
+    sinon.restore()
+  })
 
-tap.test('getPublishedInfo parses any valid JSON it finds', async t => {
-  const mocks = setupPublished()
+  it('getPublishedInfo does not get any info for this package', async () => {
+    const info = await getPublishedInfo()
+    assert.strictEqual(info, null)
+  })
 
-  const packageInfo = await mocks.getPublishedInfo()
-  t.match(packageInfo, mockPackageInfo)
-})
+  it('getPublishedInfo parses any valid JSON it finds', async () => {
+    const packageInfo = setupPublished()
+    const info = await packageInfo.getPublishedInfo()
+    assert.deepStrictEqual(info, mockPackageInfo)
+  })
 
-tap.test(
-  'getPublishedInfo continues and returns null if the request 404s',
-  async t => {
-    const mocks = setupPublished({
+  it('getPublishedInfo continues and returns null if the request 404s', async () => {
+    const packageInfo = setupPublished({
       value: JSON.stringify(mockPackageInfo),
       error: new Error('code E404 - package not found'),
     })
-
-    const packageInfo = await mocks.getPublishedInfo()
-    t.match(packageInfo, null)
-  }
-)
-
-tap.test(
-  'getPublishedInfo throws if it encounters an internal error',
-  async t => {
-    const mocks = setupPublished({
-      value: "[{ 'this:' is not ] valid}j.s.o.n()",
-    })
-
-    await t.rejects(mocks.getPublishedInfo, /JSON/)
-  }
-)
-
-tap.test(
-  'getPublishedInfo continues and returns null if the request returns null',
-  async t => {
-    const mocks = setupPublished({
-      value: null,
-    })
-
-    const packageInfo = await mocks.getPublishedInfo()
-    t.match(packageInfo, null)
-  }
-)
-
-tap.test('getPublishedInfo throws if it hits a non-404 error', async t => {
-  const mocks = setupPublished({
-    error: new Error('code E418 - unexpected teapot'),
+    const info = await packageInfo.getPublishedInfo()
+    assert.strictEqual(info, null)
   })
 
-  await t.rejects(mocks.getPublishedInfo, /teapot/)
-})
+  it('getPublishedInfo throws if it encounters an internal error', async () => {
+    const packageInfo = setupPublished({
+      value: "[{ 'this:' is not ] valid}j.s.o.n()",
+    })
+    await assert.rejects(packageInfo.getPublishedInfo, /JSON/)
+  })
 
-tap.test(
-  'getLocalInfo gets real name and stable properties of this package',
-  async t => {
-    const packageInfo = getLocalInfo()
-    // Check it works for real using real package.json properties that are stable
-    t.equal(packageInfo.name, 'optic-release-automation-action')
-    t.equal(packageInfo.license, 'MIT')
-  }
-)
+  it('getPublishedInfo continues and returns null if the request returns null', async () => {
+    const packageInfo = setupPublished({
+      value: null,
+    })
+    const info = await packageInfo.getPublishedInfo()
+    assert.strictEqual(info, null)
+  })
 
-tap.test('getLocalInfo gets data from stringified JSON from file', async t => {
-  const mocks = setupLocal()
-  const packageInfo = mocks.getLocalInfo()
-  t.match(packageInfo, mockPackageInfo)
+  it('getPublishedInfo throws if it hits a non-404 error', async () => {
+    const packageInfo = setupPublished({
+      error: new Error('code E418 - unexpected teapot'),
+    })
+    await assert.rejects(packageInfo.getPublishedInfo, /teapot/)
+  })
+
+  it('getLocalInfo gets real name and stable properties of this package', async () => {
+    const info = getLocalInfo()
+    assert.strictEqual(info.name, 'optic-release-automation-action')
+    assert.strictEqual(info.license, 'MIT')
+  })
+
+  it('getLocalInfo gets data from stringified JSON from file', async () => {
+    const packageInfo = setupLocal()
+    const info = packageInfo.getLocalInfo()
+    assert.deepStrictEqual(info, mockPackageInfo)
+  })
 })

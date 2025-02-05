@@ -1,8 +1,9 @@
 'use strict'
 
-const tap = require('tap')
+const { describe, afterEach, it } = require('node:test')
+const assert = require('node:assert/strict')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
+const { mockModule } = require('./mockModule.js')
 
 const setup = () => {
   const logInfoStub = sinon.stub()
@@ -19,18 +20,24 @@ const setup = () => {
 
   const fastifyStub = sinon.stub().returns(mockApp)
 
-  const ngrokOtpVerificationProxy = proxyquire(
-    '../src/utils/ngrokOtpVerification',
+  const ngrokOtpVerificationProxy = mockModule(
+    '../src/utils/ngrokOtpVerification.js',
     {
-      fastify: fastifyStub,
-      '../log': {
-        logInfo: logInfoStub,
-        logError: logErrorStub,
+      fastify: {
+        defaultExport: fastifyStub,
       },
-      './getNgrok': async () => ({
-        connect: sinon.stub().resolves('https://test.ngrok.io'),
-        kill: sinon.stub().resolves(),
-      }),
+      '../src/log.js': {
+        namedExports: {
+          logInfo: logInfoStub,
+          logError: logErrorStub,
+        },
+      },
+      '../src/utils/getNgrok.js': {
+        defaultExport: async () => ({
+          connect: sinon.stub().resolves('https://test.ngrok.io'),
+          kill: sinon.stub().resolves(),
+        }),
+      },
     }
   )
 
@@ -42,50 +49,20 @@ const setup = () => {
   }
 }
 
-tap.afterEach(() => {
-  sinon.restore()
-})
-
-tap.test('Should successfully verify OTP', async t => {
-  const { ngrokOtpVerificationProxy, mockApp } = setup()
-
-  // Capture the OTP callback
-  let otpCallback
-  mockApp.post.withArgs('/otp').callsFake((path, handler) => {
-    otpCallback = handler
+describe('ngrok otp tests', async () => {
+  afterEach(() => {
+    sinon.restore()
   })
 
-  // Start OTP verification process
-  const otpPromise = ngrokOtpVerificationProxy(
-    {
-      name: 'test-package',
-      version: 'v1.0.0',
-    },
-    'ngrok-token'
-  )
+  it('Should successfully verify OTP', async () => {
+    const { ngrokOtpVerificationProxy, mockApp } = setup()
 
-  // Simulate OTP submission
-  await otpCallback(
-    {
-      body: { otp: '123456' },
-    },
-    {
-      send: sinon.stub(),
-    }
-  )
+    let otpCallback
+    mockApp.post.withArgs('/otp').callsFake((path, handler) => {
+      otpCallback = handler
+    })
 
-  const otp = await otpPromise
-  t.equal(otp, '123456', 'should return submitted OTP')
-})
-
-tap.test('Should timeout after 5 minutes', async t => {
-  const { ngrokOtpVerificationProxy, logErrorStub } = setup()
-
-  // Use fake timers
-  const clock = sinon.useFakeTimers()
-
-  try {
-    const promise = ngrokOtpVerificationProxy(
+    const otpPromise = ngrokOtpVerificationProxy(
       {
         name: 'test-package',
         version: 'v1.0.0',
@@ -93,73 +70,94 @@ tap.test('Should timeout after 5 minutes', async t => {
       'ngrok-token'
     )
 
-    // Advance clock by 5 minutes + 1ms
-    clock.tick(300001)
-
-    await t.rejects(promise)
-
-    t.ok(logErrorStub.calledWith('OTP submission timed out.'))
-  } finally {
-    clock.restore()
-  }
-})
-
-tap.test('Should handle HTML template rendering', async t => {
-  const { ngrokOtpVerificationProxy, mockApp } = setup()
-
-  let renderedHtml
-  let otpHandler
-
-  // Store the OTP handler when registered
-  mockApp.post.withArgs('/otp').callsFake((path, handler) => {
-    otpHandler = handler
-  })
-
-  mockApp.get.withArgs('/').callsFake((path, handler) => {
-    handler(
-      {},
+    await otpCallback(
       {
-        type: () => ({
-          send: html => {
-            renderedHtml = html
-          },
-        }),
+        body: { otp: '123456' },
+      },
+      {
+        send: sinon.stub(),
       }
     )
+
+    const otp = await otpPromise
+    assert.strictEqual(otp, '123456', 'should return submitted OTP')
   })
 
-  // Start OTP verification process in background
-  const otpPromise = ngrokOtpVerificationProxy({
-    name: 'test-package',
-    version: 'v1.0.0',
-  })
+  it('Should timeout after 5 minutes', async () => {
+    const { ngrokOtpVerificationProxy, logErrorStub } = setup()
 
-  // Submit OTP immediately after handlers are set up
-  setImmediate(() => {
-    if (otpHandler) {
-      otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
+    const clock = sinon.useFakeTimers()
+
+    try {
+      const promise = ngrokOtpVerificationProxy(
+        {
+          name: 'test-package',
+          version: 'v1.0.0',
+        },
+        'ngrok-token'
+      )
+
+      clock.tick(300001)
+
+      await assert.rejects(promise)
+      assert.ok(logErrorStub.calledWith('OTP submission timed out.'))
+    } finally {
+      clock.restore()
     }
-  }, 'ngrok-token')
+  })
 
-  await otpPromise
+  it('Should handle HTML template rendering', async () => {
+    const { ngrokOtpVerificationProxy, mockApp } = setup()
 
-  t.match(renderedHtml, /test-package/, 'should include package name')
-  t.match(renderedHtml, /v1.0.0/, 'should include package version')
-})
+    let renderedHtml
+    let otpHandler
 
-tap.test(
-  'Should handle the failure case when fastify app or html fails to load',
-  async t => {
+    mockApp.post.withArgs('/otp').callsFake((path, handler) => {
+      otpHandler = handler
+    })
+
+    mockApp.get.withArgs('/').callsFake((path, handler) => {
+      handler(
+        {},
+        {
+          type: () => ({
+            send: html => {
+              renderedHtml = html
+            },
+          }),
+        }
+      )
+    })
+
+    const otpPromise = ngrokOtpVerificationProxy({
+      name: 'test-package',
+      version: 'v1.0.0',
+    })
+
+    setImmediate(() => {
+      if (otpHandler) {
+        otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
+      }
+    }, 'ngrok-token')
+
+    await otpPromise
+
+    assert.match(renderedHtml, /test-package/, 'should include package name')
+    assert.match(renderedHtml, /v1.0.0/, 'should include package version')
+  })
+
+  it('Should handle the failure case when fastify app or html fails to load', async () => {
     const { ngrokOtpVerificationProxy, mockApp } = setup()
 
     let otpHandler
 
-    // Store the OTP handler when registered
     mockApp.post.withArgs('/otp').callsFake((path, handler) => {
       otpHandler = handler
     })
+
     const sendSpy = sinon.spy()
     const codeSpy = sinon.stub().returns({ send: sendSpy })
+
     mockApp.get.withArgs('/').callsFake((path, handler) => {
       handler(
         {},
@@ -174,7 +172,6 @@ tap.test(
       )
     })
 
-    // Start OTP verification process in background
     const otpPromise = ngrokOtpVerificationProxy(
       {
         name: 'test-package',
@@ -183,7 +180,6 @@ tap.test(
       'ngrok-token'
     )
 
-    // Submit OTP immediately after handlers are set up
     setImmediate(() => {
       if (otpHandler) {
         otpHandler({ body: { otp: '123456' } }, { send: sinon.stub() })
@@ -192,22 +188,20 @@ tap.test(
 
     await otpPromise
 
-    t.ok(codeSpy.calledWith(500), 'should set 500 status code')
-    t.ok(
+    assert.ok(codeSpy.calledWith(500), 'should set 500 status code')
+    assert.ok(
       sendSpy.calledWith('Error loading HTML page'),
       'should send error message'
     )
-
-    // Or if using tap assertions:
-    t.equal(
+    assert.strictEqual(
       codeSpy.firstCall.args[0],
       500,
       'should set correct error status code'
     )
-    t.equal(
+    assert.strictEqual(
       sendSpy.firstCall.args[0],
       'Error loading HTML page',
       'should send correct error message'
     )
-  }
-)
+  })
+})

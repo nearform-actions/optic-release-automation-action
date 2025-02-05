@@ -1,79 +1,98 @@
 'use strict'
 
-const tap = require('tap')
-const sinon = require('sinon')
-const proxyquire = require('proxyquire')
-const actionLog = require('../src/log')
+const { describe, it, mock } = require('node:test')
+const assert = require('node:assert/strict')
+const actionLog = require('../src/log.js')
+const { mockModule } = require('./mockModule.js')
 
-const setup = status => {
-  const logStub = sinon.stub(actionLog)
-  const fetchStub = sinon.stub()
-  const callApiProxy = proxyquire('../src/utils/callApi', {
-    '../log': logStub,
-    'node-fetch': fetchStub.resolves({
+const mockAllMethods = obj =>
+  Object.fromEntries(Object.keys(obj).map(key => [key, mock.fn()]))
+
+const setup = ({ status }) => {
+  const logStub = mockAllMethods(actionLog)
+  const fetchStub = mock.fn(() =>
+    Promise.resolve({
       status,
       get json() {
         return () => {}
       },
-    }),
+    })
+  )
+
+  const callApiProxy = mockModule('../src/utils/callApi.js', {
+    '../src/log.js': {
+      defaultExport: logStub,
+    },
+    'node-fetch': {
+      defaultExport: fetchStub,
+    },
   })
+
   return { logStub, callApiProxy, fetchStub }
 }
 
-tap.afterEach(() => {
-  sinon.restore()
-})
+describe('callApi tests', async () => {
+  it('Call api warns if code is not 200', async () => {
+    const { logStub, callApiProxy } = setup({
+      status: 401,
+    })
+    await callApiProxy.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      {
+        'api-url': 'whatever',
+      }
+    )
+    assert.strictEqual(logStub.logWarning.mock.calls.length, 1)
+  })
 
-tap.test('Call api warns if code is not 200', async () => {
-  const { logStub, callApiProxy } = setup(401)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    {
-      'api-url': 'whatever',
-    }
-  )
-  sinon.assert.calledOnce(logStub.logWarning)
-})
+  it('Call api does not warn if code is 200', async () => {
+    const { logStub, callApiProxy } = setup({
+      status: 200,
+    })
+    await callApiProxy.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      { 'api-url': 'whatever' }
+    )
+    assert.strictEqual(logStub.logWarning.mock.calls.length, 0)
+  })
 
-tap.test('Call api does not warn if code is  200', async () => {
-  const { logStub, callApiProxy } = setup(200)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    { 'api-url': 'whatever' }
-  )
-  sinon.assert.notCalled(logStub.logWarning)
-})
+  it('Call api does not append slash to api url if present', async () => {
+    const { fetchStub, callApiProxy } = setup({
+      status: 200,
+    })
+    await callApiProxy.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      { 'api-url': 'whatever/' }
+    )
+    assert.strictEqual(fetchStub.mock.calls.length, 1)
+    assert.strictEqual(fetchStub.mock.calls[0].arguments[0], 'whatever/release')
+  })
 
-tap.test('Call api does not append slash to api url if present', async () => {
-  const { fetchStub, callApiProxy } = setup(200)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    { 'api-url': 'whatever/' }
-  )
-  sinon.assert.calledWith(fetchStub, 'whatever/release')
-})
-
-tap.test('Call api appends slash to api url if not present', async () => {
-  const { fetchStub, callApiProxy } = setup(200)
-  await callApiProxy.callApi(
-    {
-      endpoint: 'release',
-      method: 'PATCH',
-      body: {},
-    },
-    { 'api-url': 'whatever' }
-  )
-  sinon.assert.calledWith(fetchStub, 'whatever/release')
+  it('Call api appends slash to api url if not present', async () => {
+    const { fetchStub, callApiProxy } = setup({
+      status: 200,
+    })
+    await callApiProxy.callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {},
+      },
+      { 'api-url': 'whatever' }
+    )
+    assert.strictEqual(fetchStub.mock.calls.length, 1)
+    assert.strictEqual(fetchStub.mock.calls[0].arguments[0], 'whatever/release')
+  })
 })

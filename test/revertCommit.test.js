@@ -1,33 +1,37 @@
 'use strict'
 
-const tap = require('tap')
-const sinon = require('sinon')
-const proxyquire = require('proxyquire')
+const { describe, it, mock } = require('node:test')
+const assert = require('node:assert/strict')
+const { mockModule } = require('./mockModule.js')
 
 const setup = () => {
-  const execWithOutputStub = sinon.stub()
-  const revertCommitProxy = proxyquire('../src/utils/revertCommit', {
-    './execWithOutput': { execWithOutput: execWithOutputStub },
+  const execWithOutputStub = mock.fn()
+  const revertCommitProxy = mockModule('../src/utils/revertCommit.js', {
+    '../src/utils/execWithOutput.js': {
+      namedExports: {
+        execWithOutput: execWithOutputStub,
+      },
+    },
   })
 
   return { execWithOutputStub, revertCommitProxy }
 }
 
-tap.afterEach(() => {
-  sinon.restore()
-})
+describe('revertCommit tests', async () => {
+  it('Revert commit', async () => {
+    const { revertCommitProxy, execWithOutputStub } = setup()
+    const baseRef = 'master'
+    await revertCommitProxy.revertCommit(baseRef)
 
-tap.test('Revert commit', async t => {
-  const { revertCommitProxy, execWithOutputStub } = setup()
-  const baseRef = 'master'
-  await revertCommitProxy.revertCommit(baseRef)
+    assert.strictEqual(execWithOutputStub.mock.calls.length, 2)
 
-  t.ok(execWithOutputStub.callCount === 2)
-
-  sinon.assert.calledWithExactly(execWithOutputStub, 'git', ['revert', 'HEAD'])
-  sinon.assert.calledWithExactly(execWithOutputStub, 'git', [
-    'push',
-    'origin',
-    `${baseRef}`,
-  ])
+    assert.deepStrictEqual(execWithOutputStub.mock.calls[0].arguments, [
+      'git',
+      ['revert', 'HEAD'],
+    ])
+    assert.deepStrictEqual(execWithOutputStub.mock.calls[1].arguments, [
+      'git',
+      ['push', 'origin', baseRef],
+    ])
+  })
 })

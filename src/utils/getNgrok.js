@@ -1,8 +1,9 @@
 'use strict'
-/* c8 ignore start */
+
+/* node:coverage disable */
 async function getNgrok() {
   return await import('ngrok')
 }
 
 module.exports = getNgrok
-/* c8 ignore stop */
+/* node:coverage disable */

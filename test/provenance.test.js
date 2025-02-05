@@ -1,117 +1,112 @@
 'use strict'
 
-const tap = require('tap')
-const semver = require('semver')
+const { describe, it, afterEach } = require('node:test')
+const assert = require('node:assert/strict')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
+const semver = require('semver')
 const {
   getProvenanceOptions,
   checkIsSupported,
   checkPermissions,
   getNpmVersion,
-  // getAccessAdjustment needs proxyquire to mock internal package.json getter results
 } = require('../src/utils/provenance')
+const { mockModule } = require('./mockModule.js')
 
 const MINIMUM_VERSION = '9.5.0'
-
-tap.afterEach(() => {
-  sinon.restore()
-})
-
-tap.test('getNpmVersion can get a real NPM version number', async t => {
-  const npmVersion = await getNpmVersion()
-
-  t.type(npmVersion, 'string')
-
-  // We don't care which version of NPM tests are run on, just that it gets any valid version
-  t.ok(semver.satisfies(npmVersion, '>0.0.1'))
-})
-
-tap.test('checkIsSupported passes on minimum NPM version', async t => {
-  t.doesNotThrow(() => checkIsSupported(MINIMUM_VERSION))
-})
-
-tap.test('checkIsSupported passes on major version after minimum', async t => {
-  t.doesNotThrow(() => checkIsSupported('10.0.0'))
-})
-
-tap.test('checkIsSupported fails on minor version before minimum', async t => {
-  t.throws(
-    () => checkIsSupported('9.4.0'),
-    `Provenance requires NPM ${MINIMUM_VERSION}`
-  )
-})
-
-tap.test('checkIsSupported fails on major version before minimum', async t => {
-  t.throws(
-    () => checkIsSupported('8.0.0'),
-    `Provenance requires NPM ${MINIMUM_VERSION}`
-  )
-})
-
-tap.test('checkPermissions always passes on NPM 9.6.1', async t => {
-  t.doesNotThrow(() => checkIsSupported('9.6.1'))
-})
-
-tap.test(
-  'checkPermissions always passes on next major NPM version',
-  async t => {
-    t.doesNotThrow(() => checkIsSupported('10.0.0'))
-  }
-)
-
-tap.test('checkPermissions fails on minimum version without env', async t => {
-  t.throws(
-    () => checkPermissions(MINIMUM_VERSION),
-    'Provenance generation in GitHub Actions requires "write" access to the "id-token" permission'
-  )
-})
-
-tap.test('checkPermissions passes on minimum version with env', async t => {
-  sinon
-    .stub(process, 'env')
-    .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
-
-  t.doesNotThrow(() => checkIsSupported(MINIMUM_VERSION))
-})
+const unscopedPackageName = 'unscoped-fake-package'
+const scopedPackageName = '@scoped/fake-package'
 
 const setupAccessAdjustment = ({ local, published }) => {
-  const { getAccessAdjustment } = proxyquire('../src/utils/provenance', {
-    './packageInfo': {
-      getPublishedInfo: async () => published,
-      getLocalInfo: () => local,
+  const { getAccessAdjustment } = mockModule('../src/utils/provenance.js', {
+    '../src/utils/packageInfo.js': {
+      namedExports: {
+        getPublishedInfo: async () => published,
+        getLocalInfo: () => local,
+      },
     },
   })
   return getAccessAdjustment
 }
-const unscopedPackageName = 'unscoped-fake-package'
-const scopedPackageName = '@scoped/fake-package'
 
-tap.test(
-  'getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option',
-  async t => {
+describe('provenance tests', async () => {
+  afterEach(() => {
+    sinon.restore()
+  })
+
+  it('getNpmVersion can get a real NPM version number', async () => {
+    const npmVersion = await getNpmVersion()
+    assert.strictEqual(typeof npmVersion, 'string')
+    assert.ok(semver.satisfies(npmVersion, '>0.0.1'))
+  })
+
+  it('checkIsSupported passes on minimum NPM version', async () => {
+    assert.doesNotThrow(() => checkIsSupported(MINIMUM_VERSION))
+  })
+
+  it('checkIsSupported passes on major version after minimum', async () => {
+    assert.doesNotThrow(() => checkIsSupported('10.0.0'))
+  })
+
+  it('checkIsSupported fails on minor version before minimum', async () => {
+    assert.throws(
+      () => checkIsSupported('9.4.0'),
+      err => {
+        return err.message.includes('Provenance requires NPM >=9.5.0')
+      }
+    )
+  })
+
+  it('checkIsSupported fails on major version before minimum', async () => {
+    assert.throws(
+      () => checkIsSupported('8.0.0'),
+      err => {
+        return err.message.includes('Provenance requires NPM >=9.5.0')
+      }
+    )
+  })
+
+  it('checkPermissions always passes on NPM 9.6.1', async () => {
+    assert.doesNotThrow(() => checkIsSupported('9.6.1'))
+  })
+
+  it('checkPermissions always passes on next major NPM version', async () => {
+    assert.doesNotThrow(() => checkIsSupported('10.0.0'))
+  })
+
+  it('checkPermissions fails on minimum version without env', async () => {
+    assert.throws(
+      () => checkPermissions(MINIMUM_VERSION),
+      /Provenance generation in GitHub Actions requires "write" access to the "id-token" permission/
+    )
+  })
+
+  it('checkPermissions passes on minimum version with env', async () => {
+    sinon
+      .stub(process, 'env')
+      .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
+    assert.doesNotThrow(() => checkIsSupported(MINIMUM_VERSION))
+  })
+
+  it('getAccessAdjustment returns { access: public } if unscoped, unpublished and no access option', async () => {
     const getAccessAdjustment = setupAccessAdjustment({
       local: { name: unscopedPackageName },
       published: null,
     })
-    t.match(await getAccessAdjustment(), { access: 'public' })
-  }
-)
+    assert.deepStrictEqual(await getAccessAdjustment(), { access: 'public' })
+  })
 
-tap.test(
-  'getAccessAdjustment does nothing if passed defined access option',
-  async t => {
+  it('getAccessAdjustment does nothing if passed defined access option', async () => {
     const getAccessAdjustment = setupAccessAdjustment({
       local: { name: unscopedPackageName },
       published: null,
     })
-    t.notOk(await getAccessAdjustment({ access: 'public' }))
-  }
-)
+    assert.strictEqual(
+      await getAccessAdjustment({ access: 'public' }),
+      undefined
+    )
+  })
 
-tap.test(
-  'getAccessAdjustment does nothing if package.json defines access',
-  async t => {
+  it('getAccessAdjustment does nothing if package.json defines access', async () => {
     const getAccessAdjustment = setupAccessAdjustment({
       local: {
         name: unscopedPackageName,
@@ -119,30 +114,75 @@ tap.test(
       },
       published: null,
     })
-    t.notOk(await getAccessAdjustment())
-  }
-)
+    assert.strictEqual(await getAccessAdjustment(), undefined)
+  })
 
-tap.test(
-  'getAccessAdjustment does nothing if package.json name is scoped',
-  async t => {
+  it('getAccessAdjustment does nothing if package.json name is scoped', async () => {
     const getAccessAdjustment = setupAccessAdjustment({
       local: { name: scopedPackageName },
       published: null,
     })
-    t.notOk(await getAccessAdjustment())
-  }
-)
-
-tap.test('getAccessAdjustment does nothing if package is on npm', async t => {
-  const getAccessAdjustment = setupAccessAdjustment({
-    local: { name: unscopedPackageName },
-    published: { name: unscopedPackageName },
+    assert.strictEqual(await getAccessAdjustment(), undefined)
   })
-  t.notOk(await getAccessAdjustment())
-})
 
-tap.test(
-  'getProvenanceOptions fails fast if NPM version unavailable',
-  async t => t.rejects(getProvenanceOptions, 'Current npm version not provided')
-)
+  it('getAccessAdjustment does nothing if package is on npm', async () => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: unscopedPackageName },
+      published: { name: unscopedPackageName },
+    })
+    assert.strictEqual(await getAccessAdjustment(), undefined)
+  })
+
+  it('getProvenanceOptions fails fast if NPM version unavailable', async () => {
+    await assert.rejects(
+      getProvenanceOptions,
+      /Current npm version not provided/
+    )
+  })
+
+  it('getProvenanceOptions returns extra options when all checks pass', async () => {
+    const getAccessAdjustment = setupAccessAdjustment({
+      local: { name: 'unscoped-package' },
+      published: null,
+    })
+
+    sinon
+      .stub(process, 'env')
+      .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
+
+    const publishOptions = { someOption: 'value' }
+    const result = await getAccessAdjustment('9.6.0', publishOptions)
+    assert.deepStrictEqual(result, { access: 'public' })
+  })
+
+  it('getProvenanceOptions succeeds with npm version and no publish options', async () => {
+    const getProvenanceOptions = setupAccessAdjustment({
+      local: { name: '@scoped/package' }, // Scoped package won't return access option
+      published: null,
+    })
+
+    sinon
+      .stub(process, 'env')
+      .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
+
+    const result = await getProvenanceOptions('9.6.0')
+    assert.strictEqual(result, undefined)
+  })
+
+  it('getProvenanceOptions returns whatever getAccessAdjustment returns', async () => {
+    const getProvenanceOptions = mockModule('../src/utils/provenance.js', {
+      '../src/utils/packageInfo.js': {
+        namedExports: {
+          getPublishedInfo: async () => null,
+          getLocalInfo: () => ({ name: 'unscoped-package' }),
+        },
+      },
+    }).getProvenanceOptions
+
+    sinon
+      .stub(process, 'env')
+      .value({ ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' })
+    const result = await getProvenanceOptions('9.6.1', {})
+    assert.deepStrictEqual(result, { access: 'public' })
+  })
+})
