@@ -37,7 +37,7 @@
     "@vercel/ncc": "^0.38.3",
     "doctoc": "^2.2.1",
     "eslint": "^8.57.0",
-    "eslint-config-prettier": "^10.0.2",
+    "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^4.2.1",
     "husky": "^9.1.7",
     "lodash.clonedeep": "^4.5.0",
