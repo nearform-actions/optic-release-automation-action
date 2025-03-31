@@ -106,7 +106,7 @@ describe('ngrok otp tests', async () => {
     }
   })
 
-  it('Should not timeout when the abort is triggered before the 5 minutes end', async () => {
+  it('Should reject right away when abort is triggered and not log the timeout error', async () => {
     const { ngrokOtpVerificationProxy, logErrorStub } = setup()
 
     const clock = sinon.useFakeTimers()
