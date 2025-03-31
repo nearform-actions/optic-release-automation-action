@@ -106,6 +106,32 @@ describe('ngrok otp tests', async () => {
     }
   })
 
+  it('Should not timeout when the abort is triggered before the 5 minutes end', async () => {
+    const { ngrokOtpVerificationProxy, logErrorStub } = setup()
+
+    const clock = sinon.useFakeTimers()
+
+    const abortCtrl = new AbortController()
+    try {
+      const promise = ngrokOtpVerificationProxy(
+        {
+          name: 'test-package',
+          version: 'v1.0.0',
+        },
+        'ngrok-token',
+        abortCtrl.signal
+      )
+
+      clock.tick(150000)
+      abortCtrl.abort()
+      await assert.rejects(promise)
+      assert.ok(logErrorStub.notCalled)
+      assert.equal(await promise.catch(e => e), 'Aborted')
+    } finally {
+      clock.restore()
+    }
+  })
+
   it('Should handle HTML template rendering', async () => {
     const { ngrokOtpVerificationProxy, mockApp } = setup()
 
