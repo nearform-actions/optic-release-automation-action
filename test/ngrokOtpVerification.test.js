@@ -84,7 +84,7 @@ describe('ngrok otp tests', async () => {
   })
 
   it('Should timeout after 5 minutes', async () => {
-    const { ngrokOtpVerificationProxy } = setup()
+    const { ngrokOtpVerificationProxy, logErrorStub } = setup()
 
     const clock = sinon.useFakeTimers()
 
@@ -100,11 +100,7 @@ describe('ngrok otp tests', async () => {
       clock.tick(300001)
 
       await assert.rejects(promise)
-      assert.equal(
-        await promise.catch(reason => reason),
-        'OTP submission timed out.',
-        'should reject with the expected message'
-      )
+      assert.ok(logErrorStub.calledWith('OTP submission timed out.'))
     } finally {
       clock.restore()
     }

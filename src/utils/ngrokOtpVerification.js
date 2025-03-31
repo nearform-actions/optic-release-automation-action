@@ -19,7 +19,8 @@ async function ngrokOtpVerification(packageInfo, ngrokToken, abortSignal) {
   })
 
   const timeout = setTimeout(() => {
-    otpPromiseReject('OTP submission timed out.')
+    logError('OTP submission timed out.')
+    otpPromiseReject()
   }, otpVerificationTimeout)
 
   abortSignal?.addEventListener('abort', () => {
