@@ -5,11 +5,10 @@ const fastify = require('fastify')
 const { logInfo, logError } = require('../log')
 const getNgrok = require('./getNgrok')
 
-const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 const otpVerificationTimeout = 300000 // 5 minutes;
-
-async function ngrokOtpVerification(packageInfo, ngrokToken) {
+async function ngrokOtpVerification(packageInfo, ngrokToken, abortSignal) {
   const app = fastify()
+  const otpHtml = fs.readFileSync(__dirname + '/assets/otp.html', 'utf8')
 
   let otpPromiseResolve
   let otpPromiseReject
@@ -20,9 +19,13 @@ async function ngrokOtpVerification(packageInfo, ngrokToken) {
   })
 
   const timeout = setTimeout(() => {
-    logError('OTP submission timed out.')
-    otpPromiseReject()
+    otpPromiseReject('OTP submission timed out.')
   }, otpVerificationTimeout)
+
+  abortSignal?.addEventListener('abort', () => {
+    clearTimeout(timeout)
+    otpPromiseReject('Aborted')
+  })
 
   app.get('/', async (req, reply) => {
     try {
@@ -44,7 +47,6 @@ async function ngrokOtpVerification(packageInfo, ngrokToken) {
     reply.send('OTP received. You can close this window.')
   })
 
-  // const ngrok = await import('ngrok')
   const ngrok = await getNgrok()
   try {
     await app.listen({ port: 3000 })
@@ -61,7 +63,6 @@ async function ngrokOtpVerification(packageInfo, ngrokToken) {
     )
 
     const otp = await otpPromise
-
     return otp
   } finally {
     await app.close()

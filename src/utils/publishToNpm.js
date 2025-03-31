@@ -69,6 +69,7 @@ async function publishToNpm({
     if (opticToken || ngrokToken) {
       try {
         const otpPromises = []
+        const abortCtrl = new AbortController()
 
         if (opticToken) {
           otpPromises.push(
@@ -94,11 +95,13 @@ async function publishToNpm({
                 version,
                 name: localInfo?.name,
               },
-              ngrokToken
+              ngrokToken,
+              abortCtrl.signal
             )
           )
         }
         const otp = await Promise.race(otpPromises)
+        abortCtrl.abort()
         await execWithOutput('npm', ['publish', '--otp', otp, ...flags])
       } catch (error) {
         throw new Error(`OTP verification failed: ${error.message}`)
