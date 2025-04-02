@@ -95,10 +95,8 @@ runs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
-      with:
-        node-version-file: '.nvmrc'
 
-    - name: Install ngrok locally
+    - name: Install ngrok
       if: ${{ github.event_name == 'pull_request' && inputs.ngrok-token  }}
       run: |
         cd ${{ github.action_path }}
