@@ -30,7 +30,7 @@
     "markdown-it": "^14.1.0",
     "node-fetch": "^2.6.6",
     "p-map": "^4.0.0",
-    "semver": "^7.7.1",
+    "semver": "^7.7.2",
     "string-format": "^2.0.0"
   },
   "devDependencies": {
