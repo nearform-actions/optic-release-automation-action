@@ -20,7 +20,9 @@ async function fetchLatestRelease(token) {
 
     return latestRelease
   } catch (err) {
-    if (err.message === 'Not Found') {
+    if (err?.message?.includes('Not Found')) {
+      // This is mostly likely to happen when there are no previous releases for the repository yet, i.e v1.0.0 etc.
+      // In this case, it's not necessarily an error, so we just return and proceed with the release
       logInfo(`No previous releases found`)
       return
     }
@@ -72,7 +74,7 @@ async function fetchReleaseByTag(token, tag) {
 
     return release
   } catch (err) {
-    if (err.message === 'Not Found') {
+    if (err?.message?.includes('Not Found')) {
       logError(`Release with tag ${tag} not found.`)
       throw err
     }
