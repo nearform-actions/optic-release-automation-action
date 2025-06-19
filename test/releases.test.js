@@ -104,7 +104,9 @@ describe('releases tests', async () => {
             rest: {
               repos: {
                 getLatestRelease: async () => {
-                  throw new Error('Not Found - https://docs.github.com/rest/releases/releases#get-the-latest-release')
+                  throw new Error(
+                    'Not Found - https://docs.github.com/rest/releases/releases#get-the-latest-release'
+                  )
                 },
               },
             },
@@ -144,7 +146,9 @@ describe('releases tests', async () => {
             rest: {
               repos: {
                 getReleaseByTag: async () => {
-                  throw new Error('Not Found - https://docs.github.com/rest/releases/releases#get-the-latest-release')
+                  throw new Error(
+                    'Not Found - https://docs.github.com/rest/releases/releases#get-the-latest-release'
+                  )
                 },
               },
             },
