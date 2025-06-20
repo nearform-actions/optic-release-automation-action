@@ -284,4 +284,64 @@ describe('notifyIssues tests', async () => {
       )
     )
   })
+
+  it('should not post duplicate comments if multiple PRs reference the same issue', async () => {
+    const releaseNotes = `
+      ## What's Changed\n +
+      * fix: something by @dev in https://github.com/owner/repo/pull/10\n
+      * fix: another thing by @dev in https://github.com/owner/repo/pull/11\n
+      **Full Changelog**: https://github.com/owner/repo/compare/v1.0.20...v1.1.0
+    `
+
+    const release = { body: releaseNotes, html_url: 'some_url' }
+
+    // Both PRs reference the same issue #42
+    const graphqlStub = sinon.stub()
+    graphqlStub.onFirstCall().resolves({
+      repository: {
+        pullRequest: {
+          closingIssuesReferences: {
+            nodes: [
+              {
+                number: '42',
+                repository: {
+                  name: 'repo',
+                  owner: { login: 'owner' },
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+    graphqlStub.onSecondCall().resolves({
+      repository: {
+        pullRequest: {
+          closingIssuesReferences: {
+            nodes: [
+              {
+                number: '42',
+                repository: {
+                  name: 'repo',
+                  owner: { login: 'owner' },
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    await notifyIssues(
+      { ...DEFAULT_GITHUB_CLIENT, graphql: graphqlStub },
+      false,
+      'owner',
+      'repo',
+      release
+    )
+
+    // Only one comment should be posted for issue #42
+    assert.strictEqual(createCommentStub.callCount, 1)
+    assert.strictEqual(createCommentStub.firstCall.args[0].issue_number, '42')
+  })
 })

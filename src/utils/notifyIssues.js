@@ -100,6 +100,17 @@ async function notifyIssues(
     )
   ).flat()
 
+  // Deduplicate issues by issueNumber, repoOwner, and repoName
+  const seenKeys = new Set()
+  const uniqueIssuesToNotify = issueNumbersToNotify.filter(issue => {
+    const key = `${issue.repoOwner}/${issue.repoName}#${issue.issueNumber}`
+    if (seenKeys.has(key)) {
+      return false
+    }
+    seenKeys.add(key)
+    return true
+  })
+
   const body = createCommentBody(
     shouldPostNpmLink,
     packageName,
@@ -130,7 +141,7 @@ async function notifyIssues(
     }
   }
 
-  await pMap(issueNumbersToNotify, mapper, {
+  await pMap(uniqueIssuesToNotify, mapper, {
     concurrency: 10,
     stopOnError: false,
   })
