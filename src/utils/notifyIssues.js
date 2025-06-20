@@ -101,14 +101,15 @@ async function notifyIssues(
   ).flat()
 
   // Deduplicate issues by issueNumber, repoOwner, and repoName
-  const uniqueIssuesMap = new Map()
-  for (const issue of issueNumbersToNotify) {
+  const seenKeys = new Set()
+  const uniqueIssuesToNotify = issueNumbersToNotify.filter(issue => {
     const key = `${issue.repoOwner}/${issue.repoName}#${issue.issueNumber}`
-    if (!uniqueIssuesMap.has(key)) {
-      uniqueIssuesMap.set(key, issue)
+    if (seenKeys.has(key)) {
+      return false
     }
-  }
-  const uniqueIssuesToNotify = Array.from(uniqueIssuesMap.values())
+    seenKeys.add(key)
+    return true
+  })
 
   const body = createCommentBody(
     shouldPostNpmLink,
