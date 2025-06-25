@@ -86,6 +86,9 @@ inputs:
   ngrok-token:
     description: 'Your Ngrok Auth Token. Required only if you want to pubish to Npm and have MFA enabled for your account'
     required: false
+  bump-command: 
+    description: 'The command to use to bump the version of the pacakge. It defaults to npm version'
+    required: false
 
 runs:
   using: 'composite'
@@ -112,13 +115,21 @@ runs:
     - name: Version bump
       uses: actions/github-script@v7
       id: version-bump
-      if: ${{ github.event_name == 'workflow_dispatch' }}
+      if: ${{ github.event_name == 'workflow_dispatch' && !inputs.bump-command }}
       with:
         result-encoding: string
         github-token: ${{ inputs.github-token }}
         script: |
           const { bumpVersion } = require('${{ github.action_path }}/dist/index.js')
           return await bumpVersion({ inputs: ${{ toJSON(inputs) }} })
+
+    - name: Custom version bump
+      id: custom-version-bump
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.bump-command }}
+      run: |
+        VERSION=${{ inputs.bump-command }} ${{ inputs.semver }} 
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"        
+      shell: 'bash'
 
     - name: Build the package
       if: ${{ inputs.build-command }}
@@ -135,7 +146,10 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const { runAction } = require('${{ github.action_path }}/dist/index.js')
-          await runAction({ github, context, inputs: ${{ toJSON(inputs) }}, packageVersion: ${{ steps.version-bump.outputs.result }} })
+          await runAction(
+            { github, context, inputs: ${{ toJSON(inputs) }}, 
+            packageVersion: ${{ steps.version-bump.outputs.result || steps.custom-version-bump.outputs.version  }} 
+          })
 
     - name: Release the package
       uses: actions/github-script@v7
