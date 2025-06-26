@@ -127,9 +127,11 @@ runs:
       id: custom-version-bump
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.bump-command }}
       run: |
-        VERSION=${{ inputs.bump-command }} ${{ inputs.semver }} 
-        echo "version=$VERSION" >> "$GITHUB_OUTPUT"        
-      shell: 'bash'
+        ${{ inputs.bump-command }} ${{ inputs.semver }}
+        VERSION=$(bump-my-version show current_version)
+        echo "$VERSION"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      shell: bash
 
     - name: Build the package
       if: ${{ inputs.build-command }}
@@ -146,9 +148,11 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const { runAction } = require('${{ github.action_path }}/dist/index.js')
-          await runAction(
-            { github, context, inputs: ${{ toJSON(inputs) }}, 
-            packageVersion: ${{ steps.version-bump.outputs.result || steps.custom-version-bump.outputs.version  }} 
+          await runAction({
+            github,
+            context,
+            inputs: ${{ toJSON(inputs) }},
+            packageVersion: '${{ steps.version-bump.outputs.result || steps.custom-version-bump.outputs.version }}'
           })
 
     - name: Release the package
