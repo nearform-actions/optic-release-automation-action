@@ -127,8 +127,7 @@ runs:
       id: custom-version-bump
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.bump-command }}
       run: |
-        ${{ inputs.bump-command }} ${{ inputs.semver }}
-        VERSION=$(bump-my-version show current_version)
+        VERSION=$(${{ inputs.bump-command }} ${{ inputs.semver }} --verbose | grep "New version will be" | sed "s/.*'\(.*\)'/\1/")
         echo "$VERSION"
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       shell: bash
