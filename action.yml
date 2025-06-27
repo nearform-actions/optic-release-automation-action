@@ -159,7 +159,7 @@ runs:
             github,
             context,
             inputs: ${{ toJSON(inputs) }},
-            packageVersion: '${{ steps.version-bump.outputs.result || steps.custom-get-version.outputs.version }}'
+            packageVersion: ${{ steps.version-bump.outputs.result || steps.custom-get-version.outputs.version }}
           })
 
     - name: Release the package
