@@ -89,6 +89,9 @@ inputs:
   bump-command: 
     description: 'The command to use to bump the version of the pacakge. It defaults to npm version'
     required: false
+  get-version-command: 
+    description: 'The command to use to get the current version of the package. It defaults to npm get pkg version'
+    required: false
 
 runs:
   using: 'composite'
@@ -124,11 +127,16 @@ runs:
           return await bumpVersion({ inputs: ${{ toJSON(inputs) }} })
 
     - name: Custom version bump
-      id: custom-version-bump
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.bump-command }}
       run: |
-        VERSION=$(${{ inputs.bump-command }} ${{ inputs.semver }} --verbose | grep "New version will be" | sed "s/.*'\(.*\)'/\1/" | xargs)
-        echo "$VERSION"
+        ${{ inputs.bump-command }} ${{ inputs.semver }} 
+      shell: bash
+
+    - name: Custom get version
+      id: custom-get-version
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.get-version-command }}
+      run: |
+        VERSION=$(${{ inputs.get-version-command }})
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       shell: bash
 
@@ -151,7 +159,7 @@ runs:
             github,
             context,
             inputs: ${{ toJSON(inputs) }},
-            packageVersion: '${{ steps.version-bump.outputs.result || steps.custom-version-bump.outputs.version }}'
+            packageVersion: '${{ steps.version-bump.outputs.result || steps.custom-get-version.outputs.version }}'
           })
 
     - name: Release the package
