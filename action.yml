@@ -136,7 +136,7 @@ runs:
       id: custom-get-version
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.get-version-command }}
       run: |
-        VERSION=$(${{ inputs.get-version-command }})
+        VERSION="$(${{ inputs.get-version-command }})"
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       shell: bash
 
