@@ -423,6 +423,50 @@ describe('release tests', async () => {
     assert.ok(true, 'called publishToNpm')
   })
 
+  it('Should publish via OIDC mode and warn when provenance is set', async () => {
+    const { release, stubs } = setup({
+      npmVersion: '9.5.0',
+      env: { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.com' },
+    })
+
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'publish-mode': 'oidc',
+        provenance: 'true',
+      },
+    })
+
+    sinon.assert.calledWithMatch(
+      stubs.logStub.logWarning,
+      'provenance is enabled but OIDC already manages provenance automatically; --provenance flag will not be added.'
+    )
+
+    sinon.assert.calledWithMatch(stubs.publishToNpmStub, {
+      publishMode: 'oidc',
+      provenance: true,
+    })
+  })
+
+  it('Should skip npm publish when publish-mode is none', async () => {
+    const { release, stubs } = setup()
+
+    await release({
+      ...DEFAULT_ACTION_DATA,
+      inputs: {
+        'app-name': APP_NAME,
+        'publish-mode': 'none',
+      },
+    })
+
+    sinon.assert.calledWithMatch(
+      stubs.logStub.logInfo,
+      'publish-mode is set to "none". Skipping npm publish.'
+    )
+    sinon.assert.notCalled(stubs.publishToNpmStub)
+  })
+
   it('Should not override access restricted with provenance while unscoped and unpublished', async () => {
     const { release, stubs } = setup({
       isScoped: false,
