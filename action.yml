@@ -83,6 +83,10 @@ inputs:
   access:
     description: 'If defined, sets package to public or restricted via `--access` flag on `npm publish`. Supported values are "restricted" or "public".'
     required: false
+  publish-mode:
+    description: 'Choose how to publish to npm: "token" (default), "oidc" (Trusted Publishing), or "none" (skip npm publish)'
+    required: false
+    default: 'token'
   ngrok-token:
     description: 'Your Ngrok Auth Token. Required only if you want to pubish to Npm and have MFA enabled for your account'
     required: false
