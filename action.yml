@@ -105,6 +105,8 @@ runs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
 
     - name: Install ngrok
       if: ${{ github.event_name == 'pull_request' && inputs.ngrok-token  }}
