@@ -108,6 +108,12 @@ runs:
       with:
         node-version: lts/*
 
+    - name: Upgrade npm for OIDC publishing
+      if: ${{ inputs.publish-mode == 'oidc' }}
+      run: |
+        npm install -g npm@^11.5.1
+      shell: bash
+
     - name: Install ngrok
       if: ${{ github.event_name == 'pull_request' && inputs.ngrok-token  }}
       run: |
