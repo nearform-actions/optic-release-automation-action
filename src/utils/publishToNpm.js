@@ -45,12 +45,18 @@ async function publishToNpm({
   version,
   provenance,
   access,
+  publishMode,
 }) {
-  await execWithOutput('npm', [
-    'config',
-    'set',
-    `//registry.npmjs.org/:_authToken=${npmToken}`,
-  ])
+  const isOidc = publishMode === 'oidc'
+
+  // Configure token auth only if not using OIDC
+  if (!isOidc && npmToken) {
+    await execWithOutput('npm', [
+      'config',
+      'set',
+      `//registry.npmjs.org/:_authToken=${npmToken}`,
+    ])
+  }
 
   const flags = ['--tag', npmTag]
 
@@ -58,7 +64,8 @@ async function publishToNpm({
     flags.push('--access', access)
   }
 
-  if (provenance) {
+  // In OIDC mode, npm will handle provenance automatically; avoid --provenance
+  if (provenance && !isOidc) {
     flags.push('--provenance')
   }
 
@@ -66,7 +73,10 @@ async function publishToNpm({
     await execWithOutput('npm', ['pack', '--dry-run'])
     const localInfo = await getLocalInfo()
 
-    if (opticToken || ngrokToken) {
+    // If OIDC is enabled, publish without OTP flow; npm will use OIDC automatically
+    if (isOidc) {
+      await execWithOutput('npm', ['publish', ...flags])
+    } else if (opticToken || ngrokToken) {
       try {
         const otpPromises = []
         const abortCtrl = new AbortController()

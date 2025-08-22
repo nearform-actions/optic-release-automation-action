@@ -99,6 +99,7 @@ module.exports = async function ({ github, context, inputs }) {
     const ngrokToken = inputs['ngrok-token']
     const provenance = /true/i.test(inputs['provenance'])
     const access = inputs['access']
+    const publishMode = (inputs['publish-mode'] || 'token').toLowerCase()
 
     if (access && !ACCESS_OPTIONS.includes(access)) {
       core.setFailed(
@@ -118,22 +119,34 @@ module.exports = async function ({ github, context, inputs }) {
       version,
       provenance,
       access,
+      publishMode,
     }
 
-    if (provenance) {
-      const extraOptions = await getProvenanceOptions(
-        await getNpmVersion(),
-        publishOptions
-      )
-      if (extraOptions) {
-        Object.assign(publishOptions, extraOptions)
+    if (publishMode === 'none') {
+      logInfo('publish-mode is set to "none". Skipping npm publish.')
+    } else if (publishMode === 'oidc') {
+      if (provenance) {
+        logWarning(
+          'provenance is enabled but OIDC already manages provenance automatically; --provenance flag will not be added.'
+        )
       }
-    }
-
-    if (npmToken) {
       await publishToNpm(publishOptions)
     } else {
-      logWarning('missing npm-token')
+      // default/token
+      if (npmToken) {
+        if (provenance) {
+          const extraOptions = await getProvenanceOptions(
+            await getNpmVersion(),
+            publishOptions
+          )
+          if (extraOptions) {
+            Object.assign(publishOptions, extraOptions)
+          }
+        }
+        await publishToNpm(publishOptions)
+      } else {
+        logWarning('missing npm-token')
+      }
     }
   } catch (err) {
     if (pr.merged && shouldRevertCommit) {

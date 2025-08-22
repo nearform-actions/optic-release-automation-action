@@ -354,6 +354,53 @@ describe('publishToNpm tests', async () => {
     ])
   })
 
+  it('Should publish to npm via OIDC without tokens or OTP', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
+
+    await publishToNpmProxy.publishToNpm({
+      npmTag: 'latest',
+      version: 'v5.1.3',
+      publishMode: 'oidc',
+    })
+
+    // Should still dry-run pack for validation
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'pack',
+      '--dry-run',
+    ])
+
+    // Should publish without OTP and without provenance flag
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  })
+
+  it('Should not add --provenance flag in OIDC mode even if provenance is true', async () => {
+    const { publishToNpmProxy, execWithOutputStub } = setup()
+
+    await publishToNpmProxy.publishToNpm({
+      npmTag: 'latest',
+      version: 'v5.1.3',
+      publishMode: 'oidc',
+      provenance: true,
+    })
+
+    // Should still dry-run pack for validation
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'pack',
+      '--dry-run',
+    ])
+
+    // Should publish without provenance flag
+    sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
+      'publish',
+      '--tag',
+      'latest',
+    ])
+  })
+
   it('Adds --access flag if provided as an input', async () => {
     const { publishToNpmProxy, execWithOutputStub } = setup()
 

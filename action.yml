@@ -83,6 +83,10 @@ inputs:
   access:
     description: 'If defined, sets package to public or restricted via `--access` flag on `npm publish`. Supported values are "restricted" or "public".'
     required: false
+  publish-mode:
+    description: 'Choose how to publish to npm: "token" (default), "oidc" (Trusted Publishing), or "none" (skip npm publish)'
+    required: false
+    default: 'token'
   ngrok-token:
     description: 'Your Ngrok Auth Token. Required only if you want to pubish to Npm and have MFA enabled for your account'
     required: false
@@ -101,6 +105,14 @@ runs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+
+    - name: Upgrade npm for OIDC publishing
+      if: ${{ inputs.publish-mode == 'oidc' }}
+      run: |
+        npm install -g npm@>=11.5.1
+      shell: bash
 
     - name: Install ngrok
       if: ${{ github.event_name == 'pull_request' && inputs.ngrok-token  }}
