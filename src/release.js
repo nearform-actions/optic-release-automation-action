@@ -189,12 +189,13 @@ module.exports = async function ({ github, context, inputs }) {
       logInfo(`Tag ${version} doesn't exist, will be created fresh`)
     }
 
-    // Now use GitHub API directly to publish with correct target_commitish
+    // Now use GitHub API directly to publish with correct target_commitish and clean name
     const { data: release } = await github.rest.repos.updateRelease({
       owner,
       repo,
       release_id: id,
       tag_name: version,
+      name: version, // Explicitly set clean name (just the version)
       draft: false,
       prerelease: isPreRelease,
       generate_release_notes: true,
