@@ -177,6 +177,17 @@ module.exports = async function ({ github, context, inputs }) {
     const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
     logInfo(`Updating release to point to merge commit: ${mergeCommitHash}`)
 
+    // First update the release target commit via GitHub API directly
+    await github.rest.repos.updateRelease({
+      owner,
+      repo,
+      release_id: id,
+      target_commitish: mergeCommitHash,
+      prerelease: isPreRelease,
+    })
+    
+    logInfo(`Release updated successfully with target commit: ${mergeCommitHash}`)
+
     const { data: release } = await callApi(
       {
         endpoint: 'release',
