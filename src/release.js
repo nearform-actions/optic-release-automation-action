@@ -173,47 +173,33 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   try {
-    // Get the current merge commit to ensure the release tag points to the actual published code
+    // Get the current merge commit 
     const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
-    logInfo(`Updating git tag to point to merge commit: ${mergeCommitHash}`)
+    logInfo(`Publishing release and fixing tag to point to merge commit: ${mergeCommitHash}`)
 
-    // Fix the Git tag BEFORE callApi runs (so publishRelease picks up the right commit)
-    const tagName = version
-    
-    // Delete the old tag and recreate it pointing to the merge commit
+    // Delete the existing Git tag so GitHub will respect target_commitish
     try {
       await github.rest.git.deleteRef({
         owner,
         repo,
-        ref: `tags/${tagName}`,
+        ref: `tags/${version}`,
       })
+      logInfo(`Deleted existing tag ${version}`)
     } catch (err) {
-      // Tag might not exist yet, that's ok
-      logInfo(`Tag ${tagName} doesn't exist yet, will create new one`)
+      logInfo(`Tag ${version} doesn't exist, will be created fresh`)
     }
-    
-    await github.rest.git.createRef({
+
+    // Now use GitHub API directly to publish with correct target_commitish
+    const { data: release } = await github.rest.repos.updateRelease({
       owner,
       repo,
-      ref: `refs/tags/${tagName}`,
-      sha: mergeCommitHash,
+      release_id: id,
+      tag_name: version,
+      draft: false,
+      prerelease: isPreRelease,
+      generate_release_notes: true,
+      target_commitish: mergeCommitHash, // This will work now that tag is deleted!
     })
-    
-    logInfo(`Git tag ${tagName} now points to merge commit: ${mergeCommitHash}`)
-
-    // Now let the Optic service handle the publishing (it will use the updated tag)
-    const { data: release } = await callApi(
-      {
-        endpoint: 'release',
-        method: 'PATCH',
-        body: {
-          version: version,
-          releaseId: id,
-          isPreRelease,
-        },
-      },
-      inputs
-    )
 
     const shouldNotifyLinkedIssues = /true/i.test(
       inputs['notify-linked-issues']
