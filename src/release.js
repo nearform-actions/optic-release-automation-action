@@ -177,18 +177,17 @@ module.exports = async function ({ github, context, inputs }) {
     const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
     logInfo(`Updating release to point to merge commit: ${mergeCommitHash}`)
 
-    // First: Fix the target commit via GitHub API (but keep as draft)
+    // Update the release target commit, then let callApi handle publishing
     await github.rest.repos.updateRelease({
       owner,
       repo,
       release_id: id,
       target_commitish: mergeCommitHash,
-      draft: true, // Keep as draft so callApi can publish it properly
     })
     
     logInfo(`Release target updated to merge commit: ${mergeCommitHash}`)
 
-    // Then: Let the Optic service handle the proper publishing/formatting
+    // Let the Optic service handle the publishing with proper formatting
     const { data: release } = await callApi(
       {
         endpoint: 'release',
