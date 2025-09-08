@@ -11,6 +11,8 @@ const callApi = async ({ method, endpoint, body }, inputs) => {
   const apiUrl = inputs['api-url'].endsWith('/')
     ? inputs['api-url']
     : `${inputs['api-url']}/`
+  console.log('>>>>>>apiUrlapiUrl', apiUrl)
+  console.log('>>>>>>body', body)
 
   const response = await fetch(`${apiUrl}${endpoint}`, {
     method,
