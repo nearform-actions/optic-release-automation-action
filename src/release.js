@@ -192,17 +192,30 @@ module.exports = async function ({ github, context, inputs }) {
     // }
 
     // Now use GitHub API directly to publish with correct target_commitish and clean name
-    const { data: release } = await github.rest.repos.updateRelease({
+    await github.rest.repos.updateRelease({
       owner,
       repo,
       release_id: id,
-      tag_name: version,
-      name: version, // Explicitly set clean name (just the version)
-      draft: false,
-      prerelease: isPreRelease,
-      generate_release_notes: true,
+      // tag_name: version,
+      // name: version, // Explicitly set clean name (just the version)
+      // draft: false,
+      // prerelease: isPreRelease,
+      // generate_release_notes: true,
       target_commitish: mergeCommitHash, // This will work now that tag is deleted!
     })
+
+    const { data: release } = await callApi(
+      {
+        endpoint: 'release',
+        method: 'PATCH',
+        body: {
+          version: version,
+          releaseId: id,
+          isPreRelease,
+        },
+      },
+      inputs
+    )
 
     const shouldNotifyLinkedIssues = /true/i.test(
       inputs['notify-linked-issues']
