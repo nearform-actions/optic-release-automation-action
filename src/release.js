@@ -177,12 +177,20 @@ module.exports = async function ({ github, context, inputs }) {
     const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
     logInfo(`Updating release to point to merge commit: ${mergeCommitHash}`)
 
-    // Update the release target commit, then let callApi handle publishing
+    // Get the current release to preserve its title
+    const { data: currentRelease } = await github.rest.repos.getRelease({
+      owner,
+      repo,
+      release_id: id,
+    })
+
+    // Update the release target commit while preserving the original title
     await github.rest.repos.updateRelease({
       owner,
       repo,
       release_id: id,
       target_commitish: mergeCommitHash,
+      name: currentRelease.name, // Preserve original title
     })
     
     logInfo(`Release target updated to merge commit: ${mergeCommitHash}`)
