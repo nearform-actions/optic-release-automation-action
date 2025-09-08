@@ -175,9 +175,33 @@ module.exports = async function ({ github, context, inputs }) {
   try {
     // Get the current merge commit to ensure the release tag points to the actual published code
     const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
-    logInfo(`Will update release to point to merge commit: ${mergeCommitHash}`)
+    logInfo(`Updating git tag to point to merge commit: ${mergeCommitHash}`)
 
-    // First: Let the Optic service handle the publishing with proper formatting
+    // Fix the Git tag BEFORE callApi runs (so publishRelease picks up the right commit)
+    const tagName = version
+    
+    // Delete the old tag and recreate it pointing to the merge commit
+    try {
+      await github.rest.git.deleteRef({
+        owner,
+        repo,
+        ref: `tags/${tagName}`,
+      })
+    } catch (err) {
+      // Tag might not exist yet, that's ok
+      logInfo(`Tag ${tagName} doesn't exist yet, will create new one`)
+    }
+    
+    await github.rest.git.createRef({
+      owner,
+      repo,
+      ref: `refs/tags/${tagName}`,
+      sha: mergeCommitHash,
+    })
+    
+    logInfo(`Git tag ${tagName} now points to merge commit: ${mergeCommitHash}`)
+
+    // Now let the Optic service handle the publishing (it will use the updated tag)
     const { data: release } = await callApi(
       {
         endpoint: 'release',
@@ -190,17 +214,6 @@ module.exports = async function ({ github, context, inputs }) {
       },
       inputs
     )
-
-    // Then: Fix the target commit after publishing (preserving the clean title)
-    await github.rest.repos.updateRelease({
-      owner,
-      repo,
-      release_id: id,
-      target_commitish: mergeCommitHash,
-      name: release.name, // Keep the title that callApi just set
-    })
-    
-    logInfo(`Release target updated to merge commit: ${mergeCommitHash}`)
 
     const shouldNotifyLinkedIssues = /true/i.test(
       inputs['notify-linked-issues']
