@@ -173,6 +173,10 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   try {
+    // Get the current merge commit to ensure the release tag points to the actual published code
+    const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
+    logInfo(`Updating release to point to merge commit: ${mergeCommitHash}`)
+
     const { data: release } = await callApi(
       {
         endpoint: 'release',
@@ -181,6 +185,7 @@ module.exports = async function ({ github, context, inputs }) {
           version: version,
           releaseId: id,
           isPreRelease,
+          target_commitish: mergeCommitHash,
         },
       },
       inputs
