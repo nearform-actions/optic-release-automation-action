@@ -173,21 +173,23 @@ module.exports = async function ({ github, context, inputs }) {
   }
 
   try {
-    // Get the current merge commit 
+    // Get the current merge commit
     const mergeCommitHash = await execWithOutput('git', ['rev-parse', 'HEAD'])
-    logInfo(`Publishing release and fixing tag to point to merge commit: ${mergeCommitHash}`)
+    logInfo(
+      `Publishing release and fixing tag to point to merge commit: ${mergeCommitHash}`
+    )
 
     // Delete the existing Git tag so GitHub will respect target_commitish
-    try {
-      await github.rest.git.deleteRef({
-        owner,
-        repo,
-        ref: `tags/${version}`,
-      })
-      logInfo(`Deleted existing tag ${version}`)
-    } catch (err) {
-      logInfo(`Tag ${version} doesn't exist, will be created fresh`)
-    }
+    // try {
+    //   await github.rest.git.deleteRef({
+    //     owner,
+    //     repo,
+    //     ref: `tags/${version}`,
+    //   })
+    //   logInfo(`Deleted existing tag ${version}`)
+    // } catch (err) {
+    //   logInfo(`Tag ${version} doesn't exist, will be created fresh`)
+    // }
 
     // Now use GitHub API directly to publish with correct target_commitish and clean name
     const { data: release } = await github.rest.repos.updateRelease({
