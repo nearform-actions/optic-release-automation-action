@@ -185,8 +185,10 @@ module.exports = async function ({ github, context, inputs }) {
       target_commitish: mergeCommitHash,
       prerelease: isPreRelease,
     })
-    
-    logInfo(`Release updated successfully with target commit: ${mergeCommitHash}`)
+
+    logInfo(
+      `Release updated successfully with target commit: ${mergeCommitHash}`
+    )
 
     const { data: release } = await callApi(
       {
