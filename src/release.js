@@ -185,7 +185,7 @@ module.exports = async function ({ github, context, inputs }) {
           version: version,
           releaseId: id,
           isPreRelease,
-          target_commitish: mergeCommitHash,
+          targetCommitish: mergeCommitHash,
         },
       },
       inputs
