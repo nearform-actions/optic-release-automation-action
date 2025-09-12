@@ -60,6 +60,7 @@ const createDraftRelease = async (inputs, newVersion, releaseNotes) => {
         endpoint: 'release',
         body: {
           version: newVersion,
+          name: newVersion,
           target: releaseCommitHash,
           generateReleaseNotes: releaseNotes ? false : true,
           ...(releaseNotes && { releaseNotes }),

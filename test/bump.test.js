@@ -263,6 +263,7 @@ describe('openPr tests', async () => {
         body: {
           version: TEST_VERSION,
           target: TEST_COMMIT_HASH,
+          name: TEST_VERSION,
           generateReleaseNotes: false,
           releaseNotes: TEST_RELEASE_NOTES,
         },
@@ -291,6 +292,7 @@ describe('openPr tests', async () => {
         body: {
           version: `v${TEST_VERSION}`,
           target: TEST_COMMIT_HASH,
+          name: `v${TEST_VERSION}`,
           generateReleaseNotes: false,
           releaseNotes: TEST_RELEASE_NOTES,
         },
@@ -538,6 +540,7 @@ describe('openPr tests', async () => {
         body: {
           version: `v${TEST_VERSION}`,
           target: TEST_COMMIT_HASH,
+          name: `v${TEST_VERSION}`,
           generateReleaseNotes: true,
         },
       },
@@ -562,6 +565,7 @@ describe('openPr tests', async () => {
         body: {
           version: `v${TEST_VERSION}`,
           target: TEST_COMMIT_HASH,
+          name: `v${TEST_VERSION}`,
           generateReleaseNotes: true,
         },
       },
@@ -585,6 +589,7 @@ describe('openPr tests', async () => {
         body: {
           version: `v${TEST_VERSION}`,
           target: TEST_COMMIT_HASH,
+          name: `v${TEST_VERSION}`,
           generateReleaseNotes: false,
           releaseNotes: TEST_RELEASE_NOTES,
         },

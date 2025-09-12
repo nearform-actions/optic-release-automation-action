@@ -626,6 +626,7 @@ describe('release tests', async () => {
           version: 'v5.1.3',
           releaseId: 54503465,
           isPreRelease: false,
+          targetCommitish: undefined,
         },
       },
       {
@@ -668,6 +669,7 @@ describe('release tests', async () => {
           version,
           releaseId: 54503465,
           isPreRelease: true,
+          targetCommitish: undefined,
         },
       },
       {
