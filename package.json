@@ -34,7 +34,7 @@
     "string-format": "^2.0.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.38.3",
+    "@vercel/ncc": "^0.38.4",
     "doctoc": "^2.2.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^10.1.8",
