@@ -96,4 +96,88 @@ describe('releaseNotes tests', async () => {
       )
     )
   })
+
+  it('Should detect npm publish when npm-token is provided', async () => {
+    const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
+
+    const prBody = getPRBody(_template(tpl), {
+      newVersion: '1.0.0',
+      draftRelease: {
+        id: 1,
+        body: 'Test release notes',
+        html_url: 'https://github.com/test/test/releases/1',
+      },
+      inputs: { 'npm-token': 'test-token', 'npm-tag': 'latest' },
+      author: 'test',
+      artifact: null,
+    })
+
+    assert.ok(
+      prBody.includes('The npm package with tag latest will be published')
+    )
+    assert.ok(!prBody.includes('No npm package will be published'))
+  })
+
+  it('Should detect npm publish when publish-mode is oidc', async () => {
+    const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
+
+    const prBody = getPRBody(_template(tpl), {
+      newVersion: '1.0.0',
+      draftRelease: {
+        id: 1,
+        body: 'Test release notes',
+        html_url: 'https://github.com/test/test/releases/1',
+      },
+      inputs: { 'publish-mode': 'oidc', 'npm-tag': 'latest' },
+      author: 'test',
+      artifact: null,
+    })
+
+    assert.ok(
+      prBody.includes('The npm package with tag latest will be published')
+    )
+    assert.ok(!prBody.includes('No npm package will be published'))
+  })
+
+  it('Should not detect npm publish when publish-mode is none', async () => {
+    const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
+
+    const prBody = getPRBody(_template(tpl), {
+      newVersion: '1.0.0',
+      draftRelease: {
+        id: 1,
+        body: 'Test release notes',
+        html_url: 'https://github.com/test/test/releases/1',
+      },
+      inputs: { 'publish-mode': 'none', 'npm-tag': 'latest' },
+      author: 'test',
+      artifact: null,
+    })
+
+    assert.ok(prBody.includes('No npm package will be published'))
+    assert.ok(
+      !prBody.includes('The npm package with tag latest will be published')
+    )
+  })
+
+  it('Should not detect npm publish when no npm-token and no oidc mode', async () => {
+    const tpl = fs.readFileSync(path.join(__dirname, '../src/pr.tpl'), 'utf8')
+
+    const prBody = getPRBody(_template(tpl), {
+      newVersion: '1.0.0',
+      draftRelease: {
+        id: 1,
+        body: 'Test release notes',
+        html_url: 'https://github.com/test/test/releases/1',
+      },
+      inputs: { 'npm-tag': 'latest' },
+      author: 'test',
+      artifact: null,
+    })
+
+    assert.ok(prBody.includes('No npm package will be published'))
+    assert.ok(
+      !prBody.includes('The npm package with tag latest will be published')
+    )
+  })
 })
