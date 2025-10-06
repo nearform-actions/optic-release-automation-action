@@ -63,11 +63,15 @@ function getPRBody(
     })
   }
 
+  const publishMode = (inputs['publish-mode'] || 'token').toLowerCase()
+  const npmPublish =
+    publishMode !== 'none' && (!!inputs['npm-token'] || publishMode === 'oidc')
+
   const prBody = template({
     releaseMeta,
     draftRelease,
     tagsToUpdate: tagsToBeUpdated.join(', '),
-    npmPublish: !!inputs['npm-token'],
+    npmPublish,
     artifact,
     syncTags: /true/i.test(inputs['sync-semver-tags']),
     author,
