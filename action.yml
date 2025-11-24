@@ -101,7 +101,7 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout the fresh project
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
