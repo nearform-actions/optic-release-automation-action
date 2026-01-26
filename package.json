@@ -22,7 +22,7 @@
     "@actions/github": "^7.0.0",
     "adm-zip": "^0.5.16",
     "conventional-changelog-monorepo": "github:nearform/conventional-changelog",
-    "fastify": "^5.7.1",
+    "fastify": "^5.7.2",
     "lodash.isequal": "^4.5.0",
     "lodash.template": "^4.5.0",
     "lodash.truncate": "^4.4.2",
