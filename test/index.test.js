@@ -160,7 +160,7 @@ describe('index tests', async () => {
       '--preid=',
       'major',
     ])
-    assert.strictEqual(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '"3.0.0"')
   })
 
   it('semver-auto: should not call getAutoBumpedVersion if semver is not auto', async () => {
@@ -175,8 +175,57 @@ describe('index tests', async () => {
 
     sinon.assert.notCalled(stubs.bumpStub)
     sinon.assert.calledTwice(stubs.execWithOutputStub)
-    assert.strictEqual(newVersion, '3.1.1')
+    assert.strictEqual(newVersion, '"3.1.1"')
   })
+
+  it('should return a quoted version literal when npm 12 omits the quotes (#649)', async () => {
+    const { bumpVersion, stubs } = buildStubbedAction()
+
+    // npm 12: `npm pkg get version` returns the version without quotes
+    stubs.execWithOutputStub.onCall(1).resolves('1.14.0')
+
+    const inputs = { semver: 'patch' }
+    const newVersion = await bumpVersion({
+      inputs,
+    })
+
+    // Must be a valid JS string literal for the action.yml github-script step
+    assert.strictEqual(newVersion, '"1.14.0"')
+  })
+
+  it('should return a quoted version literal when npm <12 includes the quotes (#649)', async () => {
+    const { bumpVersion, stubs } = buildStubbedAction()
+
+    // npm <12: `npm pkg get version` returns the version already quoted
+    stubs.execWithOutputStub.onCall(1).resolves('"1.14.0"')
+
+    const inputs = { semver: 'patch' }
+    const newVersion = await bumpVersion({
+      inputs,
+    })
+
+    assert.strictEqual(newVersion, '"1.14.0"')
+  })
+
+  for (const { npmOutput, expected } of [
+    { npmOutput: '"1.14.0"', expected: '1.14.0' }, // npm <12, quoted
+    { npmOutput: '1.14.0', expected: '1.14.0' }, // npm 12, unquoted
+    { npmOutput: '"2.0.0-rc.1"', expected: '2.0.0-rc.1' }, // prerelease, quoted
+    { npmOutput: '2.0.0-rc.1', expected: '2.0.0-rc.1' }, // prerelease, unquoted
+  ]) {
+    it(`should produce a valid JS literal for npm output ${npmOutput} (#649)`, async () => {
+      const { bumpVersion, stubs } = buildStubbedAction()
+
+      stubs.execWithOutputStub.onCall(1).resolves(npmOutput)
+
+      const newVersion = await bumpVersion({ inputs: { semver: 'patch' } })
+
+      // Parsing as JS source must not throw (the #649 SyntaxError), and the
+      // literal must evaluate back to the clean version string.
+      const evaluated = new Function(`return ${newVersion}`)()
+      assert.strictEqual(evaluated, expected)
+    })
+  }
 
   it('semver-auto: should bump major if breaking change', async () => {
     const { bumpVersion, stubs } = buildStubbedAction()
@@ -197,7 +246,7 @@ describe('index tests', async () => {
       '--preid=',
       'major',
     ])
-    assert.strictEqual(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '"3.0.0"')
   })
 
   it('semver-auto: should bump minor if its a feat', async () => {
@@ -219,7 +268,7 @@ describe('index tests', async () => {
       '--preid=',
       'minor',
     ])
-    assert.strictEqual(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '"3.0.0"')
   })
 
   it('semver-auto: should bump patch if its a fix', async () => {
@@ -241,7 +290,7 @@ describe('index tests', async () => {
       '--preid=',
       'patch',
     ])
-    assert.strictEqual(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '"3.0.0"')
   })
 
   it('semver-auto: should use the correct base tag if specified', async () => {
@@ -267,7 +316,7 @@ describe('index tests', async () => {
       '--preid=',
       'patch',
     ])
-    assert.strictEqual(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '"3.0.0"')
   })
 
   it('semver-auto: should get the latest tag if base tag not provided', async () => {
@@ -294,7 +343,7 @@ describe('index tests', async () => {
       '--preid=',
       'patch',
     ])
-    assert.strictEqual(newVersion, '3.0.0')
+    assert.strictEqual(newVersion, '"3.0.0"')
   })
 
   it('semver-auto: should throw if auto bump fails', async () => {
@@ -338,6 +387,6 @@ describe('index tests', async () => {
       '--preid=',
       'patch',
     ])
-    assert.deepStrictEqual(newVersion, '3.0.0')
+    assert.deepStrictEqual(newVersion, '"3.0.0"')
   })
 })
