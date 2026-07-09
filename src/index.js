@@ -38,7 +38,10 @@ async function bumpVersion({ inputs }) {
     `--preid=${preReleasePrefix}`,
     newVersion,
   ])
-  return await execWithOutput('npm', ['pkg', 'get', 'version'])
+
+  const packageVersion = await execWithOutput('npm', ['pkg', 'get', 'version'])
+
+  return JSON.stringify(packageVersion.replace(/^"|"$/g, ''))
 }
 
 async function getAutoBumpedVersion(baseTag) {
