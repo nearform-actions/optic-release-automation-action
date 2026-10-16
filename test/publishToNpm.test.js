@@ -432,12 +432,11 @@ describe('publishToNpm tests', async () => {
       version: 'v5.1.3',
     })
 
-    const ctrl = new AbortController()
     sinon.assert.calledWithExactly(
       otpVerificationStub,
       { version: 'v5.1.3', name: 'fakeTestPkg' },
       'ngrok-token',
-      ctrl.signal
+      sinon.match.instanceOf(AbortSignal)
     )
 
     sinon.assert.calledWithExactly(execWithOutputStub, 'npm', [
