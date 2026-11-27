@@ -10,7 +10,10 @@ const { execWithOutput } = require('../utils/execWithOutput')
 async function getPublishedInfo() {
   try {
     const packageInfo = await execWithOutput('npm', ['view', '--json'])
-    return packageInfo ? JSON.parse(packageInfo) : null
+    if (!packageInfo) return null
+    const parsed = JSON.parse(packageInfo)
+    // npm >= 12 wraps the result in an array.
+    return Array.isArray(parsed) ? parsed[0] ?? null : parsed
   } catch (error) {
     if (!error?.message?.match(/code E404/)) {
       throw error
