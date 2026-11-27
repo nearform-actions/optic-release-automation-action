@@ -68,6 +68,20 @@ describe('packageInfo tests', async () => {
     assert.deepStrictEqual(info, mockPackageInfo)
   })
 
+  it('getPublishedInfo unwraps the single-entry array returned by npm 12', async () => {
+    const packageInfo = setupPublished({
+      value: JSON.stringify([mockPackageInfo]),
+    })
+    const info = await packageInfo.getPublishedInfo()
+    assert.deepStrictEqual(info, mockPackageInfo)
+  })
+
+  it('getPublishedInfo returns null for an empty array', async () => {
+    const packageInfo = setupPublished({ value: '[]' })
+    const info = await packageInfo.getPublishedInfo()
+    assert.strictEqual(info, null)
+  })
+
   it('getPublishedInfo continues and returns null if the request 404s', async () => {
     const packageInfo = setupPublished({
       value: JSON.stringify(mockPackageInfo),
